@@ -5,6 +5,12 @@ import { readHotbar, reorderHotbar } from './hotbar';
 import { applyOptionToggle, calculateOptionPrice } from './options';
 import type { BOptionEntry } from './types';
 import { canTraverse, crossesApartmentWall, expandTileRuns } from './world';
+import {
+  apartmentPropPlacement,
+  apartmentSolidBlockVisualFootprint,
+  apartmentUnitWorldPoint,
+  auditApartmentPropPlacements,
+} from './apartment-transform';
 import type { WorldData, WorldObject } from './types';
 
 const options: BOptionEntry[] = [
@@ -118,6 +124,38 @@ describe('game-local state helpers', () => {
     } as unknown as WorldData;
     expect(canTraverse(cornerWorld, 0, 0, 1, 1)).toBe(false);
     expect(canTraverse({ ...cornerWorld, blocked: new Set() }, 0, 0, 1, 1)).toBe(true);
+  });
+
+  it('keeps renderer, props, and collision on the same mirrored apartment transform', () => {
+    const object: WorldObject = {
+      originCell: { x: 10, y: 20 },
+      transform: { rotationDeg: 90, mirrorX: false },
+      geometry: {
+        cellSizeMeters: 0.5,
+        floorPolygon: [[0, 0], [3, 0], [3, 3], [0, 3]],
+        roomZones: [{ id: 'living', boundsMeters: [0, 0, 3, 3] }],
+      },
+    };
+    expect(apartmentUnitWorldPoint(object, [1, 0]).x).toBeCloseTo(10);
+    expect(apartmentUnitWorldPoint(object, [1, 0]).y).toBeCloseTo(22);
+    const placement = apartmentPropPlacement(object, {
+      id: 'table', assetId: 'table', roomZoneId: 'living', positionMeters: [1, 1], yawDeg: 0,
+    });
+    expect(placement.worldYaw).toBeCloseTo(-Math.PI / 2);
+    expect(auditApartmentPropPlacements(object, [{
+      id: 'table', assetId: 'table', roomZoneId: 'living', positionMeters: [1, 1], yawDeg: 0,
+    }]).issues).toEqual([]);
+  });
+
+  it('separates a solid block face from its coplanar apartment wall', () => {
+    const object: WorldObject = {
+      geometry: {
+        solidBlockWallContactClearanceMeters: 0.015,
+        wallSegments: [{ a: [0, 0], b: [2, 0], thicknessMeters: 0.12 }],
+      },
+    };
+    const polygon = apartmentSolidBlockVisualFootprint(object, { boundsMeters: [0, -0.06, 1, 0.5] });
+    expect(Math.min(...polygon.map((point) => point[1]))).toBeCloseTo(0.075);
   });
 
   it('adds requirements and removes mutually exclusive B options', () => {

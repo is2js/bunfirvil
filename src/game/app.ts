@@ -2,7 +2,7 @@ import { escapeHtml, formatBytes, resolveProjectUrl } from './base';
 import { loadCatalog, mapFromQuery } from './catalog';
 import { ManifestEffectPlayer } from './effect-player';
 import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
-import { screenDirection, screenVectorToWorldDelta } from './grid';
+import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from './grid';
 import { FrameMetrics } from './metrics';
 import {
   applyOptionToggle,
@@ -95,7 +95,6 @@ export class ShowcaseApp {
   private cursorScreenPoint: { x: number; y: number } | null = null;
   private optionCategory = '전체';
   private animationFrame = 0;
-  private lastMoveAt = 0;
   private lastMetricPaint = 0;
   private assetCount = 0;
   private mapLoadToken = 0;
@@ -318,7 +317,11 @@ export class ShowcaseApp {
         direction: 's',
         motion: 'idle',
         motionUntil: 0,
+        motionStartedAt: performance.now(),
         moving: false,
+        displayX: this.currentMap.spawn.x,
+        displayY: this.currentMap.spawn.y,
+        travel: null,
       };
       const view = new ActorView(entry, (key) => this.setActiveActor(key));
       this.actors.set(entry.key, actor);
@@ -452,8 +455,27 @@ export class ShowcaseApp {
     const second = nearestWalkable(this.world, first.x + 2, first.y + 1);
     const actor100 = this.actors.get('100');
     const actor200 = this.actors.get('200');
-    if (actor100) Object.assign(actor100, first, { direction: 's', motion: 'idle', moving: false });
-    if (actor200) Object.assign(actor200, second, { direction: 'sw', motion: 'idle', moving: false });
+    const now = performance.now();
+    if (actor100) Object.assign(actor100, first, {
+      displayX: first.x,
+      displayY: first.y,
+      direction: 's',
+      motion: 'idle',
+      motionStartedAt: now,
+      motionUntil: 0,
+      moving: false,
+      travel: null,
+    });
+    if (actor200) Object.assign(actor200, second, {
+      displayX: second.x,
+      displayY: second.y,
+      direction: 'sw',
+      motion: 'idle',
+      motionStartedAt: now,
+      motionUntil: 0,
+      moving: false,
+      travel: null,
+    });
   }
 
   private setActiveActor(key: CharacterKey, updateUrl = true): void {
@@ -576,19 +598,23 @@ export class ShowcaseApp {
     if (!actor) return;
     this.cooldowns.set(skillId, now + skill.cooldownMs);
     actor.motion = skillId === 'basic-attack' || skillId === 'common-double-arrow' ? 'attack' : 'cast';
+    actor.motionStartedAt = now;
     actor.motionUntil = now + Math.min(900, Math.max(360, skill.cooldownMs * 0.28));
     actor.moving = false;
+    actor.travel = null;
+    actor.displayX = actor.x;
+    actor.displayY = actor.y;
     this.triggerEffect(skillId, actor, teleportDestination);
     this.toast(`${actor.label} · ${skill.label}`, 'skill');
   }
 
   private triggerEffect(skillId: string, actor: ActorState, teleportDestination: { x: number; y: number } | null = null): void {
     const layer = this.get<HTMLElement>('#effect-layer');
-    const from = this.renderer.project(actor.x, actor.y);
+    const from = this.renderer.project(actor.displayX, actor.displayY);
     const other = this.actors.get(actor.key === '100' ? '200' : '100');
     const to = teleportDestination
       ? this.renderer.project(teleportDestination.x, teleportDestination.y)
-      : other ? this.renderer.project(other.x, other.y) : { x: from.x + 110, y: from.y - 22 };
+      : other ? this.renderer.project(other.displayX, other.displayY) : { x: from.x + 110, y: from.y - 22 };
     const manifestUrls = this.catalog.skills.find((skill) => skill.id === skillId)?.effectUrls || [];
     this.effectPlayer.playMany(manifestUrls, {
       direction: actor.direction,
@@ -601,6 +627,9 @@ export class ShowcaseApp {
       this.spawnEffect('teleport-burst', from.x, from.y, 850);
       actor.x = teleportDestination.x;
       actor.y = teleportDestination.y;
+      actor.displayX = actor.x;
+      actor.displayY = actor.y;
+      actor.travel = null;
       const projected = this.renderer.project(actor.x, actor.y);
       this.spawnEffect('teleport-burst is-arrival', projected.x, projected.y, 850);
       return;
@@ -717,21 +746,34 @@ export class ShowcaseApp {
     const horizontal = Number(this.pressedKeys.has('d') || this.pressedKeys.has('arrowright')) - Number(this.pressedKeys.has('a') || this.pressedKeys.has('arrowleft'));
     const vertical = Number(this.pressedKeys.has('s') || this.pressedKeys.has('arrowdown')) - Number(this.pressedKeys.has('w') || this.pressedKeys.has('arrowup'));
     if (horizontal === 0 && vertical === 0) {
-      actor.moving = false;
-      if (actor.motion === 'walk') actor.motion = 'idle';
+      if (!actor.travel) {
+        actor.moving = false;
+        if (actor.motion === 'walk') {
+          actor.motion = 'idle';
+          actor.motionStartedAt = time;
+        }
+      }
       return;
     }
     actor.direction = screenDirection(horizontal, vertical);
-    if (time - this.lastMoveAt < MOVEMENT_INTERVAL_MS || actor.motionUntil > time) return;
-    this.lastMoveAt = time;
+    if (actor.travel || actor.motionUntil > time) return;
     const worldDelta = screenVectorToWorldDelta(horizontal, vertical);
     const nextX = actor.x + worldDelta.dx;
     const nextY = actor.y + worldDelta.dy;
     if (canTraverse(this.world, actor.x, actor.y, nextX, nextY)) {
+      actor.travel = {
+        fromX: actor.x,
+        fromY: actor.y,
+        toX: nextX,
+        toY: nextY,
+        startedAt: time,
+        endsAt: time + MOVEMENT_INTERVAL_MS,
+      };
       actor.x = nextX;
       actor.y = nextY;
       actor.moving = true;
       actor.motion = 'walk';
+      actor.motionStartedAt = time;
     } else {
       actor.moving = false;
       this.get<HTMLElement>('#game-stage').classList.remove('hit-boundary');
@@ -740,15 +782,29 @@ export class ShowcaseApp {
     }
   }
 
+  private advanceActorTravel(actor: ActorState, time: number): void {
+    if (!actor.travel) return;
+    const position = interpolateCellTravel(actor.travel, time);
+    actor.displayX = position.x;
+    actor.displayY = position.y;
+    if (position.progress < 1) return;
+    actor.displayX = actor.travel.toX;
+    actor.displayY = actor.travel.toY;
+    actor.travel = null;
+    actor.moving = false;
+  }
+
   private readonly tick = (time: number): void => {
     if (this.destroyed) return;
     this.frameMetrics.push(time);
+    for (const actor of this.actors.values()) this.advanceActorTravel(actor, time);
     this.moveActiveActor(time);
 
     for (const actor of this.actors.values()) {
       if (actor.motionUntil > 0 && actor.motionUntil <= time) {
         actor.motionUntil = 0;
         actor.motion = actor.moving ? 'walk' : 'idle';
+        actor.motionStartedAt = time;
       }
     }
     const active = this.actors.get(this.activeActor);
@@ -771,7 +827,7 @@ export class ShowcaseApp {
     }
     this.actorViews.forEach((view, key) => {
       const actor = this.actors.get(key);
-      if (actor) view.update(actor, this.renderer.project(actor.x, actor.y), time);
+      if (actor) view.update(actor, this.renderer.project(actor.displayX, actor.displayY), time);
     });
     this.paintCooldowns(time);
 

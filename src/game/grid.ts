@@ -5,6 +5,25 @@ export interface GridVector {
   dy: number;
 }
 
+export interface CellTravel {
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  startedAt: number;
+  endsAt: number;
+}
+
+export function interpolateCellTravel(travel: CellTravel, time: number): { x: number; y: number; progress: number } {
+  const duration = Math.max(1, travel.endsAt - travel.startedAt);
+  const progress = Math.max(0, Math.min(1, (time - travel.startedAt) / duration));
+  return {
+    x: travel.fromX + (travel.toX - travel.fromX) * progress,
+    y: travel.fromY + (travel.toY - travel.fromY) * progress,
+    progress,
+  };
+}
+
 /** Root /rpg의 화면 방향을 canonical world diagonal grid로 바꾼다. */
 export function screenVectorToWorldDelta(screenDx: number, screenDy: number): GridVector {
   const dx = Math.sign(screenDx);

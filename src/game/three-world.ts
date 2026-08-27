@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { fetchJson, resolveProjectUrl, resolveReferencedUrl } from './base';
+import {
+  apartmentPropPlacement,
+  apartmentSolidBlockVisualFootprint,
+  apartmentUnitWorldPoint,
+  auditApartmentPropPlacements,
+  type NumericPoint,
+} from './apartment-transform';
 import type {
   ActorState,
   ApartmentGeometry,
@@ -10,8 +17,6 @@ import type {
   WorldData,
   WorldObject,
 } from './types';
-
-type NumericPoint = [number, number];
 
 interface RuntimePart {
   shape?: 'box' | 'cylinder' | 'vertical-cylinder' | 'ellipsoid' | 'rounded-l-shelf' | string;
@@ -71,7 +76,122 @@ const DEFAULT_VARIANTS: Record<string, Record<string, string>> = {
   'mma-sanded-goose-panel': { primary: '#8f918d', secondary: '#d4d4ce', accent: '#767974' },
   'system-ac-light-gray': { primary: '#d8dadd', secondary: '#eef0f2', accent: '#aeb3b9' },
   'system-ac-premium-light-gray': { primary: '#e4e6e8', secondary: '#f5f6f7', accent: '#b8bdc3' },
+  'clear-glass-chrome': { primary: '#c9cece', secondary: '#d9f0ef', accent: '#6f797a' },
 };
+
+// 원본 three-pbr-renderer의 구조 결합형 procedural recipes. 독립 카탈로그 행이
+// 아닌 샤워부스/기본 주방 마감도 일반 박스 fallback으로 뭉개지지 않게 한다.
+export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
+  {
+    assetId: 'shower-booth-glass-corner',
+    rendererKind: 'procedural',
+    mountingKind: 'floor',
+    defaultDimensionsMeters: [0.78, 0.74, 2.05],
+    parts: [
+      { shape: 'box', scale: [1, 1, 0.035], offset: [0, 0, 0.0175], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.025, 0.94, 0.90], offset: [0.4875, -0.01, 0.48], materialRole: 'glass' },
+      { shape: 'box', scale: [0.045, 0.96, 0.025], offset: [0.475, -0.01, 0.93], materialRole: 'accent' },
+      { shape: 'box', scale: [0.08, 0.08, 0.72], offset: [0, -0.45, 0.42], materialRole: 'accent' },
+      { shape: 'box', scale: [0.06, 0.42, 0.035], offset: [0, -0.27, 0.80], materialRole: 'accent' },
+      { shape: 'cylinder', scale: [0.24, 0.12, 0.24], offset: [0, -0.10, 0.82], materialRole: 'primary' },
+    ],
+  },
+  {
+    assetId: 'kitchen-countertop-default-run',
+    rendererKind: 'procedural',
+    mountingKind: 'anchored',
+    defaultDimensionsMeters: [1, 0.6, 0.06],
+    parts: [{ shape: 'box', scale: [1, 1, 1], offset: [0, 0, 0.5], materialRole: 'primary' }],
+  },
+  {
+    assetId: 'kitchen-backsplash-default-run',
+    rendererKind: 'procedural',
+    mountingKind: 'anchored',
+    defaultDimensionsMeters: [1, 0.035, 0.55],
+    parts: [{ shape: 'box', scale: [1, 1, 1], offset: [0, 0, 0.5], materialRole: 'secondary' }],
+  },
+  {
+    assetId: 'kitchen-countertop-radianz-run', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultDimensionsMeters: [1, 0.6, 0.06],
+    parts: [{ shape: 'box', scale: [1, 1, 1], offset: [0, 0, 0.5], materialRole: 'primary' }],
+  },
+  {
+    assetId: 'kitchen-backsplash-radianz-run', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultDimensionsMeters: [1, 0.035, 0.55],
+    parts: [{ shape: 'box', scale: [1, 1, 1], offset: [0, 0, 0.5], materialRole: 'secondary' }],
+  },
+  {
+    assetId: 'interior-infinity-door-panel', rendererKind: 'procedural', mountingKind: 'wall',
+    defaultDimensionsMeters: [0.9, 0.08, 2.2],
+    parts: [
+      { shape: 'box', scale: [1, 1, 1], offset: [0, 0, 0.5], materialRole: 'primary' },
+      { shape: 'box', scale: [0.018, 1.08, 0.96], offset: [-0.491, 0.04, 0.5], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.018, 1.08, 0.96], offset: [0.491, 0.04, 0.5], materialRole: 'secondary' },
+      { shape: 'box', scale: [1, 1.08, 0.018], offset: [0, 0.04, 0.982], materialRole: 'secondary' },
+      { shape: 'cylinder', scale: [0.035, 0.09, 0.035], offset: [0.36, 0.53, 0.52], materialRole: 'accent' },
+    ],
+  },
+  {
+    assetId: 'ceiling-smart-downlight', rendererKind: 'procedural', mountingKind: 'ceiling',
+    defaultDimensionsMeters: [0.16, 0.16, 0.06],
+    parts: [
+      { shape: 'cylinder', scale: [1, 1, 0.36], offset: [0, 0, 0.18], materialRole: 'primary' },
+      { shape: 'cylinder', scale: [0.72, 0.72, 0.16], offset: [0, 0, 0.72], materialRole: 'accent' },
+      { shape: 'cylinder', scale: [0.46, 0.46, 0.08], offset: [0, 0, 0.91], materialRole: 'secondary' },
+    ],
+  },
+  ...['built-in-oven-navien', 'built-in-oven-samsung', 'built-in-oven-lg'].map((assetId): RuntimeAsset => ({
+    assetId, rendererKind: 'procedural', mountingKind: 'anchored', defaultDimensionsMeters: [0.6, 0.55, 0.6],
+    parts: [
+      { shape: 'box', scale: [1, 1, 1], offset: [0, 0, 0.5], materialRole: 'primary' },
+      { shape: 'box', scale: [0.90, 0.035, 0.68], offset: [0, 0.51, 0.45], materialRole: 'accent' },
+      { shape: 'box', scale: [0.90, 0.045, 0.18], offset: [0, 0.52, 0.84], materialRole: 'secondary' },
+      { shape: 'cylinder', scale: [0.055, 0.05, 0.055], offset: [0.32, 0.55, 0.84], materialRole: 'primary' },
+      { shape: 'box', scale: [0.68, 0.055, 0.035], offset: [0, 0.55, 0.16], materialRole: 'secondary' },
+    ],
+  })),
+  {
+    assetId: 'refrigerator-cabinet-pet-basic', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [1.35, 0.72, 2.2],
+    parts: [
+      { shape: 'box', scale: [0.055, 1, 1], offset: [-0.4725, 0, 0.5], materialRole: 'primary' },
+      { shape: 'box', scale: [0.055, 1, 1], offset: [0.4725, 0, 0.5], materialRole: 'primary' },
+      { shape: 'box', scale: [0.89, 1, 0.16], offset: [0, 0, 0.92], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.89, 0.08, 0.12], offset: [0, -0.46, 0.06], materialRole: 'accent' },
+    ],
+  },
+  {
+    assetId: 'refrigerator-cabinet-bespoke-alt2', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [2.45, 0.72, 2.2],
+    parts: [
+      { shape: 'box', scale: [0.035, 1, 1], offset: [-0.4825, 0, 0.5], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.035, 1, 1], offset: [0.4825, 0, 0.5], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.93, 1, 0.12], offset: [0, 0, 0.94], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.30, 0.91, 0.78], offset: [-0.315, 0.035, 0.43], materialRole: 'primary' },
+      { shape: 'box', scale: [0.30, 0.91, 0.78], offset: [0, 0.035, 0.43], materialRole: 'primary' },
+      { shape: 'box', scale: [0.18, 0.91, 0.86], offset: [0.255, 0.035, 0.47], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.13, 0.91, 0.38], offset: [0.42, 0.035, 0.22], materialRole: 'primary' },
+      { shape: 'box', scale: [0.13, 0.91, 0.34], offset: [0.42, 0.035, 0.70], materialRole: 'accent' },
+      { shape: 'box', scale: [0.012, 0.94, 0.72], offset: [-0.16, 0.51, 0.43], materialRole: 'accent' },
+      { shape: 'box', scale: [0.012, 0.94, 0.72], offset: [0.155, 0.51, 0.43], materialRole: 'accent' },
+    ],
+  },
+  {
+    assetId: 'refrigerator-cabinet-lg-built-in', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [2.45, 0.72, 2.2],
+    parts: [
+      { shape: 'box', scale: [0.035, 1, 1], offset: [-0.4825, 0, 0.5], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.035, 1, 1], offset: [0.4825, 0, 0.5], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.93, 1, 0.12], offset: [0, 0, 0.94], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.50, 0.91, 0.78], offset: [-0.22, 0.035, 0.43], materialRole: 'primary' },
+      { shape: 'box', scale: [0.29, 0.91, 0.78], offset: [0.20, 0.035, 0.43], materialRole: 'primary' },
+      { shape: 'box', scale: [0.15, 0.91, 0.86], offset: [0.41, 0.035, 0.47], materialRole: 'secondary' },
+      { shape: 'box', scale: [0.018, 0.94, 0.72], offset: [-0.22, 0.51, 0.43], materialRole: 'accent' },
+      { shape: 'box', scale: [0.018, 0.94, 0.72], offset: [0.05, 0.51, 0.43], materialRole: 'accent' },
+      { shape: 'box', scale: [0.018, 0.94, 0.72], offset: [0.34, 0.51, 0.43], materialRole: 'accent' },
+    ],
+  },
+];
 
 function finite(value: unknown, fallback = 0): number {
   const number = Number(value);
@@ -151,6 +271,7 @@ export class ThreeWorldRenderer {
   private cssHeight = 1;
   private selectedOptionIds: string[] = [];
   private loadToken = 0;
+  private propLoadToken = 0;
   private contractsReady: Promise<void>;
 
   constructor(
@@ -213,7 +334,7 @@ export class ThreeWorldRenderer {
 
   follow(target: ActorState, smoothing = 0.095): void {
     if (!this.world) return;
-    this.focus.lerp(this.worldPoint(target.x, target.y, 0), smoothing);
+    this.focus.lerp(this.worldPoint(target.displayX, target.displayY, 0), smoothing);
     this.updateCamera();
   }
 
@@ -266,6 +387,9 @@ export class ThreeWorldRenderer {
     for (const asset of catalog.assets || []) {
       if (!asset.assetId) continue;
       this.assets.set(asset.assetId, { ...asset, ...recipesById.get(asset.assetId) });
+    }
+    for (const asset of STRUCTURAL_PROP_ASSETS) {
+      if (!this.assets.has(asset.assetId)) this.assets.set(asset.assetId, asset);
     }
     this.canvas.dataset.interiorAssetCount = String(this.assets.size);
     this.canvas.dataset.recipePartCount = String(
@@ -327,18 +451,8 @@ export class ThreeWorldRenderer {
   }
 
   private localPoint(object: WorldObject, point: NumericPoint, elevation = 0): THREE.Vector3 {
-    const sourceX = finite(point[0]);
-    const sourceY = finite(point[1]);
-    const transform = object.transform || {};
-    const mirrorX = transform.mirrorX ? -sourceX : sourceX;
-    const mirrorY = transform.mirrorY ? -sourceY : sourceY;
-    const radians = finite(transform.rotationDeg) * Math.PI / 180;
-    const localX = mirrorX * Math.cos(radians) - mirrorY * Math.sin(radians);
-    const localY = mirrorX * Math.sin(radians) + mirrorY * Math.cos(radians);
-    const cellSize = Math.max(0.01, finite(object.geometry?.cellSizeMeters, 0.5));
-    const originX = finite(object.originCell?.x, finite(object.x));
-    const originY = finite(object.originCell?.y, finite(object.y));
-    return this.worldPoint(originX + localX / cellSize, originY + localY / cellSize, elevation);
+    const world = apartmentUnitWorldPoint(object, point);
+    return this.worldPoint(world.x, world.y, elevation);
   }
 
   private shapeGeometry(object: WorldObject, polygon: NumericPoint[]): THREE.ShapeGeometry | null {
@@ -413,7 +527,7 @@ export class ThreeWorldRenderer {
       this.material('#b9aa9b', { roughness: 0.86, mapId: String(geometry.materials?.wood || 'bundang-55b-greige-oak-v1') }),
     );
     floor.position.y = 0.035;
-    floor.receiveShadow = true;
+    floor.receiveShadow = false;
     floor.userData.structureKind = 'apartment-floor';
     this.structureRoot.add(floor);
 
@@ -432,7 +546,7 @@ export class ThreeWorldRenderer {
         }),
       );
       overlay.position.y = 0.052;
-      overlay.receiveShadow = true;
+      overlay.receiveShadow = false;
       this.structureRoot.add(overlay);
     }
 
@@ -453,6 +567,7 @@ export class ThreeWorldRenderer {
       );
       body.position.set(center.x, (totalHeight - topHeight) / 2 + 0.045, center.z);
       body.castShadow = true;
+      body.receiveShadow = false;
       this.structureRoot.add(body);
       const top = new THREE.Mesh(
         new THREE.BoxGeometry(Math.abs(x2 - x1) / cellSize + 0.06, topHeight, Math.abs(y2 - y1) / cellSize + 0.06),
@@ -460,12 +575,13 @@ export class ThreeWorldRenderer {
       );
       top.position.set(center.x, totalHeight - topHeight / 2 + 0.045, center.z);
       top.castShadow = true;
+      top.receiveShadow = false;
       this.structureRoot.add(top);
     }
 
     for (const blockValue of geometry.solidBlocks || []) {
       const block = blockValue as Record<string, unknown>;
-      const polygon = rowPolygon(block);
+      const polygon = apartmentSolidBlockVisualFootprint(object, block);
       if (polygon.length < 3) continue;
       const shape = new THREE.Shape();
       polygon.forEach((point, index) => {
@@ -479,6 +595,7 @@ export class ThreeWorldRenderer {
       blockGeometry.translate(0, height, 0);
       const mesh = new THREE.Mesh(blockGeometry, this.material('#c9c3bb', { roughness: 0.92 }));
       mesh.castShadow = true;
+      mesh.receiveShadow = false;
       this.structureRoot.add(mesh);
     }
 
@@ -509,7 +626,8 @@ export class ThreeWorldRenderer {
       mesh.position.set((start.x + end.x) / 2, span.base / cellSize + height / 2, (start.z + end.z) / 2);
       mesh.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
       mesh.castShadow = !frontCutaway;
-      mesh.receiveShadow = true;
+      // 실내 벽이 전역 shadow map을 다시 받으면 카메라 이동 시 shadow-acne가 번쩍인다.
+      mesh.receiveShadow = false;
       this.structureRoot.add(mesh);
     }
 
@@ -558,7 +676,7 @@ export class ThreeWorldRenderer {
       panel.position.set(hinge.x + opened.x / 2, height / 2, hinge.z + opened.y / 2);
       panel.rotation.y = -Math.atan2(opened.y, opened.x);
       panel.castShadow = true;
-      panel.receiveShadow = true;
+      panel.receiveShadow = false;
       this.structureRoot.add(panel);
     }
     void object;
@@ -566,6 +684,7 @@ export class ThreeWorldRenderer {
 
   private rebuildProps(): void {
     disposeTree(this.propRoot);
+    const propLoadToken = ++this.propLoadToken;
     const object = this.apartment;
     const geometry = object?.geometry;
     if (!object || !geometry) return;
@@ -573,7 +692,16 @@ export class ThreeWorldRenderer {
       ? this.optionRuntime.bundangPrototypeOptionProps(geometry, object.unitTypeId || this.world?.entry.unitType || '', this.selectedOptionIds)
       : geometry.interiorProps || [];
     this.canvas.dataset.apartmentPropCount = String(props.length);
-    for (const prop of props) void this.addProp(object, prop);
+    const audit = auditApartmentPropPlacements(object, props);
+    const missingAssetIds = props
+      .map((prop) => String(prop.assetId || ''))
+      .filter((assetId) => assetId && !this.assets.has(assetId));
+    const placementIssues = [...audit.issues, ...missingAssetIds.map((assetId) => `${assetId}:missing-asset`)];
+    this.canvas.dataset.interiorPlacementChecked = String(audit.checked);
+    this.canvas.dataset.interiorPlacementIssueCount = String(placementIssues.length);
+    this.canvas.dataset.interiorPlacementStatus = placementIssues.length ? 'warning' : 'verified';
+    this.canvas.dataset.interiorPlacementIssues = placementIssues.join('|');
+    for (const prop of props) void this.addProp(object, prop, propLoadToken);
   }
 
   private async modelTemplate(asset: RuntimeAsset): Promise<THREE.Group | null> {
@@ -590,7 +718,7 @@ export class ThreeWorldRenderer {
     return this.modelCache.get(resolved) || null;
   }
 
-  private async addProp(object: WorldObject, prop: ApartmentInteriorProp): Promise<void> {
+  private async addProp(object: WorldObject, prop: ApartmentInteriorProp, propLoadToken: number): Promise<void> {
     const assetId = String(prop.assetId || '');
     const asset = this.assets.get(assetId);
     const token = this.loadToken;
@@ -601,14 +729,14 @@ export class ThreeWorldRenderer {
     } catch {
       group = this.proceduralProp(prop, asset);
     }
-    if (token !== this.loadToken || object !== this.apartment) {
+    if (token !== this.loadToken || propLoadToken !== this.propLoadToken || object !== this.apartment) {
       disposeTree(group);
       return;
     }
-    const source = Array.isArray(prop.positionMeters) ? prop.positionMeters : [0, 0];
-    const center = this.localPoint(object, [finite(source[0]), finite(source[1])]);
+    const placement = apartmentPropPlacement(object, prop);
+    const center = this.worldPoint(placement.center.x, placement.center.y, 0);
     const size = dimensions(prop, asset);
-    const cellSize = Math.max(0.01, finite(object.geometry?.cellSizeMeters, 0.5));
+    const cellSize = placement.cellSize;
     const mountingKind = asset?.mountingKind || 'floor';
     const clearHeight = finite(object.geometry?.clearHeightMeters, 2.3);
     const mountHeight = Number.isFinite(Number(prop.mountHeightMeters))
@@ -620,8 +748,10 @@ export class ThreeWorldRenderer {
           : ['wall', 'anchored'].includes(mountingKind)
             ? Math.max(0, finite(asset?.defaultMountHeightMeters))
             : 0.018;
-    group.position.set(center.x, mountHeight / cellSize, center.z);
-    group.rotation.y = -(finite(prop.yawDeg) + finite(object.transform?.rotationDeg)) * Math.PI / 180;
+    const baseY = mountingKind === 'room-finish' ? 0.038 : mountHeight / cellSize;
+    group.position.set(center.x, baseY, center.z);
+    group.rotation.y = placement.worldYaw;
+    group.renderOrder = mountingKind === 'room-finish' ? 3.04 : 3.1;
     this.propRoot.add(group);
   }
 
@@ -634,7 +764,7 @@ export class ThreeWorldRenderer {
       mesh.geometry = prop.mirrored ? this.reflectedGeometry(mesh.geometry) : mesh.geometry.clone();
       mesh.material = this.material(palette.primary, { roughness: 0.82 });
       mesh.castShadow = true;
-      mesh.receiveShadow = true;
+      mesh.receiveShadow = false;
     });
     const target = dimensions(prop, asset);
     const cellSize = Math.max(0.01, finite(this.apartment?.geometry?.cellSizeMeters, 0.5));
@@ -683,14 +813,19 @@ export class ThreeWorldRenderer {
       const material = role === 'glass'
         ? this.material('#d9f0ef', { glass: true })
         : this.material(palette[role] || palette.primary, { roughness: prop.materialVariantId === 'charcoal-accent' ? 0.62 : 0.88 });
+      if (roomFinish) {
+        material.polygonOffset = true;
+        material.polygonOffsetFactor = -2;
+        material.polygonOffsetUnits = -2;
+      }
       const mesh = new THREE.Mesh(finalGeometry, material);
       mesh.position.set(
-        size[0] * finite(part.offset?.[0]) / cellSize,
+        size[0] * finite(part.offset?.[0]) * (prop.mirrored ? -1 : 1) / cellSize,
         size[2] * finite(part.offset?.[2], 0.5) / cellSize,
         size[1] * finite(part.offset?.[1]) / cellSize,
       );
       mesh.castShadow = !roomFinish && role !== 'glass';
-      mesh.receiveShadow = true;
+      mesh.receiveShadow = false;
       group.add(mesh);
     }
     return group;

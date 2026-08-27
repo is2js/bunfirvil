@@ -207,7 +207,18 @@ export interface ActorState {
   direction: Direction;
   motion: MotionName;
   motionUntil: number;
+  motionStartedAt: number;
   moving: boolean;
+  displayX: number;
+  displayY: number;
+  travel: {
+    fromX: number;
+    fromY: number;
+    toX: number;
+    toY: number;
+    startedAt: number;
+    endsAt: number;
+  } | null;
 }
 
 export interface ProjectedPoint {

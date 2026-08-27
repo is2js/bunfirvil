@@ -1,4 +1,5 @@
 import { fetchJson, resolveProjectUrl, resolveReferencedUrl } from './base';
+import { apartmentUnitWorldPoint } from './apartment-transform';
 import type {
   ActorState,
   ProjectedPoint,
@@ -262,8 +263,8 @@ export class IsometricWorldRenderer {
   }
 
   follow(target: ActorState, smoothing = 0.095): void {
-    this.camera.x += (target.x - this.camera.x) * smoothing;
-    this.camera.y += (target.y - this.camera.y) * smoothing;
+    this.camera.x += (target.displayX - this.camera.x) * smoothing;
+    this.camera.y += (target.displayY - this.camera.y) * smoothing;
   }
 
   project(x: number, y: number): ProjectedPoint {
@@ -481,19 +482,7 @@ function finite(value: unknown, fallback = 0): number {
 
 function worldCollisionPoint(object: WorldObject, value: unknown): CollisionPoint | null {
   if (!Array.isArray(value) || value.length < 2) return null;
-  const sourceX = finite(value[0]);
-  const sourceY = finite(value[1]);
-  const transform = object.transform || {};
-  const mirrorX = transform.mirrorX ? -sourceX : sourceX;
-  const mirrorY = transform.mirrorY ? -sourceY : sourceY;
-  const radians = finite(transform.rotationDeg) * Math.PI / 180;
-  const localX = mirrorX * Math.cos(radians) - mirrorY * Math.sin(radians);
-  const localY = mirrorX * Math.sin(radians) + mirrorY * Math.cos(radians);
-  const cellSize = Math.max(0.01, finite(object.geometry?.cellSizeMeters, 0.5));
-  return {
-    x: finite(object.originCell?.x, finite(object.x)) + localX / cellSize,
-    y: finite(object.originCell?.y, finite(object.y)) + localY / cellSize,
-  };
+  return apartmentUnitWorldPoint(object, [finite(value[0]), finite(value[1])]);
 }
 
 function movementIntersectsWall(

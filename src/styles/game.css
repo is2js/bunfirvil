@@ -520,7 +520,7 @@ input:focus-visible {
 }
 
 .rpg-actor[data-motion="walk"] .actor-sprite {
-  animation: actor-bob 320ms ease-in-out infinite alternate;
+  animation: actor-bob 420ms linear infinite;
 }
 
 .rpg-actor[data-motion="attack"] .actor-sprite { animation: actor-strike 320ms cubic-bezier(.2,.8,.2,1); }
@@ -1545,7 +1545,10 @@ input:focus-visible {
 
 @keyframes status-pulse { 50% { opacity: .55; transform: scale(.8); } }
 @keyframes ring-pulse { 50% { opacity: .48; transform: scale(.88) rotate(-2deg); } }
-@keyframes actor-bob { to { transform: translateY(-2px); } }
+@keyframes actor-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
 @keyframes actor-strike { 50% { transform: translate(7px, -3px) rotate(5deg) scale(1.04); } }
 @keyframes actor-cast { 35% { transform: translateY(-5px) scale(1.04); filter: drop-shadow(0 0 9px rgba(94,239,220,.8)); } }
 @keyframes slash-effect { 0% { opacity: 0; transform: translate(-50%,-50%) rotate(-85deg) scale(.35); } 35% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%,-50%) rotate(70deg) scale(1.2); } }

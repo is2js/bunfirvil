@@ -60,8 +60,14 @@ export class ActorView {
     this.element.style.zIndex = String(1_000 + Math.round(point.y));
     this.element.dataset.direction = actor.direction;
     this.element.dataset.motion = actor.motion;
-    this.element.dataset.worldX = String(actor.x);
-    this.element.dataset.worldY = String(actor.y);
+    this.element.dataset.worldX = actor.displayX.toFixed(4);
+    this.element.dataset.worldY = actor.displayY.toFixed(4);
+    this.element.dataset.cellX = String(actor.x);
+    this.element.dataset.cellY = String(actor.y);
+    this.element.dataset.travelState = actor.travel ? 'moving' : 'settled';
+    this.element.dataset.travelProgress = actor.travel
+      ? String(Math.max(0, Math.min(1, (time - actor.travel.startedAt) / Math.max(1, actor.travel.endsAt - actor.travel.startedAt))))
+      : '1';
     this.motionLabel.textContent = actor.motion.toUpperCase();
 
     if (!this.manifest) return;
@@ -74,8 +80,11 @@ export class ActorView {
     const columns = Math.max(1, action.sheetColumns || action.frameCount || 1);
     const rows = Math.max(1, action.sheetRows || this.manifest.directions?.length || 8);
     const duration = Math.max(120, motion.durationMs || (actor.motion === 'walk' ? 640 : 1_000));
+    this.element.dataset.animationCycleMs = String(duration);
     const frameCount = Math.max(1, Math.min(columns, action.frameCount || columns));
-    const frame = Math.floor((time % duration) / duration * frameCount) % frameCount;
+    const elapsed = Math.max(0, time - actor.motionStartedAt);
+    const frame = Math.floor((elapsed % duration) / duration * frameCount) % frameCount;
+    this.element.dataset.animationCycleProgress = String((elapsed % duration) / duration);
     const directionOrder = this.manifest.directions || ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
     const row = Math.max(0, directionOrder.indexOf(actor.direction));
     const sheetUrl = resolveReferencedUrl(action.sheet, this.manifestUrl);
@@ -86,5 +95,6 @@ export class ActorView {
     }
     this.sprite.style.backgroundSize = `${columns * 100}% ${rows * 100}%`;
     this.sprite.style.backgroundPosition = `${columns === 1 ? 0 : (frame / (columns - 1)) * 100}% ${rows === 1 ? 0 : (row / (rows - 1)) * 100}%`;
+    this.element.dataset.spriteFrame = String(frame);
   }
 }
