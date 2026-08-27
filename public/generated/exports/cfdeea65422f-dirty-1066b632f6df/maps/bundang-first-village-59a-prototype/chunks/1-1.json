@@ -1,0 +1,259 @@
+{
+  "schemaVersion": "rpg-world-chunk-v2",
+  "worldId": "bundang-first-village-59a-prototype",
+  "revision": "bundang-59a-prototype-r28",
+  "chunkX": 1,
+  "chunkY": 1,
+  "origin": {
+    "x": 16,
+    "y": 16
+  },
+  "size": {
+    "width": 16,
+    "height": 16
+  },
+  "tileEncoding": "row-major-rle",
+  "tileRuns": [
+    {
+      "tileId": "light-soil",
+      "count": 40
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 8
+    },
+    {
+      "tileId": "light-soil",
+      "count": 8
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 8
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    }
+  ],
+  "elevationEncoding": "world-unit-rle",
+  "elevationRuns": [
+    {
+      "value": 0,
+      "count": 256
+    }
+  ],
+  "blockedCellIndices": [
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    52,
+    53,
+    54,
+    55,
+    56,
+    59,
+    68,
+    72,
+    75,
+    84,
+    88,
+    91,
+    100,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    132,
+    136,
+    137,
+    138,
+    139,
+    148,
+    152,
+    154,
+    155,
+    164,
+    170,
+    171,
+    180,
+    186,
+    187,
+    196,
+    197,
+    198,
+    200,
+    201,
+    202,
+    203,
+    212,
+    228,
+    235,
+    244,
+    251
+  ],
+  "visibleBlockerCellIndices": [
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    52,
+    53,
+    54,
+    55,
+    56,
+    59,
+    68,
+    72,
+    75,
+    84,
+    88,
+    91,
+    100,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    132,
+    136,
+    137,
+    138,
+    139,
+    148,
+    152,
+    154,
+    155,
+    164,
+    170,
+    171,
+    180,
+    186,
+    187,
+    196,
+    197,
+    198,
+    200,
+    201,
+    202,
+    203,
+    212,
+    228,
+    235,
+    244,
+    251
+  ],
+  "occlusionCellIndices": [],
+  "transparencyCellIndices": [],
+  "objects": [],
+  "zones": [
+    "bundang-59a-prototype-zone"
+  ]
+}

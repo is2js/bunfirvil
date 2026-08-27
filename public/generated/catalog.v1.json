@@ -1,0 +1,1102 @@
+{
+  "schemaVersion": 1,
+  "exportId": "cfdeea65422f-dirty-1066b632f6df",
+  "generatedAt": "2026-08-27T07:58:36.721Z",
+  "maps": [
+    {
+      "id": "bundang-first-village-51a-prototype",
+      "label": "분당퍼스트빌리지 51A 평면도A 검수",
+      "unitType": "51A",
+      "revision": "bundang-51a-prototype-r28",
+      "width": 64,
+      "height": 64,
+      "chunkCount": 16,
+      "assetBytes": 281213,
+      "renderer": "three-pbr",
+      "manifestUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/maps/bundang-first-village-51a-prototype/manifest.json",
+      "minimapUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/maps/bundang-first-village-51a-prototype/minimap.png",
+      "spawn": {
+        "x": 25,
+        "y": 21
+      }
+    },
+    {
+      "id": "bundang-first-village-55a-prototype",
+      "label": "분당퍼스트빌리지 55A 평면도A 검수",
+      "unitType": "55A",
+      "revision": "bundang-55a-prototype-r29",
+      "width": 64,
+      "height": 64,
+      "chunkCount": 16,
+      "assetBytes": 308426,
+      "renderer": "three-pbr",
+      "manifestUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/maps/bundang-first-village-55a-prototype/manifest.json",
+      "minimapUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/maps/bundang-first-village-55a-prototype/minimap.png",
+      "spawn": {
+        "x": 38,
+        "y": 21
+      }
+    },
+    {
+      "id": "bundang-first-village-55b-prototype",
+      "label": "분당퍼스트빌리지 55B 세대 검증",
+      "unitType": "55B",
+      "revision": "bundang-55b-prototype-r36",
+      "width": 64,
+      "height": 64,
+      "chunkCount": 16,
+      "assetBytes": 608376,
+      "renderer": "three-pbr",
+      "manifestUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/maps/bundang-first-village-55b-prototype/manifest.json",
+      "minimapUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/maps/bundang-first-village-55b-prototype/minimap.png",
+      "spawn": {
+        "x": 37,
+        "y": 20
+      }
+    },
+    {
+      "id": "bundang-first-village-59a-prototype",
+      "label": "분당퍼스트빌리지 59A 평면도A 검수",
+      "unitType": "59A",
+      "revision": "bundang-59a-prototype-r28",
+      "width": 64,
+      "height": 64,
+      "chunkCount": 16,
+      "assetBytes": 320754,
+      "renderer": "three-pbr",
+      "manifestUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/maps/bundang-first-village-59a-prototype/manifest.json",
+      "minimapUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/maps/bundang-first-village-59a-prototype/minimap.png",
+      "spawn": {
+        "x": 40,
+        "y": 21
+      }
+    }
+  ],
+  "characters": [
+    {
+      "key": "100",
+      "label": "남자의료진",
+      "manifestUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/characters/100/animation.json"
+    },
+    {
+      "key": "200",
+      "label": "여자의료진",
+      "manifestUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/characters/200/animation.json"
+    }
+  ],
+  "skills": [
+    {
+      "id": "warrior-shock-stun",
+      "label": "쇼크스턴",
+      "description": "근접 공격과 머리 위 별 회전 상태 효과를 재생합니다.",
+      "iconUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/skills/icons/shock-stun.png",
+      "effectUrls": [
+        "generated/exports/cfdeea65422f-dirty-1066b632f6df/skills/effects/rpg-shock-stun-status/manifest.json"
+      ],
+      "cooldownMs": 2800,
+      "manaCost": 0
+    },
+    {
+      "id": "common-double-arrow",
+      "label": "더블애로우",
+      "description": "활 모션과 8방향 에너지궁·투사체 효과를 재생합니다.",
+      "iconUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/skills/icons/double-arrow.png",
+      "effectUrls": [
+        "generated/exports/cfdeea65422f-dirty-1066b632f6df/skills/effects/rpg-summoned-bow-energy-overlay/manifest.json",
+        "generated/exports/cfdeea65422f-dirty-1066b632f6df/skills/effects/rpg-summoned-bow-energy-projectile/manifest.json"
+      ],
+      "cooldownMs": 1600,
+      "manaCost": 0
+    },
+    {
+      "id": "common-teleport",
+      "label": "텔레포트",
+      "description": "로컬 맵의 이동 가능한 셀로 순간이동하고 효과를 재생합니다.",
+      "iconUrl": "generated/exports/cfdeea65422f-dirty-1066b632f6df/skills/icons/teleport.png",
+      "effectUrls": [
+        "generated/exports/cfdeea65422f-dirty-1066b632f6df/skills/effects/rpg-teleport-origin/manifest.json"
+      ],
+      "cooldownMs": 4200,
+      "manaCost": 0
+    }
+  ],
+  "defaultHotbar": [
+    "basic-attack",
+    "warrior-shock-stun",
+    "common-double-arrow",
+    "common-teleport",
+    null,
+    null,
+    null,
+    null
+  ],
+  "bOptions": [
+    {
+      "id": "system-ac-2-general",
+      "label": "시스템에어컨 · 일반형",
+      "category": "시스템에어컨",
+      "price": 3600000,
+      "prices": {
+        "51A": 3600000,
+        "55A": 3600000,
+        "55B": 3600000,
+        "59A": 3800000
+      },
+      "description": "시스템에어컨 2대 · 일반형 · ceiling-ac",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "system-ac-2-premium",
+        "system-ac-3-general",
+        "system-ac-3-premium",
+        "system-ac-4-general",
+        "system-ac-4-premium"
+      ]
+    },
+    {
+      "id": "system-ac-2-premium",
+      "label": "시스템에어컨 · 고급형",
+      "category": "시스템에어컨",
+      "price": 4000000,
+      "prices": {
+        "51A": 4000000,
+        "55A": 4000000,
+        "55B": 4000000,
+        "59A": 4200000
+      },
+      "description": "시스템에어컨 2대 · 고급형 · ceiling-ac",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "system-ac-2-general",
+        "system-ac-3-general",
+        "system-ac-3-premium",
+        "system-ac-4-general",
+        "system-ac-4-premium"
+      ]
+    },
+    {
+      "id": "system-ac-3-general",
+      "label": "시스템에어컨 3대 · 일반형",
+      "category": "시스템에어컨",
+      "price": 5200000,
+      "prices": {
+        "51A": 5200000,
+        "55A": 5200000,
+        "55B": 5200000
+      },
+      "description": "시스템에어컨 3대 · 일반형 · ceiling-ac",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "system-ac-2-general",
+        "system-ac-2-premium",
+        "system-ac-3-premium",
+        "system-ac-4-general",
+        "system-ac-4-premium"
+      ]
+    },
+    {
+      "id": "system-ac-3-premium",
+      "label": "시스템에어컨 3대 · 고급형",
+      "category": "시스템에어컨",
+      "price": 5800000,
+      "prices": {
+        "51A": 5800000,
+        "55A": 5800000,
+        "55B": 5800000
+      },
+      "description": "시스템에어컨 3대 · 고급형 · ceiling-ac",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "system-ac-2-general",
+        "system-ac-2-premium",
+        "system-ac-3-general",
+        "system-ac-4-general",
+        "system-ac-4-premium"
+      ]
+    },
+    {
+      "id": "system-ac-4-general",
+      "label": "시스템에어컨 4대 · 일반형",
+      "category": "시스템에어컨",
+      "price": 6600000,
+      "prices": {
+        "55A": 6600000,
+        "55B": 6600000,
+        "59A": 6800000
+      },
+      "description": "시스템에어컨 4대 · 일반형 · ceiling-ac",
+      "compatibleUnitTypes": [
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "system-ac-2-general",
+        "system-ac-2-premium",
+        "system-ac-3-general",
+        "system-ac-3-premium",
+        "system-ac-4-premium"
+      ]
+    },
+    {
+      "id": "system-ac-4-premium",
+      "label": "시스템에어컨 4대 · 고급형",
+      "category": "시스템에어컨",
+      "price": 7400000,
+      "prices": {
+        "55A": 7400000,
+        "55B": 7400000,
+        "59A": 7600000
+      },
+      "description": "시스템에어컨 4대 · 고급형 · ceiling-ac",
+      "compatibleUnitTypes": [
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "system-ac-2-general",
+        "system-ac-2-premium",
+        "system-ac-3-general",
+        "system-ac-3-premium",
+        "system-ac-4-general"
+      ]
+    },
+    {
+      "id": "entry-sliding-partition-door",
+      "label": "현관 중문(슬라이딩)",
+      "category": "현관/거실",
+      "price": 1500000,
+      "prices": {
+        "51A": 1500000,
+        "55A": 1500000,
+        "55B": 1500000,
+        "59A": 1500000
+      },
+      "description": "현관 중문(슬라이딩) · entry-door",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "wide-plank-floor-finish",
+      "label": "광폭 강마루",
+      "category": "현관/거실",
+      "price": 1680000,
+      "prices": {
+        "51A": 1680000,
+        "55A": 1820000,
+        "55B": 1710000,
+        "59A": 1940000
+      },
+      "description": "광폭 강마루 · room-finish",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "entry-open-premium-shoe-cabinet",
+      "label": "개방형 프리미엄 신발장",
+      "category": "현관/거실",
+      "price": 1340000,
+      "prices": {
+        "55A": 1340000,
+        "55B": 1340000,
+        "59A": 1340000
+      },
+      "description": "개방형 프리미엄 신발장 · entry-storage",
+      "compatibleUnitTypes": [
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "entry-pantry-system-shelf",
+      "label": "현관 팬트리 시스템 선반",
+      "category": "현관/거실",
+      "price": 490000,
+      "prices": {
+        "55A": 490000,
+        "55B": 490000,
+        "59A": 510000
+      },
+      "description": "현관 팬트리 시스템 선반 · entry-storage",
+      "compatibleUnitTypes": [
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "living-design-wall-panel",
+      "label": "거실 디자인월 패널",
+      "category": "현관/거실",
+      "price": 920000,
+      "prices": {
+        "51A": 920000,
+        "55A": 1110000,
+        "55B": 1540000,
+        "59A": 1260000
+      },
+      "description": "거실 디자인월 패널 · living-wall",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "infinity-door-bedroom-1",
+      "label": "침실1 인피니티 도어",
+      "category": "현관/거실",
+      "price": 1350000,
+      "prices": {
+        "51A": 1350000,
+        "55A": 1350000,
+        "55B": 1350000,
+        "59A": 1350000
+      },
+      "description": "침실1 인피니티 도어 · infinity-door",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "infinity-door-all-bedrooms"
+      ]
+    },
+    {
+      "id": "infinity-door-all-bedrooms",
+      "label": "전체 침실 인피니티 도어",
+      "category": "현관/거실",
+      "price": 4050000,
+      "prices": {
+        "51A": 4050000,
+        "55A": 5400000,
+        "55B": 5400000,
+        "59A": 5400000
+      },
+      "description": "전체 침실 인피니티 도어 · infinity-door",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [
+        "living-design-wall-panel"
+      ],
+      "requiresAny": [],
+      "excludes": [
+        "infinity-door-bedroom-1"
+      ]
+    },
+    {
+      "id": "bathroom-combination-ventilator",
+      "label": "복합환풍기(전체 욕실)",
+      "category": "욕실",
+      "price": 1300000,
+      "prices": {
+        "51A": 1300000,
+        "55A": 1300000,
+        "55B": 1300000,
+        "59A": 1300000
+      },
+      "description": "복합환풍기(전체 욕실) · bathroom-ceiling",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "toilet-integrated-bidet",
+      "label": "비데일체형 양변기(전체 욕실)",
+      "category": "욕실",
+      "price": 830000,
+      "prices": {
+        "51A": 830000,
+        "55A": 830000,
+        "55B": 830000,
+        "59A": 830000
+      },
+      "description": "비데일체형 양변기(전체 욕실) · bathroom-replace",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "utility-ceramic-elastic-coat",
+      "label": "세라믹 탄성코트",
+      "category": "발코니/다용도실",
+      "price": 800000,
+      "prices": {
+        "51A": 800000,
+        "55A": 800000,
+        "55B": 880000,
+        "59A": 800000
+      },
+      "description": "세라믹 탄성코트 · deferred",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "bedroom-1-built-in-closet-pet",
+      "label": "침실1 광폭 붙박이장(PET)",
+      "category": "침실/수납",
+      "price": 2370000,
+      "prices": {
+        "51A": 2370000,
+        "55A": 2370000,
+        "55B": 2370000,
+        "59A": 2370000
+      },
+      "description": "침실1 광폭 붙박이장(PET) · bedroom-storage",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "bedroom-1-clothing-care-closet"
+      ]
+    },
+    {
+      "id": "bedroom-1-clothing-care-closet",
+      "label": "침실1 의류관리형 붙박이장",
+      "category": "침실/수납",
+      "price": 2020000,
+      "prices": {
+        "51A": 2020000,
+        "55A": 2020000,
+        "55B": 2020000,
+        "59A": 2020000
+      },
+      "description": "침실1 의류관리형 붙박이장 · bedroom-storage",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "bedroom-1-built-in-closet-pet"
+      ]
+    },
+    {
+      "id": "dress-room-powder-storage",
+      "label": "드레스룸 파우더 결합형 수납장",
+      "category": "침실/수납",
+      "price": 3400000,
+      "prices": {
+        "51A": 3400000,
+        "55A": 3400000,
+        "55B": 3200000,
+        "59A": 3400000
+      },
+      "description": "드레스룸 파우더 결합형 수납장 · bedroom-storage",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "bedroom-2-built-in-closet-pet",
+      "label": "침실2 붙박이장(PET)",
+      "category": "침실/수납",
+      "price": 1240000,
+      "prices": {
+        "51A": 1240000,
+        "55A": 1300000,
+        "55B": 1300000,
+        "59A": 1240000
+      },
+      "description": "침실2 붙박이장(PET) · bedroom-storage",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "bedroom-2-closet-desk-set"
+      ]
+    },
+    {
+      "id": "bedroom-2-closet-desk-set",
+      "label": "침실2 붙박이장 + 책상",
+      "category": "침실/수납",
+      "price": 3880000,
+      "prices": {
+        "51A": 3880000,
+        "55A": 3620000,
+        "55B": 3540000,
+        "59A": 3620000
+      },
+      "description": "침실2 붙박이장 + 책상 · bedroom-storage",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "bedroom-2-built-in-closet-pet"
+      ]
+    },
+    {
+      "id": "bedroom-3-built-in-closet-pet",
+      "label": "침실3 붙박이장(PET)",
+      "category": "침실/수납",
+      "price": 1240000,
+      "prices": {
+        "59A": 1240000
+      },
+      "description": "침실3 붙박이장(PET) · bedroom-storage",
+      "compatibleUnitTypes": [
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "bedroom-3-closet-desk-set"
+      ]
+    },
+    {
+      "id": "bedroom-3-closet-desk-set",
+      "label": "침실3 붙박이장 + 책상",
+      "category": "침실/수납",
+      "price": 3620000,
+      "prices": {
+        "59A": 3620000
+      },
+      "description": "침실3 붙박이장 + 책상 · bedroom-storage",
+      "compatibleUnitTypes": [
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "bedroom-3-built-in-closet-pet"
+      ]
+    },
+    {
+      "id": "smart-lighting-package",
+      "label": "스마트 조명 특화",
+      "category": "조명특화",
+      "price": 3580000,
+      "prices": {
+        "51A": 3580000,
+        "55A": 4380000,
+        "55B": 3880000,
+        "59A": 4420000
+      },
+      "description": "스마트 조명 특화 · smart-lighting",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "air-planner-ceiling-vent",
+      "label": "D-에어플래너 + 침실 스마트 디스플레이",
+      "category": "빌트인 가전",
+      "price": 4980000,
+      "prices": {
+        "51A": 4980000,
+        "55A": 4980000,
+        "55B": 4980000,
+        "59A": 4980000
+      },
+      "description": "D-에어플래너 + 침실 스마트 디스플레이 · manual",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "closet-breeze-dehumidifier",
+      "label": "D-클로젯 브리즈",
+      "category": "빌트인 가전",
+      "price": 1500000,
+      "prices": {
+        "51A": 1500000,
+        "55A": 1500000,
+        "55B": 1500000,
+        "59A": 1500000
+      },
+      "description": "D-클로젯 브리즈 · manual",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "silent-range-hood",
+      "label": "D-사일런트 후드",
+      "category": "빌트인 가전",
+      "price": 780000,
+      "prices": {
+        "51A": 780000,
+        "55A": 780000,
+        "55B": 780000,
+        "59A": 780000
+      },
+      "description": "D-사일런트 후드 · manual",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "dishwasher-built-in-die6pt",
+      "label": "LG DIE6PT 빌트인 식기세척기 + 콘센트",
+      "category": "빌트인 가전",
+      "price": 1650000,
+      "prices": {
+        "51A": 1650000,
+        "55A": 1650000,
+        "55B": 1650000,
+        "59A": 1650000
+      },
+      "description": "LG DIE6PT 빌트인 식기세척기 + 콘센트 · manual",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "electric-cooktop-erh-3903",
+      "label": "ERH-3903 전기쿡탑",
+      "category": "빌트인 가전",
+      "price": 580000,
+      "prices": {
+        "51A": 580000,
+        "55A": 580000,
+        "55B": 580000,
+        "59A": 580000
+      },
+      "description": "ERH-3903 전기쿡탑 · manual",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "induction-cooktop-nz63b5056ak",
+        "induction-cooktop-bei3asb4bi"
+      ]
+    },
+    {
+      "id": "induction-cooktop-nz63b5056ak",
+      "label": "삼성 NZ63B5056AK 인덕션",
+      "category": "빌트인 가전",
+      "price": 950000,
+      "prices": {
+        "51A": 950000,
+        "55A": 950000,
+        "55B": 950000,
+        "59A": 950000
+      },
+      "description": "삼성 NZ63B5056AK 인덕션 · manual",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "electric-cooktop-erh-3903",
+        "induction-cooktop-bei3asb4bi"
+      ]
+    },
+    {
+      "id": "induction-cooktop-bei3asb4bi",
+      "label": "LG BEI3ASB4BI 인덕션",
+      "category": "빌트인 가전",
+      "price": 1000000,
+      "prices": {
+        "51A": 1000000,
+        "55A": 1000000,
+        "55B": 1000000,
+        "59A": 1000000
+      },
+      "description": "LG BEI3ASB4BI 인덕션 · manual",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "electric-cooktop-erh-3903",
+        "induction-cooktop-nz63b5056ak"
+      ]
+    },
+    {
+      "id": "lg-styler-sc5mbr53",
+      "label": "LG 스타일러 SC5MBR53",
+      "category": "빌트인 가전",
+      "price": 1800000,
+      "prices": {
+        "51A": 1800000,
+        "55A": 1800000,
+        "55B": 1800000,
+        "59A": 1800000
+      },
+      "description": "LG 스타일러 SC5MBR53 · bedroom-appliance",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [
+        "bedroom-1-clothing-care-closet"
+      ],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "built-in-oven-navien",
+      "label": "경동나비엔 빌트인 오븐",
+      "category": "빌트인 가전",
+      "price": 650000,
+      "prices": {
+        "51A": 650000,
+        "55A": 650000,
+        "55B": 650000,
+        "59A": 650000
+      },
+      "description": "경동나비엔 빌트인 오븐 · kitchen-appliance",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [
+        "island-counter-modern",
+        "island-counter-dining-integrated"
+      ],
+      "excludes": [
+        "built-in-oven-samsung",
+        "built-in-oven-lg"
+      ]
+    },
+    {
+      "id": "built-in-oven-samsung",
+      "label": "삼성 빌트인 오븐",
+      "category": "빌트인 가전",
+      "price": 900000,
+      "prices": {
+        "51A": 900000,
+        "55A": 900000,
+        "55B": 900000,
+        "59A": 900000
+      },
+      "description": "삼성 빌트인 오븐 · kitchen-appliance",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [
+        "island-counter-modern",
+        "island-counter-dining-integrated"
+      ],
+      "excludes": [
+        "built-in-oven-navien",
+        "built-in-oven-lg"
+      ]
+    },
+    {
+      "id": "built-in-oven-lg",
+      "label": "LG 빌트인 오븐",
+      "category": "빌트인 가전",
+      "price": 480000,
+      "prices": {
+        "51A": 480000,
+        "55A": 480000,
+        "55B": 480000,
+        "59A": 480000
+      },
+      "description": "LG 빌트인 오븐 · kitchen-appliance",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [
+        "island-counter-modern",
+        "island-counter-dining-integrated"
+      ],
+      "excludes": [
+        "built-in-oven-navien",
+        "built-in-oven-samsung"
+      ]
+    },
+    {
+      "id": "island-counter-modern",
+      "label": "아일랜드장(PET)",
+      "category": "주방 벽/상판·냉장고장",
+      "price": 1270000,
+      "prices": {
+        "51A": 1270000,
+        "55A": 1270000,
+        "55B": 1300000,
+        "59A": 1270000
+      },
+      "description": "아일랜드장(PET) · kitchen-island",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "island-counter-dining-integrated"
+      ]
+    },
+    {
+      "id": "island-counter-dining-integrated",
+      "label": "식탁결합형 아일랜드장(PET)",
+      "category": "주방 벽/상판·냉장고장",
+      "price": 2220000,
+      "prices": {
+        "55B": 2220000
+      },
+      "description": "식탁결합형 아일랜드장(PET) · kitchen-island",
+      "compatibleUnitTypes": [
+        "55B"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": [
+        "island-counter-modern"
+      ]
+    },
+    {
+      "id": "kitchen-wall-countertop-radianz-golden-shore",
+      "label": "주방 벽/상판 · 엔지니어드 스톤(라디언스 골든쇼어)",
+      "category": "주방 벽/상판·냉장고장",
+      "price": 4080000,
+      "prices": {
+        "51A": 4080000,
+        "55A": 3780000,
+        "55B": 3070000,
+        "59A": 3930000
+      },
+      "description": "주방 벽/상판 · 엔지니어드 스톤(라디언스 골든쇼어) · kitchen-surface",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "refrigerator-cabinet-pet-basic",
+      "label": "냉장고장 기본형(PET) · ALT.1",
+      "category": "주방 벽/상판·냉장고장",
+      "price": 1200000,
+      "prices": {
+        "51A": 1200000,
+        "55A": 1200000,
+        "55B": 1200000,
+        "59A": 1200000
+      },
+      "description": "냉장고장 기본형(PET) · ALT.1 · refrigerator-cabinet",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [],
+      "requiresAny": [],
+      "excludes": []
+    },
+    {
+      "id": "refrigerator-cabinet-bespoke-alt2",
+      "label": "삼성 비스포크 냉장고 패키지 · ALT.2",
+      "category": "빌트인 가전",
+      "price": 6430000,
+      "prices": {
+        "51A": 6430000,
+        "55A": 6430000,
+        "55B": 6430000,
+        "59A": 6430000
+      },
+      "description": "삼성 비스포크 냉장고 패키지 · ALT.2 · refrigerator-cabinet",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [
+        "refrigerator-cabinet-pet-basic"
+      ],
+      "requiresAny": [],
+      "excludes": [
+        "refrigerator-cabinet-lg-built-in"
+      ]
+    },
+    {
+      "id": "refrigerator-cabinet-lg-built-in",
+      "label": "LG 빌트인 냉장고 패키지 · ALT.3",
+      "category": "빌트인 가전",
+      "price": 7550000,
+      "prices": {
+        "51A": 7550000,
+        "55A": 7550000,
+        "55B": 7550000,
+        "59A": 7550000
+      },
+      "description": "LG 빌트인 냉장고 패키지 · ALT.3 · refrigerator-cabinet",
+      "compatibleUnitTypes": [
+        "51A",
+        "55A",
+        "55B",
+        "59A"
+      ],
+      "requires": [
+        "refrigerator-cabinet-pet-basic"
+      ],
+      "requiresAny": [],
+      "excludes": [
+        "refrigerator-cabinet-bespoke-alt2"
+      ]
+    }
+  ]
+}

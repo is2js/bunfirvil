@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "rpg-world-chunk-v2",
+  "worldId": "bundang-first-village-55b-prototype",
+  "revision": "bundang-55b-prototype-r36",
+  "chunkX": 0,
+  "chunkY": 1,
+  "origin": {
+    "x": 0,
+    "y": 16
+  },
+  "size": {
+    "width": 16,
+    "height": 16
+  },
+  "tileEncoding": "row-major-rle",
+  "tileRuns": [
+    {
+      "tileId": "light-soil",
+      "count": 256
+    }
+  ],
+  "elevationEncoding": "world-unit-rle",
+  "elevationRuns": [
+    {
+      "value": 0,
+      "count": 256
+    }
+  ],
+  "blockedCellIndices": [],
+  "visibleBlockerCellIndices": [],
+  "occlusionCellIndices": [],
+  "transparencyCellIndices": [],
+  "objects": [],
+  "zones": [
+    "bundang-55b-prototype-zone"
+  ]
+}

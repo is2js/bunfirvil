@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "bunfirvil-pbr-materials-v1",
+  "materials": [
+    {
+      "id": "bundang-55b-greige-oak-v1",
+      "tileIds": [],
+      "repeat": 1,
+      "maps": {
+        "diffuse": {
+          "webp": "bundang-55b-greige-oak-v1.webp"
+        }
+      },
+      "networkCompression": "webp",
+      "gpuCompression": "none",
+      "colorSpace": "sRGB",
+      "roughness": 0.86
+    },
+    {
+      "id": "bundang-55b-warm-gray-wall-v1",
+      "tileIds": [],
+      "repeat": 1,
+      "maps": {
+        "diffuse": {
+          "webp": "bundang-55b-warm-gray-wall-v1.webp"
+        }
+      },
+      "networkCompression": "webp",
+      "gpuCompression": "none",
+      "colorSpace": "sRGB",
+      "roughness": 0.94
+    },
+    {
+      "id": "bundang-55b-gray-grout-tile-v1",
+      "tileIds": [],
+      "repeat": 1,
+      "maps": {
+        "diffuse": {
+          "webp": "bundang-55b-gray-grout-tile-v1.webp"
+        }
+      },
+      "networkCompression": "webp",
+      "gpuCompression": "none",
+      "colorSpace": "sRGB",
+      "roughness": 0.94
+    }
+  ],
+  "fallback": "manifest-palette"
+}

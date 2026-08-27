@@ -1,0 +1,32 @@
+{
+  "effectId": "rpg-shock-stun-status",
+  "provider": "rpg",
+  "sourceKey": "shock-stun-status",
+  "displayName": "쇼크스턴 별 회전",
+  "sourceFrameCount": 8,
+  "frameChunkSize": 8,
+  "frameDurationMs": 150,
+  "backgroundStatus": "transparent-alpha",
+  "directionMode": "unclassified",
+  "directions": [],
+  "suggestedPlacementType": "status_overhead",
+  "suggestedBindings": [
+    {
+      "skillId": "warrior-shock-stun",
+      "skillName": "쇼크스턴",
+      "phase": "impact"
+    }
+  ],
+  "variants": [
+    {
+      "index": 0,
+      "startFrame": 0,
+      "frameCount": 8,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "sheetUrl": "shock-stun-star-orbit.png",
+      "transparentSheetUrl": "shock-stun-star-orbit.png"
+    }
+  ],
+  "schemaVersion": "bunfirvil-skill-effect-v1"
+}

@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "bunfirvil-skills-v1",
+  "skills": [
+    {
+      "id": "basic-attack",
+      "name": "기본 공격",
+      "description": "선택한 캐릭터의 기본 근접 공격 모션을 재생합니다.",
+      "iconUrl": "",
+      "cooldownMs": 650,
+      "motion": {
+        "motion": "attack",
+        "action": "fist1"
+      },
+      "effects": [],
+      "serverAuthority": false
+    },
+    {
+      "id": "warrior-shock-stun",
+      "name": "쇼크스턴",
+      "description": "근접 공격과 머리 위 별 회전 상태 효과를 재생합니다.",
+      "iconUrl": "icons/shock-stun.png",
+      "cooldownMs": 2800,
+      "motion": {
+        "motion": "attack",
+        "action": "sword"
+      },
+      "effects": [
+        {
+          "effectId": "rpg-shock-stun-status",
+          "phase": "impact",
+          "manifestUrl": "effects/rpg-shock-stun-status/manifest.json"
+        }
+      ],
+      "serverAuthority": false
+    },
+    {
+      "id": "common-double-arrow",
+      "name": "더블애로우",
+      "description": "활 모션과 8방향 에너지궁·투사체 효과를 재생합니다.",
+      "iconUrl": "icons/double-arrow.png",
+      "cooldownMs": 1600,
+      "motion": {
+        "motion": "attack",
+        "action": "bow"
+      },
+      "effects": [
+        {
+          "effectId": "rpg-summoned-bow-energy-overlay",
+          "phase": "primary",
+          "manifestUrl": "effects/rpg-summoned-bow-energy-overlay/manifest.json"
+        },
+        {
+          "effectId": "rpg-summoned-bow-energy-projectile",
+          "phase": "projectile",
+          "manifestUrl": "effects/rpg-summoned-bow-energy-projectile/manifest.json"
+        }
+      ],
+      "serverAuthority": false
+    },
+    {
+      "id": "common-teleport",
+      "name": "텔레포트",
+      "description": "로컬 맵의 이동 가능한 셀로 순간이동하고 효과를 재생합니다.",
+      "iconUrl": "icons/teleport.png",
+      "cooldownMs": 4200,
+      "motion": {
+        "motion": "cast",
+        "action": "normal"
+      },
+      "effects": [
+        {
+          "effectId": "rpg-teleport-origin",
+          "phase": "impact",
+          "manifestUrl": "effects/rpg-teleport-origin/manifest.json"
+        }
+      ],
+      "serverAuthority": false
+    }
+  ],
+  "effects": [
+    {
+      "id": "rpg-shock-stun-status",
+      "displayName": "쇼크스턴 별 회전",
+      "manifestUrl": "effects/rpg-shock-stun-status/manifest.json",
+      "placementType": "status_overhead"
+    },
+    {
+      "id": "rpg-summoned-bow-energy-projectile",
+      "displayName": "청록 에너지 화살",
+      "manifestUrl": "effects/rpg-summoned-bow-energy-projectile/manifest.json",
+      "placementType": "attack_projectile"
+    },
+    {
+      "id": "rpg-summoned-bow-energy-overlay",
+      "displayName": "청록 에너지궁",
+      "manifestUrl": "effects/rpg-summoned-bow-energy-overlay/manifest.json",
+      "placementType": "attack_weapon_overlay"
+    },
+    {
+      "id": "rpg-teleport-origin",
+      "displayName": "텔레포트 이동 이펙트",
+      "manifestUrl": "effects/rpg-teleport-origin/manifest.json",
+      "placementType": "status_body_aura"
+    }
+  ]
+}

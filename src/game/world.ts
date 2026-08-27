@@ -1,0 +1,477 @@
+import { fetchJson, resolveProjectUrl, resolveReferencedUrl } from './base';
+import type {
+  ActorState,
+  ProjectedPoint,
+  StaticMapEntry,
+  WorldChunk,
+  WorldData,
+  WorldManifest,
+  WorldObject,
+} from './types';
+
+const DEFAULT_PALETTE = new Map([
+  ['light-soil', '#566354'],
+  ['tiled-floor', '#d2cbbd'],
+  ['floor', '#b9b39f'],
+  ['grass', '#596b57'],
+]);
+
+function cellKey(x: number, y: number): string {
+  return `${x},${y}`;
+}
+
+function isServerRoute(value: string): boolean {
+  const pathname = value.split(/[?#]/, 1)[0];
+  return pathname.split('/').some((segment) => segment.toLowerCase() === 'api');
+}
+
+export function expandTileRuns(
+  runs: WorldChunk['tileRuns'],
+  expectedLength: number,
+): string[] {
+  const result: string[] = [];
+  for (const run of runs || []) {
+    const count = Math.max(0, Math.min(Number(run.count) || 0, expectedLength - result.length));
+    for (let index = 0; index < count; index += 1) result.push(run.tileId || 'light-soil');
+    if (result.length >= expectedLength) break;
+  }
+  while (result.length < expectedLength) result.push('light-soil');
+  return result;
+}
+
+function chunkCoordinates(entry: StaticMapEntry, manifest: WorldManifest): Array<[number, number]> {
+  const chunkWidth = Math.max(1, manifest.chunk?.width || 16);
+  const chunkHeight = Math.max(1, manifest.chunk?.height || 16);
+  const width = Math.max(1, manifest.bounds?.width || entry.width || 64);
+  const height = Math.max(1, manifest.bounds?.height || entry.height || 64);
+  const coordinates: Array<[number, number]> = [];
+  for (let y = 0; y < Math.ceil(height / chunkHeight); y += 1) {
+    for (let x = 0; x < Math.ceil(width / chunkWidth); x += 1) coordinates.push([x, y]);
+  }
+  return coordinates;
+}
+
+function chunkCandidates(
+  entry: StaticMapEntry,
+  manifest: WorldManifest,
+  manifestUrl: string,
+  x: number,
+  y: number,
+): string[] {
+  const candidates: string[] = [];
+  const template = manifest.chunkUrlTemplate;
+  if (template && !isServerRoute(template)) {
+    const expanded = template
+      .replaceAll('{chunkX}', String(x))
+      .replaceAll('{chunkY}', String(y))
+      .replaceAll('{x}', String(x))
+      .replaceAll('{y}', String(y));
+    candidates.push(resolveReferencedUrl(expanded, manifestUrl));
+  }
+
+  if (Array.isArray(manifest.chunkUrls)) {
+    const flatIndex = y * Math.ceil(entry.width / (manifest.chunk?.width || 16)) + x;
+    const item = manifest.chunkUrls[flatIndex];
+    if (item) candidates.push(resolveReferencedUrl(item, manifestUrl));
+  } else if (manifest.chunkUrls && typeof manifest.chunkUrls === 'object') {
+    const item = manifest.chunkUrls[`${x}-${y}`] || manifest.chunkUrls[`${x},${y}`];
+    if (item) candidates.push(resolveReferencedUrl(item, manifestUrl));
+  }
+
+  const manifestDirectory = new URL('.', manifestUrl);
+  candidates.push(new URL(`chunks/${x}-${y}.json`, manifestDirectory).toString());
+  candidates.push(new URL(`chunks/${x}/${y}.json`, manifestDirectory).toString());
+  return [...new Set(candidates)];
+}
+
+async function fetchFirstChunk(candidates: string[]): Promise<WorldChunk | null> {
+  for (const candidate of candidates) {
+    try {
+      return await fetchJson<WorldChunk>(candidate);
+    } catch {
+      // Static exports from older snapshots used both x-y and x/y layouts.
+    }
+  }
+  return null;
+}
+
+async function loadImage(url: string): Promise<HTMLImageElement | null> {
+  if (!url) return null;
+  return await new Promise((resolve) => {
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
+}
+
+export async function loadWorld(
+  entry: StaticMapEntry,
+  onAssetLoaded: () => void = () => undefined,
+): Promise<WorldData> {
+  const manifestUrl = resolveProjectUrl(entry.manifestUrl);
+  let manifest: WorldManifest;
+  try {
+    manifest = await fetchJson<WorldManifest>(manifestUrl);
+    onAssetLoaded();
+  } catch (error) {
+    console.warn(`[bunfirvil] ${entry.id} manifest fallback`, error);
+    manifest = {
+      worldId: entry.id,
+      displayName: entry.label,
+      revision: entry.revision,
+      bounds: { width: entry.width, height: entry.height },
+      chunk: { width: 16, height: 16 },
+      projection: { type: 'isometric', tileWidth: 48, tileHeight: 24 },
+      spawn: entry.spawn,
+      palette: [...DEFAULT_PALETTE].map(([id, color]) => ({ id, color })),
+    };
+  }
+
+  const coordinates = chunkCoordinates(entry, manifest);
+  const chunkResults = await Promise.all(
+    coordinates.map(async ([x, y]) => {
+      const chunk = await fetchFirstChunk(chunkCandidates(entry, manifest, manifestUrl, x, y));
+      if (chunk) onAssetLoaded();
+      return chunk;
+    }),
+  );
+
+  const tiles = new Map<string, string>();
+  const blocked = new Set<string>();
+  const objects: WorldObject[] = [];
+  const chunkWidth = Math.max(1, manifest.chunk?.width || 16);
+  const chunkHeight = Math.max(1, manifest.chunk?.height || 16);
+
+  for (const chunk of chunkResults) {
+    if (!chunk) continue;
+    const width = Math.max(1, chunk.size?.width || chunkWidth);
+    const height = Math.max(1, chunk.size?.height || chunkHeight);
+    const originX = Number(chunk.origin?.x ?? (chunk.chunkX || 0) * chunkWidth);
+    const originY = Number(chunk.origin?.y ?? (chunk.chunkY || 0) * chunkHeight);
+    const decoded = expandTileRuns(chunk.tileRuns, width * height);
+
+    decoded.forEach((tileId, index) => {
+      const x = originX + (index % width);
+      const y = originY + Math.floor(index / width);
+      tiles.set(cellKey(x, y), tileId);
+    });
+    for (const index of chunk.blockedCellIndices || []) {
+      blocked.add(cellKey(originX + (index % width), originY + Math.floor(index / width)));
+    }
+    objects.push(...(chunk.objects || []));
+  }
+
+  const minimapUrl = entry.minimapUrl
+    ? resolveProjectUrl(entry.minimapUrl)
+    : manifest.minimapUrl && !isServerRoute(manifest.minimapUrl)
+      ? resolveReferencedUrl(manifest.minimapUrl, manifestUrl)
+      : '';
+  const minimap = await loadImage(minimapUrl);
+  if (minimap) onAssetLoaded();
+
+  const palette = new Map(DEFAULT_PALETTE);
+  for (const item of manifest.palette || []) {
+    if (item.id && /^#[0-9a-f]{3,8}$/i.test(item.color)) palette.set(item.id, item.color);
+  }
+  const loadedChunkCount = chunkResults.filter(Boolean).length;
+
+  return {
+    entry,
+    manifest,
+    width: Math.max(1, manifest.bounds?.width || entry.width || 64),
+    height: Math.max(1, manifest.bounds?.height || entry.height || 64),
+    chunkWidth,
+    chunkHeight,
+    palette,
+    tiles,
+    blocked,
+    objects,
+    loadedChunkCount,
+    requestedChunkCount: coordinates.length,
+    minimap,
+    sourceMode: loadedChunkCount > 0 ? 'chunks' : minimap ? 'minimap' : 'procedural',
+  };
+}
+
+function shade(hex: string, amount: number): string {
+  const match = hex.match(/^#([0-9a-f]{6})$/i);
+  if (!match) return hex;
+  const value = Number.parseInt(match[1], 16);
+  const channel = (shift: number) => Math.max(0, Math.min(255, ((value >> shift) & 0xff) + amount));
+  return `rgb(${channel(16)} ${channel(8)} ${channel(0)})`;
+}
+
+function drawDiamond(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  halfWidth: number,
+  halfHeight: number,
+  fill: string,
+  stroke: string,
+): void {
+  context.beginPath();
+  context.moveTo(x, y - halfHeight);
+  context.lineTo(x + halfWidth, y);
+  context.lineTo(x, y + halfHeight);
+  context.lineTo(x - halfWidth, y);
+  context.closePath();
+  context.fillStyle = fill;
+  context.fill();
+  context.strokeStyle = stroke;
+  context.stroke();
+}
+
+function stableHash(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash);
+}
+
+export class IsometricWorldRenderer {
+  private readonly context: CanvasRenderingContext2D;
+  private world: WorldData | null = null;
+  private camera = { x: 32, y: 32 };
+  private tileWidth = 48;
+  private tileHeight = 24;
+  private cssWidth = 1;
+  private cssHeight = 1;
+  private selectedOptionIds: string[] = [];
+
+  constructor(private readonly canvas: HTMLCanvasElement) {
+    const context = canvas.getContext('2d', { alpha: false, desynchronized: true });
+    if (!context) throw new Error('Canvas2D 렌더러를 초기화할 수 없습니다.');
+    this.context = context;
+  }
+
+  setWorld(world: WorldData): void {
+    this.world = world;
+    this.tileWidth = Math.max(30, Math.min(58, world.manifest.projection?.tileWidth || 48));
+    this.tileHeight = Math.max(16, Math.min(34, world.manifest.projection?.tileHeight || 24));
+    this.camera.x = world.entry.spawn.x;
+    this.camera.y = world.entry.spawn.y;
+  }
+
+  setSelectedOptions(optionIds: string[]): void {
+    this.selectedOptionIds = optionIds;
+  }
+
+  follow(target: ActorState, smoothing = 0.095): void {
+    this.camera.x += (target.x - this.camera.x) * smoothing;
+    this.camera.y += (target.y - this.camera.y) * smoothing;
+  }
+
+  project(x: number, y: number): ProjectedPoint {
+    const rawX = (x - y) * (this.tileWidth / 2);
+    const rawY = (x + y) * (this.tileHeight / 2);
+    const cameraX = (this.camera.x - this.camera.y) * (this.tileWidth / 2);
+    const cameraY = (this.camera.x + this.camera.y) * (this.tileHeight / 2);
+    return {
+      x: this.cssWidth * 0.48 + rawX - cameraX,
+      y: this.cssHeight * 0.47 + rawY - cameraY,
+    };
+  }
+
+  private resize(): number {
+    const bounds = this.canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.cssWidth = Math.max(1, Math.round(bounds.width));
+    this.cssHeight = Math.max(1, Math.round(bounds.height));
+    const width = Math.round(this.cssWidth * dpr);
+    const height = Math.round(this.cssHeight * dpr);
+    if (this.canvas.width !== width || this.canvas.height !== height) {
+      this.canvas.width = width;
+      this.canvas.height = height;
+    }
+    this.context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return dpr;
+  }
+
+  render(time: number): void {
+    this.resize();
+    const context = this.context;
+    const backdrop = context.createLinearGradient(0, 0, 0, this.cssHeight);
+    backdrop.addColorStop(0, '#172a32');
+    backdrop.addColorStop(0.45, '#102128');
+    backdrop.addColorStop(1, '#071117');
+    context.fillStyle = backdrop;
+    context.fillRect(0, 0, this.cssWidth, this.cssHeight);
+
+    this.drawAmbientGrid(time);
+    if (!this.world) return;
+    if (this.world.sourceMode === 'minimap') this.drawMinimapFallback();
+    this.drawWorldTiles(time);
+    this.drawObjects();
+    this.drawOptionProps(time);
+  }
+
+  private drawAmbientGrid(time: number): void {
+    const context = this.context;
+    const glowX = this.cssWidth * 0.54 + Math.sin(time / 8_000) * 45;
+    const glow = context.createRadialGradient(glowX, this.cssHeight * 0.43, 0, glowX, this.cssHeight * 0.43, this.cssWidth * 0.65);
+    glow.addColorStop(0, 'rgba(74, 190, 176, .12)');
+    glow.addColorStop(0.55, 'rgba(32, 103, 107, .04)');
+    glow.addColorStop(1, 'rgba(5, 12, 17, 0)');
+    context.fillStyle = glow;
+    context.fillRect(0, 0, this.cssWidth, this.cssHeight);
+  }
+
+  private drawMinimapFallback(): void {
+    if (!this.world?.minimap) return;
+    const context = this.context;
+    const image = this.world.minimap;
+    const maxWidth = this.cssWidth * 0.7;
+    const maxHeight = this.cssHeight * 0.7;
+    const scale = Math.min(maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+    const width = image.naturalWidth * scale;
+    const height = image.naturalHeight * scale;
+    context.save();
+    context.globalAlpha = 0.34;
+    context.filter = 'saturate(.75) contrast(1.15)';
+    context.drawImage(image, (this.cssWidth - width) / 2, (this.cssHeight - height) / 2, width, height);
+    context.restore();
+  }
+
+  private drawWorldTiles(time: number): void {
+    if (!this.world) return;
+    const context = this.context;
+    context.lineWidth = 0.65;
+    const width = this.world.width;
+    const height = this.world.height;
+    const hasTiles = this.world.tiles.size > 0;
+
+    for (let depth = 0; depth < width + height - 1; depth += 1) {
+      const xMin = Math.max(0, depth - (height - 1));
+      const xMax = Math.min(width - 1, depth);
+      for (let x = xMin; x <= xMax; x += 1) {
+        const y = depth - x;
+        const point = this.project(x, y);
+        if (point.x < -this.tileWidth || point.x > this.cssWidth + this.tileWidth) continue;
+        if (point.y < -this.tileHeight * 3 || point.y > this.cssHeight + this.tileHeight * 3) continue;
+        const tileId = this.world.tiles.get(cellKey(x, y));
+        if (hasTiles && !tileId) continue;
+        const baseColor = this.world.palette.get(tileId || 'light-soil') || '#64705e';
+        const variation = ((x * 13 + y * 7) % 5) * 2 - 4;
+        drawDiamond(
+          context,
+          point.x,
+          point.y,
+          this.tileWidth / 2,
+          this.tileHeight / 2,
+          shade(baseColor, variation),
+          tileId === 'tiled-floor' ? 'rgba(245, 238, 222, .26)' : 'rgba(11, 30, 31, .2)',
+        );
+
+        if (this.world.blocked.has(cellKey(x, y))) this.drawBlocker(point, baseColor, time, x + y);
+      }
+    }
+  }
+
+  private drawBlocker(point: ProjectedPoint, color: string, time: number, seed: number): void {
+    const context = this.context;
+    const height = 7 + Math.sin(time / 1_100 + seed) * 0.4;
+    const halfWidth = this.tileWidth / 2;
+    const halfHeight = this.tileHeight / 2;
+    context.beginPath();
+    context.moveTo(point.x - halfWidth, point.y);
+    context.lineTo(point.x, point.y + halfHeight);
+    context.lineTo(point.x, point.y + halfHeight - height);
+    context.lineTo(point.x - halfWidth, point.y - height);
+    context.closePath();
+    context.fillStyle = shade(color, -32);
+    context.fill();
+    context.beginPath();
+    context.moveTo(point.x + halfWidth, point.y);
+    context.lineTo(point.x, point.y + halfHeight);
+    context.lineTo(point.x, point.y + halfHeight - height);
+    context.lineTo(point.x + halfWidth, point.y - height);
+    context.closePath();
+    context.fillStyle = shade(color, -48);
+    context.fill();
+    drawDiamond(context, point.x, point.y - height, halfWidth, halfHeight, shade(color, 14), 'rgba(255,255,255,.14)');
+  }
+
+  private drawObjects(): void {
+    if (!this.world) return;
+    const context = this.context;
+    context.save();
+    context.setLineDash([5, 5]);
+    context.lineWidth = 1.2;
+    context.strokeStyle = 'rgba(100, 226, 205, .42)';
+    context.fillStyle = 'rgba(61, 193, 173, .035)';
+    for (const object of this.world.objects) {
+      const bounds = object.bounds;
+      if (!bounds) continue;
+      const corners = [
+        this.project(bounds.x1 || 0, bounds.y1 || 0),
+        this.project(bounds.x2 || 0, bounds.y1 || 0),
+        this.project(bounds.x2 || 0, bounds.y2 || 0),
+        this.project(bounds.x1 || 0, bounds.y2 || 0),
+      ];
+      context.beginPath();
+      corners.forEach((point, index) => (index === 0 ? context.moveTo(point.x, point.y) : context.lineTo(point.x, point.y)));
+      context.closePath();
+      context.fill();
+      context.stroke();
+    }
+    context.restore();
+  }
+
+  private drawOptionProps(time: number): void {
+    if (!this.world || this.selectedOptionIds.length === 0) return;
+    const context = this.context;
+    const anchor = this.world.objects[0]?.bounds;
+    const originX = anchor?.x1 ?? this.world.entry.spawn.x - 4;
+    const originY = anchor?.y1 ?? this.world.entry.spawn.y - 4;
+    context.save();
+    for (const [index, id] of this.selectedOptionIds.entries()) {
+      const hash = stableHash(id);
+      const x = originX + 2 + ((hash + index * 3) % 10);
+      const y = originY + 2 + ((Math.floor(hash / 11) + index * 2) % 8);
+      const point = this.project(x, y);
+      const pulse = 0.75 + Math.sin(time / 600 + index) * 0.12;
+      context.fillStyle = `rgba(229, 190, 99, ${pulse})`;
+      context.strokeStyle = 'rgba(255, 245, 202, .8)';
+      context.lineWidth = 1;
+      context.fillRect(point.x - 5, point.y - 14, 10, 14);
+      context.strokeRect(point.x - 5, point.y - 14, 10, 14);
+      context.beginPath();
+      context.arc(point.x, point.y - 17, 2.5, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.restore();
+  }
+}
+
+export function isWalkable(world: WorldData | null, x: number, y: number): boolean {
+  if (!world) return false;
+  const roundedX = Math.round(x);
+  const roundedY = Math.round(y);
+  return (
+    roundedX >= 0 &&
+    roundedY >= 0 &&
+    roundedX < world.width &&
+    roundedY < world.height &&
+    !world.blocked.has(cellKey(roundedX, roundedY))
+  );
+}
+
+export function nearestWalkable(world: WorldData, x: number, y: number): { x: number; y: number } {
+  if (isWalkable(world, x, y)) return { x: Math.round(x), y: Math.round(y) };
+  for (let radius = 1; radius < 12; radius += 1) {
+    for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
+      for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
+        if (Math.abs(offsetX) !== radius && Math.abs(offsetY) !== radius) continue;
+        if (isWalkable(world, x + offsetX, y + offsetY)) {
+          return { x: Math.round(x + offsetX), y: Math.round(y + offsetY) };
+        }
+      }
+    }
+  }
+  return { x: 0, y: 0 };
+}

@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "bunfirvil-skill-effect-v1",
+  "effectId": "rpg-summoned-bow-energy-projectile",
+  "provider": "rpg",
+  "sourceKey": "summoned-bow-energy-projectile",
+  "displayName": "청록 에너지 화살",
+  "sourceFrameCount": 1,
+  "frameChunkSize": 1,
+  "frameDurationMs": 100,
+  "backgroundStatus": "additive-screen",
+  "directionMode": "eight-direction-projectile",
+  "directions": [
+    {
+      "key": "n",
+      "label": "N"
+    },
+    {
+      "key": "ne",
+      "label": "NE"
+    },
+    {
+      "key": "e",
+      "label": "E"
+    },
+    {
+      "key": "se",
+      "label": "SE"
+    },
+    {
+      "key": "s",
+      "label": "S"
+    },
+    {
+      "key": "sw",
+      "label": "SW"
+    },
+    {
+      "key": "w",
+      "label": "W"
+    },
+    {
+      "key": "nw",
+      "label": "NW"
+    }
+  ],
+  "suggestedPlacementType": "attack_projectile",
+  "suggestedBindings": [
+    {
+      "skillId": "common-double-arrow",
+      "skillName": "더블애로우",
+      "phase": "projectile"
+    }
+  ],
+  "projectile": {
+    "releaseFrameIndex": 5,
+    "trail": "teal-afterimage"
+  },
+  "variants": [
+    {
+      "index": 0,
+      "direction": {
+        "key": "n",
+        "label": "N"
+      },
+      "startFrame": 0,
+      "frameCount": 1,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "sheetUrl": "variants/n.png",
+      "transparentSheetUrl": "variants/n.png"
+    },
+    {
+      "index": 1,
+      "direction": {
+        "key": "ne",
+        "label": "NE"
+      },
+      "startFrame": 0,
+      "frameCount": 1,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "sheetUrl": "variants/ne.png",
+      "transparentSheetUrl": "variants/ne.png"
+    },
+    {
+      "index": 2,
+      "direction": {
+        "key": "e",
+        "label": "E"
+      },
+      "startFrame": 0,
+      "frameCount": 1,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "sheetUrl": "variants/e.png",
+      "transparentSheetUrl": "variants/e.png"
+    },
+    {
+      "index": 3,
+      "direction": {
+        "key": "se",
+        "label": "SE"
+      },
+      "startFrame": 0,
+      "frameCount": 1,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "sheetUrl": "variants/se.png",
+      "transparentSheetUrl": "variants/se.png"
+    },
+    {
+      "index": 4,
+      "direction": {
+        "key": "s",
+        "label": "S"
+      },
+      "startFrame": 0,
+      "frameCount": 1,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "sheetUrl": "variants/s.png",
+      "transparentSheetUrl": "variants/s.png"
+    },
+    {
+      "index": 5,
+      "direction": {
+        "key": "sw",
+        "label": "SW"
+      },
+      "startFrame": 0,
+      "frameCount": 1,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "sheetUrl": "variants/sw.png",
+      "transparentSheetUrl": "variants/sw.png"
+    },
+    {
+      "index": 6,
+      "direction": {
+        "key": "w",
+        "label": "W"
+      },
+      "startFrame": 0,
+      "frameCount": 1,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "sheetUrl": "variants/w.png",
+      "transparentSheetUrl": "variants/w.png"
+    },
+    {
+      "index": 7,
+      "direction": {
+        "key": "nw",
+        "label": "NW"
+      },
+      "startFrame": 0,
+      "frameCount": 1,
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "sheetUrl": "variants/nw.png",
+      "transparentSheetUrl": "variants/nw.png"
+    }
+  ]
+}

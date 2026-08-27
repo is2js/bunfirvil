@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "rpg-world-chunk-v2",
+  "worldId": "bundang-first-village-55a-prototype",
+  "revision": "bundang-55a-prototype-r29",
+  "chunkX": 1,
+  "chunkY": 2,
+  "origin": {
+    "x": 16,
+    "y": 32
+  },
+  "size": {
+    "width": 16,
+    "height": 16
+  },
+  "tileEncoding": "row-major-rle",
+  "tileRuns": [
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 4
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 12
+    },
+    {
+      "tileId": "light-soil",
+      "count": 11
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 5
+    },
+    {
+      "tileId": "light-soil",
+      "count": 192
+    }
+  ],
+  "elevationEncoding": "world-unit-rle",
+  "elevationRuns": [
+    {
+      "value": 0,
+      "count": 256
+    }
+  ],
+  "blockedCellIndices": [
+    4,
+    11,
+    20,
+    27,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    59,
+    60,
+    61,
+    62,
+    63
+  ],
+  "visibleBlockerCellIndices": [
+    4,
+    11,
+    20,
+    27,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    59,
+    60,
+    61,
+    62,
+    63
+  ],
+  "occlusionCellIndices": [],
+  "transparencyCellIndices": [],
+  "objects": [],
+  "zones": [
+    "bundang-55a-prototype-zone"
+  ]
+}

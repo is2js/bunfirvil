@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "rpg-world-content-v1",
+  "worldId": "bundang-first-village-59a-prototype",
+  "bundleRevision": "bundang-59a-prototype-r28",
+  "safeZones": [
+    {
+      "id": "59a-prototype-safe-zone",
+      "bounds": {
+        "x1": 20,
+        "y1": 18,
+        "x2": 45,
+        "y2": 35
+      }
+    }
+  ],
+  "transportPoints": [],
+  "pois": [
+    {
+      "id": "59a-prototype-unit",
+      "label": "59A 평면도A",
+      "x": 32.5,
+      "y": 26.5,
+      "kind": "prototype"
+    }
+  ],
+  "npcPlacements": [],
+  "gatheringZones": [],
+  "combatZones": [],
+  "questSeeds": [],
+  "localPersistence": false
+}

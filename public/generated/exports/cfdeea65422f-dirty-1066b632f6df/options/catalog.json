@@ -1,0 +1,906 @@
+{
+  "schemaVersion": "bunfirvil-b-options-v1",
+  "unitTypes": [
+    "51A",
+    "55A",
+    "55B",
+    "59A"
+  ],
+  "groups": [
+    {
+      "id": "system-air-conditioner-upgrades",
+      "label": "시스템에어컨"
+    },
+    {
+      "id": "entry-living-upgrades",
+      "label": "현관/거실"
+    },
+    {
+      "id": "bathroom-upgrades",
+      "label": "욕실"
+    },
+    {
+      "id": "utility-upgrades",
+      "label": "발코니/다용도실"
+    },
+    {
+      "id": "kitchen-design-upgrades",
+      "label": "주방 벽/상판·냉장고장"
+    },
+    {
+      "id": "bedroom-storage-upgrades",
+      "label": "침실/수납"
+    },
+    {
+      "id": "lighting-upgrades",
+      "label": "조명특화"
+    },
+    {
+      "id": "built-in-appliance-upgrades",
+      "label": "빌트인 가전"
+    }
+  ],
+  "options": [
+    {
+      "assetId": "system-ac-2-general",
+      "label": "시스템에어컨 2대 · 일반형",
+      "paletteLabel": "시스템에어컨 · 일반형",
+      "groupId": "system-air-conditioner-upgrades",
+      "prices": {
+        "51A": 3600000,
+        "55A": 3600000,
+        "55B": 3600000,
+        "59A": 3800000
+      },
+      "visualMode": "ceiling-ac",
+      "exclusiveGroup": "system-ac-package",
+      "systemAcTier": "general",
+      "systemAcCount": 2,
+      "systemAcPaletteCard": true
+    },
+    {
+      "assetId": "system-ac-2-premium",
+      "label": "시스템에어컨 2대 · 고급형",
+      "paletteLabel": "시스템에어컨 · 고급형",
+      "groupId": "system-air-conditioner-upgrades",
+      "prices": {
+        "51A": 4000000,
+        "55A": 4000000,
+        "55B": 4000000,
+        "59A": 4200000
+      },
+      "visualMode": "ceiling-ac",
+      "exclusiveGroup": "system-ac-package",
+      "systemAcTier": "premium",
+      "systemAcCount": 2,
+      "systemAcPaletteCard": true
+    },
+    {
+      "assetId": "system-ac-3-general",
+      "label": "시스템에어컨 3대 · 일반형",
+      "groupId": "system-air-conditioner-upgrades",
+      "prices": {
+        "51A": 5200000,
+        "55A": 5200000,
+        "55B": 5200000
+      },
+      "visualMode": "ceiling-ac",
+      "exclusiveGroup": "system-ac-package",
+      "systemAcTier": "general",
+      "systemAcCount": 3,
+      "systemAcPaletteCard": false
+    },
+    {
+      "assetId": "system-ac-3-premium",
+      "label": "시스템에어컨 3대 · 고급형",
+      "groupId": "system-air-conditioner-upgrades",
+      "prices": {
+        "51A": 5800000,
+        "55A": 5800000,
+        "55B": 5800000
+      },
+      "visualMode": "ceiling-ac",
+      "exclusiveGroup": "system-ac-package",
+      "systemAcTier": "premium",
+      "systemAcCount": 3,
+      "systemAcPaletteCard": false
+    },
+    {
+      "assetId": "system-ac-4-general",
+      "label": "시스템에어컨 4대 · 일반형",
+      "groupId": "system-air-conditioner-upgrades",
+      "prices": {
+        "55A": 6600000,
+        "55B": 6600000,
+        "59A": 6800000
+      },
+      "visualMode": "ceiling-ac",
+      "exclusiveGroup": "system-ac-package",
+      "systemAcTier": "general",
+      "systemAcCount": 4,
+      "systemAcPaletteCard": false
+    },
+    {
+      "assetId": "system-ac-4-premium",
+      "label": "시스템에어컨 4대 · 고급형",
+      "groupId": "system-air-conditioner-upgrades",
+      "prices": {
+        "55A": 7400000,
+        "55B": 7400000,
+        "59A": 7600000
+      },
+      "visualMode": "ceiling-ac",
+      "exclusiveGroup": "system-ac-package",
+      "systemAcTier": "premium",
+      "systemAcCount": 4,
+      "systemAcPaletteCard": false
+    },
+    {
+      "assetId": "entry-sliding-partition-door",
+      "label": "현관 중문(슬라이딩)",
+      "groupId": "entry-living-upgrades",
+      "prices": {
+        "51A": 1500000,
+        "55A": 1500000,
+        "55B": 1500000,
+        "59A": 1500000
+      },
+      "visualMode": "entry-door"
+    },
+    {
+      "assetId": "wide-plank-floor-finish",
+      "label": "광폭 강마루",
+      "groupId": "entry-living-upgrades",
+      "prices": {
+        "51A": 1680000,
+        "55A": 1820000,
+        "55B": 1710000,
+        "59A": 1940000
+      },
+      "visualMode": "room-finish"
+    },
+    {
+      "assetId": "entry-open-premium-shoe-cabinet",
+      "label": "개방형 프리미엄 신발장",
+      "groupId": "entry-living-upgrades",
+      "prices": {
+        "55A": 1340000,
+        "55B": 1340000,
+        "59A": 1340000
+      },
+      "visualMode": "entry-storage"
+    },
+    {
+      "assetId": "entry-pantry-system-shelf",
+      "label": "현관 팬트리 시스템 선반",
+      "groupId": "entry-living-upgrades",
+      "prices": {
+        "55A": 490000,
+        "55B": 490000,
+        "59A": 510000
+      },
+      "visualMode": "entry-storage"
+    },
+    {
+      "assetId": "living-design-wall-panel",
+      "label": "거실 디자인월 패널",
+      "groupId": "entry-living-upgrades",
+      "prices": {
+        "51A": 920000,
+        "55A": 1110000,
+        "55B": 1540000,
+        "59A": 1260000
+      },
+      "priceVariants": [
+        {
+          "whenSelectedAny": [
+            "island-counter-modern",
+            "island-counter-dining-integrated"
+          ],
+          "prices": {
+            "55B": 1600000
+          }
+        }
+      ],
+      "visualMode": "living-wall"
+    },
+    {
+      "assetId": "infinity-door-bedroom-1",
+      "label": "침실1 인피니티 도어",
+      "groupId": "entry-living-upgrades",
+      "prices": {
+        "51A": 1350000,
+        "55A": 1350000,
+        "55B": 1350000,
+        "59A": 1350000
+      },
+      "visualMode": "infinity-door",
+      "exclusiveGroup": "infinity-door-package"
+    },
+    {
+      "assetId": "infinity-door-all-bedrooms",
+      "label": "전체 침실 인피니티 도어",
+      "groupId": "entry-living-upgrades",
+      "prices": {
+        "51A": 4050000,
+        "55A": 5400000,
+        "55B": 5400000,
+        "59A": 5400000
+      },
+      "visualMode": "infinity-door",
+      "exclusiveGroup": "infinity-door-package",
+      "requires": "living-design-wall-panel"
+    },
+    {
+      "assetId": "bathroom-combination-ventilator",
+      "label": "복합환풍기(전체 욕실)",
+      "groupId": "bathroom-upgrades",
+      "prices": {
+        "51A": 1300000,
+        "55A": 1300000,
+        "55B": 1300000,
+        "59A": 1300000
+      },
+      "visualMode": "bathroom-ceiling"
+    },
+    {
+      "assetId": "toilet-integrated-bidet",
+      "label": "비데일체형 양변기(전체 욕실)",
+      "groupId": "bathroom-upgrades",
+      "prices": {
+        "51A": 830000,
+        "55A": 830000,
+        "55B": 830000,
+        "59A": 830000
+      },
+      "visualMode": "bathroom-replace"
+    },
+    {
+      "assetId": "utility-ceramic-elastic-coat",
+      "label": "세라믹 탄성코트",
+      "groupId": "utility-upgrades",
+      "prices": {
+        "51A": 800000,
+        "55A": 800000,
+        "55B": 880000,
+        "59A": 800000
+      },
+      "visualMode": "deferred"
+    },
+    {
+      "assetId": "bedroom-1-built-in-closet-pet",
+      "label": "침실1 광폭 붙박이장(PET)",
+      "groupId": "bedroom-storage-upgrades",
+      "prices": {
+        "51A": 2370000,
+        "55A": 2370000,
+        "55B": 2370000,
+        "59A": 2370000
+      },
+      "visualMode": "bedroom-storage",
+      "exclusiveGroup": "bedroom-1-closet"
+    },
+    {
+      "assetId": "bedroom-1-clothing-care-closet",
+      "label": "침실1 의류관리형 붙박이장",
+      "groupId": "bedroom-storage-upgrades",
+      "prices": {
+        "51A": 2020000,
+        "55A": 2020000,
+        "55B": 2020000,
+        "59A": 2020000
+      },
+      "visualMode": "bedroom-storage",
+      "exclusiveGroup": "bedroom-1-closet"
+    },
+    {
+      "assetId": "dress-room-powder-storage",
+      "label": "드레스룸 파우더 결합형 수납장",
+      "groupId": "bedroom-storage-upgrades",
+      "prices": {
+        "51A": 3400000,
+        "55A": 3400000,
+        "55B": 3200000,
+        "59A": 3400000
+      },
+      "visualMode": "bedroom-storage"
+    },
+    {
+      "assetId": "bedroom-2-built-in-closet-pet",
+      "label": "침실2 붙박이장(PET)",
+      "groupId": "bedroom-storage-upgrades",
+      "prices": {
+        "51A": 1240000,
+        "55A": 1300000,
+        "55B": 1300000,
+        "59A": 1240000
+      },
+      "visualMode": "bedroom-storage",
+      "exclusiveGroup": "bedroom-2-closet"
+    },
+    {
+      "assetId": "bedroom-2-closet-desk-set",
+      "label": "침실2 붙박이장 + 책상",
+      "groupId": "bedroom-storage-upgrades",
+      "prices": {
+        "51A": 3880000,
+        "55A": 3620000,
+        "55B": 3540000,
+        "59A": 3620000
+      },
+      "visualMode": "bedroom-storage",
+      "exclusiveGroup": "bedroom-2-closet"
+    },
+    {
+      "assetId": "bedroom-3-built-in-closet-pet",
+      "label": "침실3 붙박이장(PET)",
+      "groupId": "bedroom-storage-upgrades",
+      "prices": {
+        "59A": 1240000
+      },
+      "visualMode": "bedroom-storage",
+      "exclusiveGroup": "bedroom-3-closet"
+    },
+    {
+      "assetId": "bedroom-3-closet-desk-set",
+      "label": "침실3 붙박이장 + 책상",
+      "groupId": "bedroom-storage-upgrades",
+      "prices": {
+        "59A": 3620000
+      },
+      "visualMode": "bedroom-storage",
+      "exclusiveGroup": "bedroom-3-closet"
+    },
+    {
+      "assetId": "smart-lighting-package",
+      "label": "스마트 조명 특화",
+      "groupId": "lighting-upgrades",
+      "prices": {
+        "51A": 3580000,
+        "55A": 4380000,
+        "55B": 3880000,
+        "59A": 4420000
+      },
+      "visualMode": "smart-lighting"
+    },
+    {
+      "assetId": "air-planner-ceiling-vent",
+      "label": "D-에어플래너 + 침실 스마트 디스플레이",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 4980000,
+        "55A": 4980000,
+        "55B": 4980000,
+        "59A": 4980000
+      },
+      "priceVariants": [
+        {
+          "whenSelectedAny": [
+            "smart-lighting-package"
+          ],
+          "prices": {
+            "51A": 4830000,
+            "55A": 4830000,
+            "55B": 4830000,
+            "59A": 4830000
+          }
+        }
+      ],
+      "visualMode": "manual"
+    },
+    {
+      "assetId": "closet-breeze-dehumidifier",
+      "label": "D-클로젯 브리즈",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 1500000,
+        "55A": 1500000,
+        "55B": 1500000,
+        "59A": 1500000
+      },
+      "priceVariants": [
+        {
+          "whenSelectedAny": [
+            "dress-room-powder-storage"
+          ],
+          "prices": {
+            "51A": 1800000,
+            "55A": 1800000,
+            "55B": 1800000,
+            "59A": 1800000
+          }
+        }
+      ],
+      "visualMode": "manual"
+    },
+    {
+      "assetId": "silent-range-hood",
+      "label": "D-사일런트 후드",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 780000,
+        "55A": 780000,
+        "55B": 780000,
+        "59A": 780000
+      },
+      "visualMode": "manual"
+    },
+    {
+      "assetId": "dishwasher-built-in-die6pt",
+      "label": "LG DIE6PT 빌트인 식기세척기 + 콘센트",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 1650000,
+        "55A": 1650000,
+        "55B": 1650000,
+        "59A": 1650000
+      },
+      "visualMode": "manual"
+    },
+    {
+      "assetId": "electric-cooktop-erh-3903",
+      "label": "ERH-3903 전기쿡탑",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 580000,
+        "55A": 580000,
+        "55B": 580000,
+        "59A": 580000
+      },
+      "visualMode": "manual",
+      "exclusiveGroup": "cooktop"
+    },
+    {
+      "assetId": "induction-cooktop-nz63b5056ak",
+      "label": "삼성 NZ63B5056AK 인덕션",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 950000,
+        "55A": 950000,
+        "55B": 950000,
+        "59A": 950000
+      },
+      "visualMode": "manual",
+      "exclusiveGroup": "cooktop"
+    },
+    {
+      "assetId": "induction-cooktop-bei3asb4bi",
+      "label": "LG BEI3ASB4BI 인덕션",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 1000000,
+        "55A": 1000000,
+        "55B": 1000000,
+        "59A": 1000000
+      },
+      "visualMode": "manual",
+      "exclusiveGroup": "cooktop"
+    },
+    {
+      "assetId": "lg-styler-sc5mbr53",
+      "label": "LG 스타일러 SC5MBR53",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 1800000,
+        "55A": 1800000,
+        "55B": 1800000,
+        "59A": 1800000
+      },
+      "visualMode": "bedroom-appliance",
+      "requires": "bedroom-1-clothing-care-closet"
+    },
+    {
+      "assetId": "built-in-oven-navien",
+      "label": "경동나비엔 빌트인 오븐",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 650000,
+        "55A": 650000,
+        "55B": 650000,
+        "59A": 650000
+      },
+      "visualMode": "kitchen-appliance",
+      "exclusiveGroup": "built-in-oven",
+      "requiresAny": [
+        "island-counter-modern",
+        "island-counter-dining-integrated"
+      ]
+    },
+    {
+      "assetId": "built-in-oven-samsung",
+      "label": "삼성 빌트인 오븐",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 900000,
+        "55A": 900000,
+        "55B": 900000,
+        "59A": 900000
+      },
+      "visualMode": "kitchen-appliance",
+      "exclusiveGroup": "built-in-oven",
+      "requiresAny": [
+        "island-counter-modern",
+        "island-counter-dining-integrated"
+      ]
+    },
+    {
+      "assetId": "built-in-oven-lg",
+      "label": "LG 빌트인 오븐",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 480000,
+        "55A": 480000,
+        "55B": 480000,
+        "59A": 480000
+      },
+      "visualMode": "kitchen-appliance",
+      "exclusiveGroup": "built-in-oven",
+      "requiresAny": [
+        "island-counter-modern",
+        "island-counter-dining-integrated"
+      ]
+    },
+    {
+      "assetId": "island-counter-modern",
+      "label": "아일랜드장(PET)",
+      "groupId": "kitchen-design-upgrades",
+      "prices": {
+        "51A": 1270000,
+        "55A": 1270000,
+        "55B": 1300000,
+        "59A": 1270000
+      },
+      "priceVariants": [
+        {
+          "whenSelectedAny": [
+            "kitchen-wall-countertop-radianz-golden-shore"
+          ],
+          "prices": {
+            "51A": 1410000,
+            "55A": 1410000,
+            "55B": 1430000,
+            "59A": 1410000
+          }
+        }
+      ],
+      "visualMode": "kitchen-island",
+      "exclusiveGroup": "kitchen-island"
+    },
+    {
+      "assetId": "island-counter-dining-integrated",
+      "label": "식탁결합형 아일랜드장(PET)",
+      "groupId": "kitchen-design-upgrades",
+      "prices": {
+        "55B": 2220000
+      },
+      "priceVariants": [
+        {
+          "whenSelectedAny": [
+            "kitchen-wall-countertop-radianz-golden-shore"
+          ],
+          "prices": {
+            "55B": 2490000
+          }
+        }
+      ],
+      "visualMode": "kitchen-island",
+      "exclusiveGroup": "kitchen-island",
+      "availableUnitTypes": [
+        "55B"
+      ]
+    },
+    {
+      "assetId": "kitchen-wall-countertop-radianz-golden-shore",
+      "label": "주방 벽/상판 · 엔지니어드 스톤(라디언스 골든쇼어)",
+      "groupId": "kitchen-design-upgrades",
+      "prices": {
+        "51A": 4080000,
+        "55A": 3780000,
+        "55B": 3070000,
+        "59A": 3930000
+      },
+      "visualMode": "kitchen-surface"
+    },
+    {
+      "assetId": "refrigerator-cabinet-pet-basic",
+      "label": "냉장고장 기본형(PET) · ALT.1",
+      "groupId": "kitchen-design-upgrades",
+      "prices": {
+        "51A": 1200000,
+        "55A": 1200000,
+        "55B": 1200000,
+        "59A": 1200000
+      },
+      "visualMode": "refrigerator-cabinet"
+    },
+    {
+      "assetId": "refrigerator-cabinet-bespoke-alt2",
+      "label": "삼성 비스포크 냉장고 패키지 · ALT.2",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 6430000,
+        "55A": 6430000,
+        "55B": 6430000,
+        "59A": 6430000
+      },
+      "visualMode": "refrigerator-cabinet",
+      "exclusiveGroup": "built-in-refrigerator-package",
+      "requires": "refrigerator-cabinet-pet-basic"
+    },
+    {
+      "assetId": "refrigerator-cabinet-lg-built-in",
+      "label": "LG 빌트인 냉장고 패키지 · ALT.3",
+      "groupId": "built-in-appliance-upgrades",
+      "prices": {
+        "51A": 7550000,
+        "55A": 7550000,
+        "55B": 7550000,
+        "59A": 7550000
+      },
+      "visualMode": "refrigerator-cabinet",
+      "exclusiveGroup": "built-in-refrigerator-package",
+      "requires": "refrigerator-cabinet-pet-basic"
+    }
+  ],
+  "cautions": [
+    "타입·평면·설치 위치에 따라 적용 형태가 달라질 수 있습니다.",
+    "제품 모델·색상·설치 위치는 개별 변경할 수 없습니다.",
+    "복합환풍기 선택 시 기본 환풍기, 비데일체형 양변기 선택 시 기본 비데 구성은 설치되지 않습니다.",
+    "계약한 추가 선택품목은 이후 변경·취소할 수 없습니다."
+  ],
+  "proceduralAssets": [
+    {
+      "assetId": "island-counter-dining-integrated",
+      "revision": "2",
+      "displayNameKo": "식탁결합형 아일랜드장(PET)",
+      "descriptionKo": "1.26m 아일랜드장과 더 짧은 1.20m 단차형 PET 식탁을 연결한 선택형 구성",
+      "roomCategoryIds": [
+        "kitchen"
+      ],
+      "allowedRoomKinds": [
+        "kitchen-dining"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "solid",
+      "placeable": true,
+      "option": true,
+      "badges": [
+        "option"
+      ],
+      "defaultDimensionsMeters": {
+        "width": 2.46,
+        "depth": 0.8,
+        "height": 0.9
+      },
+      "defaultMaterialVariantId": "pet-warm-ivory"
+    },
+    {
+      "assetId": "kitchen-wall-countertop-default",
+      "revision": "1",
+      "displayNameKo": "기본 주방 벽/상판",
+      "descriptionKo": "패널형 주방 벽과 MMA 샌디드 구스 기본 상판",
+      "roomCategoryIds": [
+        "kitchen"
+      ],
+      "allowedRoomKinds": [
+        "kitchen-dining"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "visual-only",
+      "placeable": false,
+      "defaultDimensionsMeters": {
+        "width": 2.2,
+        "depth": 0.65,
+        "height": 1.45
+      },
+      "defaultMaterialVariantId": "mma-sanded-goose-panel"
+    },
+    {
+      "assetId": "kitchen-wall-countertop-radianz-golden-shore",
+      "revision": "1",
+      "displayNameKo": "엔지니어드 스톤 주방 벽/상판",
+      "descriptionKo": "라디언스 골든쇼어 질감의 밝은 웜그레이 주방 벽·상판 오버레이",
+      "roomCategoryIds": [
+        "kitchen"
+      ],
+      "allowedRoomKinds": [
+        "kitchen-dining"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "visual-only",
+      "placeable": true,
+      "option": true,
+      "badges": [
+        "option"
+      ],
+      "defaultDimensionsMeters": {
+        "width": 2.2,
+        "depth": 0.65,
+        "height": 1.45
+      },
+      "defaultMaterialVariantId": "golden-shore-engineered-stone"
+    },
+    {
+      "assetId": "refrigerator-cabinet-pet-basic",
+      "revision": "1",
+      "displayNameKo": "냉장고장 기본형(PET)",
+      "descriptionKo": "냉장고 설치 빈자리를 감싸는 PET 냉장고장 ALT.1",
+      "roomCategoryIds": [
+        "kitchen"
+      ],
+      "allowedRoomKinds": [
+        "kitchen-dining"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "solid",
+      "placeable": true,
+      "option": true,
+      "badges": [
+        "option"
+      ],
+      "defaultDimensionsMeters": {
+        "width": 1.35,
+        "depth": 0.72,
+        "height": 2.2
+      },
+      "defaultMaterialVariantId": "pet-warm-ivory"
+    },
+    {
+      "assetId": "refrigerator-cabinet-bespoke-alt2",
+      "revision": "1",
+      "displayNameKo": "비스포크 맞춤 냉장고장(PET)",
+      "descriptionKo": "변온·김치·키큰 수납장과 가전 맞춤장을 결합한 ALT.2",
+      "roomCategoryIds": [
+        "kitchen"
+      ],
+      "allowedRoomKinds": [
+        "kitchen-dining"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "solid",
+      "placeable": true,
+      "option": true,
+      "badges": [
+        "option"
+      ],
+      "defaultDimensionsMeters": {
+        "width": 2.45,
+        "depth": 0.72,
+        "height": 2.2
+      },
+      "defaultMaterialVariantId": "pet-warm-ivory"
+    },
+    {
+      "assetId": "refrigerator-cabinet-lg-built-in",
+      "revision": "1",
+      "displayNameKo": "LG 오브제 맞춤 냉장고장(PET)",
+      "descriptionKo": "4도어 냉장고·3도어 김치냉장고와 키큰 수납장을 결합한 ALT.3",
+      "roomCategoryIds": [
+        "kitchen"
+      ],
+      "allowedRoomKinds": [
+        "kitchen-dining"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "solid",
+      "placeable": true,
+      "option": true,
+      "badges": [
+        "option"
+      ],
+      "defaultDimensionsMeters": {
+        "width": 2.45,
+        "depth": 0.72,
+        "height": 2.2
+      },
+      "defaultMaterialVariantId": "pet-warm-ivory"
+    },
+    {
+      "assetId": "shower-column-compact",
+      "revision": "1",
+      "displayNameKo": "욕실 샤워 수전",
+      "descriptionKo": "설비벽에 부착하는 소형 샤워기",
+      "roomCategoryIds": [
+        "bathroom"
+      ],
+      "allowedRoomKinds": [
+        "bathroom-1",
+        "bathroom-2"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "visual-only",
+      "placeable": false,
+      "defaultDimensionsMeters": {
+        "width": 0.24,
+        "depth": 0.18,
+        "height": 1.45
+      },
+      "defaultMaterialVariantId": "brushed-chrome"
+    },
+    {
+      "assetId": "kitchen-countertop-default-run",
+      "revision": "1",
+      "displayNameKo": "기본 주방 상판",
+      "descriptionKo": "평면 원형의 주방 하부장 앵커에만 사용하는 내부 구조물",
+      "roomCategoryIds": [
+        "kitchen"
+      ],
+      "allowedRoomKinds": [
+        "kitchen-dining"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "visual-only",
+      "placeable": false,
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.6,
+        "height": 0.06
+      },
+      "defaultMaterialVariantId": "mma-sanded-goose"
+    },
+    {
+      "assetId": "kitchen-backsplash-default-run",
+      "revision": "1",
+      "displayNameKo": "기본 주방 벽 마감",
+      "descriptionKo": "평면 원형의 주방 하부장 앵커에만 사용하는 내부 구조물",
+      "roomCategoryIds": [
+        "kitchen"
+      ],
+      "allowedRoomKinds": [
+        "kitchen-dining"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "visual-only",
+      "placeable": false,
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.6,
+        "height": 0.06
+      },
+      "defaultMaterialVariantId": "mma-sanded-goose-panel"
+    },
+    {
+      "assetId": "kitchen-countertop-radianz-run",
+      "revision": "1",
+      "displayNameKo": "골든쇼어 주방 상판",
+      "descriptionKo": "평면 원형의 주방 하부장 앵커에만 사용하는 내부 구조물",
+      "roomCategoryIds": [
+        "kitchen"
+      ],
+      "allowedRoomKinds": [
+        "kitchen-dining"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "visual-only",
+      "placeable": false,
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.6,
+        "height": 0.06
+      },
+      "defaultMaterialVariantId": "golden-shore-engineered-stone"
+    },
+    {
+      "assetId": "kitchen-backsplash-radianz-run",
+      "revision": "1",
+      "displayNameKo": "골든쇼어 주방 벽 마감",
+      "descriptionKo": "평면 원형의 주방 하부장 앵커에만 사용하는 내부 구조물",
+      "roomCategoryIds": [
+        "kitchen"
+      ],
+      "allowedRoomKinds": [
+        "kitchen-dining"
+      ],
+      "rendererKind": "procedural",
+      "collisionDefault": "visual-only",
+      "placeable": false,
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.6,
+        "height": 0.06
+      },
+      "defaultMaterialVariantId": "golden-shore-engineered-stone"
+    }
+  ],
+  "previewPolicy": "css-neutral-card"
+}

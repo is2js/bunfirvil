@@ -1,0 +1,193 @@
+{
+  "schemaVersion": "bunfirvil-skill-effect-v1",
+  "effectId": "rpg-summoned-bow-energy-overlay",
+  "provider": "rpg",
+  "sourceKey": "summoned-bow-energy-overlay",
+  "displayName": "청록 에너지궁",
+  "sourceFrameCount": 6,
+  "frameChunkSize": 6,
+  "frameDurationMs": 54,
+  "backgroundStatus": "additive-screen",
+  "directionMode": "eight-direction-actor-overlay",
+  "directions": [
+    {
+      "key": "n",
+      "label": "N"
+    },
+    {
+      "key": "ne",
+      "label": "NE"
+    },
+    {
+      "key": "e",
+      "label": "E"
+    },
+    {
+      "key": "se",
+      "label": "SE"
+    },
+    {
+      "key": "s",
+      "label": "S"
+    },
+    {
+      "key": "sw",
+      "label": "SW"
+    },
+    {
+      "key": "w",
+      "label": "W"
+    },
+    {
+      "key": "nw",
+      "label": "NW"
+    }
+  ],
+  "suggestedPlacementType": "attack_weapon_overlay",
+  "suggestedBindings": [
+    {
+      "skillId": "common-double-arrow",
+      "skillName": "더블애로우",
+      "phase": "primary"
+    }
+  ],
+  "weaponOverlay": {
+    "placementSourceAction": "summoned-bow-wood",
+    "cycleFrameCount": 6,
+    "releaseFrameIndex": 5,
+    "repeatCount": 2,
+    "suppressEquippedWeapon": true,
+    "characterOffsets": {
+      "100": {
+        "x": 0,
+        "y": 0
+      },
+      "200": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  },
+  "variants": [
+    {
+      "index": 0,
+      "direction": {
+        "key": "n",
+        "label": "N"
+      },
+      "startFrame": 0,
+      "frameCount": 6,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "sheetUrl": "variants/n-front.png",
+      "transparentSheetUrl": "variants/n-front.png",
+      "frontSheetUrl": "variants/n-front.png",
+      "backSheetUrl": "variants/n-back.png"
+    },
+    {
+      "index": 1,
+      "direction": {
+        "key": "ne",
+        "label": "NE"
+      },
+      "startFrame": 0,
+      "frameCount": 6,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "sheetUrl": "variants/ne-front.png",
+      "transparentSheetUrl": "variants/ne-front.png",
+      "frontSheetUrl": "variants/ne-front.png",
+      "backSheetUrl": "variants/ne-back.png"
+    },
+    {
+      "index": 2,
+      "direction": {
+        "key": "e",
+        "label": "E"
+      },
+      "startFrame": 0,
+      "frameCount": 6,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "sheetUrl": "variants/e-front.png",
+      "transparentSheetUrl": "variants/e-front.png",
+      "frontSheetUrl": "variants/e-front.png",
+      "backSheetUrl": "variants/e-back.png"
+    },
+    {
+      "index": 3,
+      "direction": {
+        "key": "se",
+        "label": "SE"
+      },
+      "startFrame": 0,
+      "frameCount": 6,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "sheetUrl": "variants/se-front.png",
+      "transparentSheetUrl": "variants/se-front.png",
+      "frontSheetUrl": "variants/se-front.png",
+      "backSheetUrl": "variants/se-back.png"
+    },
+    {
+      "index": 4,
+      "direction": {
+        "key": "s",
+        "label": "S"
+      },
+      "startFrame": 0,
+      "frameCount": 6,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "sheetUrl": "variants/s-front.png",
+      "transparentSheetUrl": "variants/s-front.png",
+      "frontSheetUrl": "variants/s-front.png",
+      "backSheetUrl": "variants/s-back.png"
+    },
+    {
+      "index": 5,
+      "direction": {
+        "key": "sw",
+        "label": "SW"
+      },
+      "startFrame": 0,
+      "frameCount": 6,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "sheetUrl": "variants/sw-front.png",
+      "transparentSheetUrl": "variants/sw-front.png",
+      "frontSheetUrl": "variants/sw-front.png",
+      "backSheetUrl": "variants/sw-back.png"
+    },
+    {
+      "index": 6,
+      "direction": {
+        "key": "w",
+        "label": "W"
+      },
+      "startFrame": 0,
+      "frameCount": 6,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "sheetUrl": "variants/w-front.png",
+      "transparentSheetUrl": "variants/w-front.png",
+      "frontSheetUrl": "variants/w-front.png",
+      "backSheetUrl": "variants/w-back.png"
+    },
+    {
+      "index": 7,
+      "direction": {
+        "key": "nw",
+        "label": "NW"
+      },
+      "startFrame": 0,
+      "frameCount": 6,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "sheetUrl": "variants/nw-front.png",
+      "transparentSheetUrl": "variants/nw-front.png",
+      "frontSheetUrl": "variants/nw-front.png",
+      "backSheetUrl": "variants/nw-back.png"
+    }
+  ]
+}

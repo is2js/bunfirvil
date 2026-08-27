@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="분당 퍼스트빌리지 검수맵의 로컬 검수 상태와 B옵션 조합을 관리하는 서버리스 페이지"
+    />
+    <meta name="color-scheme" content="dark" />
+    <title>검수맵 관리 · bunfirvil</title>
+    <link rel="stylesheet" href="/src/styles/manage.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">본문으로 이동</a>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <div>
+          <a class="brand" id="homeLink" href="../" aria-label="인게임 렌더링 데모로 이동">
+            <span class="brand-mark" aria-hidden="true">B</span>
+            <span>
+              <strong>bunfirvil</strong>
+              <small>Inspection console</small>
+            </span>
+          </a>
+        </div>
+        <nav aria-label="주요 메뉴">
+          <a class="nav-link" id="demoLink" href="../">렌더링 데모</a>
+          <span class="nav-link active" aria-current="page">검수맵 관리</span>
+        </nav>
+      </div>
+    </header>
+
+    <div class="local-only-banner" role="note">
+      <strong>브라우저 로컬 전용</strong>
+      <span>이 페이지의 상태·메모·옵션은 현재 브라우저에만 저장되며 원본 PVP 프로젝트에 반영하거나 게시하지 않습니다.</span>
+    </div>
+
+    <main id="main" class="page-shell">
+      <section class="hero" aria-labelledby="pageTitle">
+        <div>
+          <p class="eyebrow">STATIC REVIEW WORKSPACE</p>
+          <h1 id="pageTitle">분당 퍼스트빌리지 검수맵</h1>
+          <p class="hero-description">
+            네 개 세대형의 렌더링 정보를 비교하고, 맵별 검수 상태와 B옵션 조합을 로컬에서 기록합니다.
+          </p>
+        </div>
+        <div class="export-meta" aria-label="정적 자산 내보내기 정보">
+          <span>EXPORT</span>
+          <strong id="exportId">불러오는 중</strong>
+          <time id="generatedAt"></time>
+        </div>
+      </section>
+
+      <section id="loadingState" class="state-panel" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <p>정적 검수 catalog를 불러오는 중입니다.</p>
+      </section>
+
+      <section id="errorState" class="state-panel error-panel" hidden aria-labelledby="errorTitle">
+        <span class="state-icon" aria-hidden="true">!</span>
+        <div>
+          <h2 id="errorTitle">검수맵 정보를 열 수 없습니다</h2>
+          <p id="errorMessage"></p>
+          <button id="retryButton" class="button secondary" type="button">다시 불러오기</button>
+        </div>
+      </section>
+
+      <div id="workspace" hidden>
+        <section class="summary-grid" aria-label="검수 현황 요약">
+          <article class="summary-card">
+            <span>전체 맵</span>
+            <strong id="totalMapCount">0</strong>
+            <small>1차 공개 검수 범위</small>
+          </article>
+          <article class="summary-card pass">
+            <span>통과</span>
+            <strong id="passCount">0</strong>
+            <small>로컬 검수 상태</small>
+          </article>
+          <article class="summary-card needs-work">
+            <span>수정 필요</span>
+            <strong id="needsWorkCount">0</strong>
+            <small>후속 확인 대상</small>
+          </article>
+          <article class="summary-card">
+            <span>선택 B옵션</span>
+            <strong id="selectedOptionCount">0</strong>
+            <small id="totalQuote">₩0</small>
+          </article>
+        </section>
+
+        <section class="toolbar" aria-label="검수자료 도구">
+          <div>
+            <h2>세대형별 검수</h2>
+            <p>변경 내용은 입력 즉시 이 브라우저에 자동 저장됩니다.</p>
+          </div>
+          <div class="toolbar-actions">
+            <input class="visually-hidden" id="importFile" type="file" accept="application/json,.json" />
+            <label class="button secondary" for="importFile">JSON 가져오기</label>
+            <button class="button secondary" id="exportButton" type="button">전체 JSON 내보내기</button>
+            <button class="button danger" id="resetButton" type="button">로컬 기록 초기화</button>
+          </div>
+        </section>
+
+        <div id="messageRegion" class="message" hidden role="status" aria-live="polite"></div>
+        <section id="mapGrid" class="map-grid" aria-label="검수맵 목록"></section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>서버·로그인·공용 저장·원본 publish 기능이 없는 정적 프론트엔드 검수 도구입니다.</p>
+    </footer>
+
+    <script type="module" src="/src/manage.ts"></script>
+  </body>
+</html>

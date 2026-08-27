@@ -1,0 +1,92 @@
+{
+  "effectId": "rpg-teleport-origin",
+  "provider": "rpg",
+  "sourceKey": "teleport-origin",
+  "displayName": "텔레포트 이동 이펙트",
+  "sourceFrameCount": 8,
+  "frameChunkSize": 8,
+  "frameDurationMs": 105,
+  "backgroundStatus": "additive-screen",
+  "directionMode": "unclassified",
+  "directions": [],
+  "suggestedPlacementType": "status_body_aura",
+  "suggestedBindings": [
+    {
+      "skillId": "common-teleport",
+      "skillName": "텔레포트",
+      "phase": "impact"
+    }
+  ],
+  "transparentFrames": [
+    {
+      "index": 0,
+      "width": 192,
+      "height": 192,
+      "pngUrl": "frames/0000.png"
+    },
+    {
+      "index": 1,
+      "width": 192,
+      "height": 192,
+      "pngUrl": "frames/0001.png"
+    },
+    {
+      "index": 2,
+      "width": 192,
+      "height": 192,
+      "pngUrl": "frames/0002.png"
+    },
+    {
+      "index": 3,
+      "width": 192,
+      "height": 192,
+      "pngUrl": "frames/0003.png"
+    },
+    {
+      "index": 4,
+      "width": 192,
+      "height": 192,
+      "pngUrl": "frames/0004.png"
+    },
+    {
+      "index": 5,
+      "width": 192,
+      "height": 192,
+      "pngUrl": "frames/0005.png"
+    },
+    {
+      "index": 6,
+      "width": 192,
+      "height": 192,
+      "pngUrl": "frames/0006.png"
+    },
+    {
+      "index": 7,
+      "width": 192,
+      "height": 192,
+      "pngUrl": "frames/0007.png"
+    }
+  ],
+  "variants": [
+    {
+      "index": 0,
+      "startFrame": 0,
+      "frameCount": 8,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "sheetUrl": "variants/00.png",
+      "transparentSheetUrl": "variants/00.png",
+      "transparentFrameUrls": [
+        "frames/0000.png",
+        "frames/0001.png",
+        "frames/0002.png",
+        "frames/0003.png",
+        "frames/0004.png",
+        "frames/0005.png",
+        "frames/0006.png",
+        "frames/0007.png"
+      ]
+    }
+  ],
+  "schemaVersion": "bunfirvil-skill-effect-v1"
+}

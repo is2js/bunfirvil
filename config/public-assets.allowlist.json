@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "policyType": "maintainer-reviewed-publication-allowlist",
+  "policyVersion": "2026-08-27.1",
+  "statement": "Operational publication approval maintained by the project maintainer; this inventory is not legal proof of ownership or redistribution rights.",
+  "legalRightsProof": false,
+  "defaultDecision": "deny",
+  "deniedCategories": [
+    "external",
+    "unresolved",
+    "rights-unknown",
+    "reference",
+    "audit",
+    "draft",
+    "database",
+    "environment",
+    "user-identity"
+  ],
+  "approvedCategories": [
+    {
+      "id": "bundang-map-runtime",
+      "decision": "approve",
+      "rightsClass": "maintainer-reviewed-project-asset",
+      "sourceRules": [
+        {
+          "bases": [
+            "assets/rpg/worlds/bundang-first-village-51a-prototype",
+            "assets/rpg/worlds/bundang-first-village-55a-prototype",
+            "assets/rpg/worlds/bundang-first-village-55b-prototype",
+            "assets/rpg/worlds/bundang-first-village-59a-prototype"
+          ],
+          "files": ["manifest.json", "content.json", "minimap.png"]
+        },
+        {
+          "bases": [
+            "assets/rpg/worlds/bundang-first-village-51a-prototype",
+            "assets/rpg/worlds/bundang-first-village-55a-prototype",
+            "assets/rpg/worlds/bundang-first-village-55b-prototype",
+            "assets/rpg/worlds/bundang-first-village-59a-prototype"
+          ],
+          "template": "chunks/{x}-{y}.json",
+          "variables": { "x": ["0", "1", "2", "3"], "y": ["0", "1", "2", "3"] }
+        },
+        {
+          "bases": [
+            "assets/rpg/worlds/bundang-first-village-51a-prototype",
+            "assets/rpg/worlds/bundang-first-village-55a-prototype",
+            "assets/rpg/worlds/bundang-first-village-55b-prototype",
+            "assets/rpg/worlds/bundang-first-village-59a-prototype"
+          ],
+          "template": "minimap/{x}-{y}.png",
+          "variables": { "x": ["0", "1"], "y": ["0", "1"] }
+        }
+      ]
+    },
+    {
+      "id": "character-runtime-sheets",
+      "decision": "approve",
+      "rightsClass": "maintainer-reviewed-project-asset",
+      "sourceRules": [
+        {
+          "bases": ["assets/characters/100", "assets/characters/200"],
+          "files": [
+            "animation.json",
+            "sheets/idle/normal.png",
+            "sheets/walk/normal.png",
+            "sheets/attack/fist1.png",
+            "sheets/attack/bow.png",
+            "sheets/attack/sword.png",
+            "sheets/attack/throw.png",
+            "sheets/cast/normal.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "selected-skill-effects",
+      "decision": "approve",
+      "rightsClass": "maintainer-reviewed-project-asset",
+      "sourceRules": [
+        {
+          "bases": ["assets/rpg/skills/effects/rpg/shock-stun"],
+          "files": ["manifest.json"]
+        },
+        {
+          "bases": ["assets/rpg/effects/status/shock-stun"],
+          "files": ["shock-stun-star-orbit.png"]
+        },
+        {
+          "bases": ["assets/rpg/skills/effects/rpg/summoned-bow-energy-projectile"],
+          "files": ["manifest.json"],
+          "template": "variants/{direction}.png",
+          "variables": { "direction": ["n", "ne", "e", "se", "s", "sw", "w", "nw"] }
+        },
+        {
+          "bases": ["assets/rpg/skills/effects/rpg/summoned-bow-energy-overlay"],
+          "files": ["manifest.json"],
+          "template": "variants/{direction}-{layer}.png",
+          "variables": {
+            "direction": ["n", "ne", "e", "se", "s", "sw", "w", "nw"],
+            "layer": ["front", "back"]
+          }
+        },
+        {
+          "bases": ["assets/rpg/skills/effects/rpg/teleport-origin"],
+          "files": ["manifest.json", "variants/00.png"],
+          "template": "frames/{frame}.png",
+          "variables": { "frame": ["0000", "0001", "0002", "0003", "0004", "0005", "0006", "0007"] }
+        }
+      ]
+    },
+    {
+      "id": "bundang-neutral-material-fallbacks",
+      "decision": "approve",
+      "rightsClass": "maintainer-reviewed-project-asset",
+      "sourceRules": [
+        {
+          "bases": ["assets/rpg/worlds/bundang-first-village-55b-prototype/materials"],
+          "files": [
+            "materials.json",
+            "bundang-55b-greige-oak-v1.webp",
+            "bundang-55b-warm-gray-wall-v1.webp",
+            "bundang-55b-gray-grout-tile-v1.webp"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bundang-option-metadata",
+      "decision": "approve",
+      "rightsClass": "maintainer-reviewed-project-source",
+      "sourceRules": [
+        {
+          "bases": ["src/rpg"],
+          "files": ["bundang-apartment-options.mjs"]
+        }
+      ]
+    }
+  ]
+}
