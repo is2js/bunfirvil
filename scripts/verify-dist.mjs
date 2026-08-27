@@ -418,7 +418,8 @@ async function verifyCatalog(distRoot, failures) {
   if (!Array.isArray(catalog.maps) || catalog.maps.length !== 4) failures.push("catalog에는 정확히 4개 검수맵이 필요합니다.");
   if (!Array.isArray(catalog.characters) || catalog.characters.length !== 2) failures.push("catalog에는 정확히 2개 캐릭터가 필요합니다.");
   if (!Array.isArray(catalog.skills) || catalog.skills.length !== 3) failures.push("catalog에는 정확히 3개 스킬이 필요합니다.");
-  if (!Array.isArray(catalog.defaultHotbar) || catalog.defaultHotbar.length !== 8) failures.push("catalog.defaultHotbar는 8칸이어야 합니다.");
+  if (!Array.isArray(catalog.defaultHotbar) || catalog.defaultHotbar.length !== 4) failures.push("catalog.defaultHotbar는 4칸이어야 합니다.");
+  if (catalog.defaultHotbar?.[0] !== "common-teleport") failures.push("catalog.defaultHotbar 1번은 텔레포트여야 합니다.");
   if (!Array.isArray(catalog.bOptions) || catalog.bOptions.length !== 41) failures.push("catalog.bOptions에는 41개 옵션이 필요합니다.");
   const optionPreviewUrls = (catalog.bOptions || []).map((option) => option?.previewUrl).filter(Boolean);
   if (optionPreviewUrls.length !== 41) failures.push("41개 B옵션 모두 versioned previewUrl이 필요합니다.");

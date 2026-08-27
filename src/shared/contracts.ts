@@ -71,10 +71,6 @@ export interface ShowcaseCatalogV1 {
     ActionId,
     ActionId,
     ActionId,
-    null,
-    null,
-    null,
-    null,
   ];
   bOptions: BOptionEntryV1[];
   renderAssets?: {

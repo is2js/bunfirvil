@@ -60,14 +60,14 @@ export function createFallbackCatalog(): ShowcaseCatalog {
       {
         id: 'common-teleport',
         label: '텔레포트',
-        description: '인접한 통과 가능 셀로 순간 이동합니다.',
+        description: '마우스 커서가 가리키는 통과 가능 셀로 순간 이동합니다.',
         iconUrl: '',
         effectUrls: [],
         cooldownMs: 4_000,
         manaCost: 25,
       },
     ],
-    defaultHotbar: ['basic-attack', 'warrior-shock-stun', 'common-double-arrow', 'common-teleport', null, null, null, null],
+    defaultHotbar: ['common-teleport', 'basic-attack', 'warrior-shock-stun', 'common-double-arrow'],
     bOptions: fallbackOptions(),
     renderAssets: undefined,
   };
@@ -294,8 +294,8 @@ export async function loadCatalog(): Promise<{ catalog: ShowcaseCatalog; fallbac
 
 export function normalizeHotbar(value: unknown): Array<string | null> {
   const source = Array.isArray(value) ? value : [];
-  const normalized = source.slice(0, 8).map((item) => (typeof item === 'string' && item.trim() ? item : null));
-  while (normalized.length < 8) normalized.push(null);
+  const normalized = source.slice(0, 4).map((item) => (typeof item === 'string' && item.trim() ? item : null));
+  while (normalized.length < 4) normalized.push(null);
   return normalized;
 }
 

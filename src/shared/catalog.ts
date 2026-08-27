@@ -24,8 +24,11 @@ export function validateCatalog(value: unknown): ShowcaseCatalogV1 {
   if (!Array.isArray(catalog.skills) || catalog.skills.length !== 3) {
     throw new Error("선별 스킬 3종이 필요합니다.");
   }
-  if (!Array.isArray(catalog.defaultHotbar) || catalog.defaultHotbar.length !== 8) {
-    throw new Error("기본 핫바는 8칸이어야 합니다.");
+  if (!Array.isArray(catalog.defaultHotbar) || catalog.defaultHotbar.length !== 4) {
+    throw new Error("기본 핫바는 4칸이어야 합니다.");
+  }
+  if (catalog.defaultHotbar[0] !== "common-teleport") {
+    throw new Error("기본 핫바 1번은 텔레포트여야 합니다.");
   }
   if (!Array.isArray(catalog.bOptions)) {
     catalog.bOptions = [];

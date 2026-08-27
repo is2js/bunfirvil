@@ -65,15 +65,19 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
 
   const actor100 = page.locator('.rpg-actor[data-actor="100"]');
   const actor200 = page.locator('.rpg-actor[data-actor="200"]');
+  const hotbarSlots = page.locator("#hotbar .hotbar-slot");
+  await expect(hotbarSlots).toHaveCount(4);
+  await expect(hotbarSlots.nth(0)).toHaveAttribute("data-skill-id", "common-teleport");
+  await expect(hotbarSlots.nth(1)).toHaveAttribute("data-skill-id", "basic-attack");
   await page.getByRole("button", { name: "100", exact: true }).click();
   await expect(page.locator("#active-actor-label")).toHaveText("남자의료진");
   await observeNextMotion(actor100, "attack");
-  await page.getByRole("button", { name: "1번 기본 공격" }).click();
+  await page.getByRole("button", { name: "2번 기본 공격" }).click();
   await expect(actor100).toHaveAttribute("data-observed-motion", "attack");
 
   await page.getByRole("button", { name: "200", exact: true }).click();
   await expect(page.locator("#active-actor-label")).toHaveText("여자의료진");
-  expect(await actor200.locator(".actor-sprite").evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBeGreaterThanOrEqual(110);
+  expect(await actor200.locator(".actor-sprite").evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBe(96);
   await expect(page.locator("#game-stage")).toHaveAttribute("data-movement-interval-ms", "420");
   const startX = Number(await actor200.getAttribute("data-world-x"));
   const startY = Number(await actor200.getAttribute("data-world-y"));
@@ -87,7 +91,7 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   expect(endX - startX).toBeGreaterThanOrEqual(1);
   expect(startY - endY).toBe(endX - startX);
   await observeNextMotion(actor200, "cast");
-  await page.getByRole("button", { name: "2번 쇼크스턴" }).click();
+  await page.getByRole("button", { name: "3번 쇼크스턴" }).click();
   await expect(actor200).toHaveAttribute("data-observed-motion", "cast");
 
   const originalSkillIcons = page.locator('#hotbar .hotbar-slot[data-skill-id]:not([data-skill-id="basic-attack"]):not([data-skill-id=""]) img');
@@ -97,19 +101,35 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   }
 
   await observeNextMotion(actor200, "attack");
-  await page.keyboard.press("Digit3");
-  await expect(actor200).toHaveAttribute("data-observed-motion", "attack");
-  await observeNextMotion(actor200, "cast");
   await page.keyboard.press("Digit4");
-  await expect(actor200).toHaveAttribute("data-observed-motion", "cast");
+  await expect(actor200).toHaveAttribute("data-observed-motion", "attack");
 
-  const firstSlot = page.locator('#hotbar [data-slot="0"]');
-  const eighthSlot = page.locator('#hotbar [data-slot="7"]');
-  await expect(firstSlot).toHaveAttribute("data-skill-id", "basic-attack");
-  await firstSlot.dragTo(eighthSlot);
-  await expect(firstSlot).toHaveAttribute("data-skill-id", "");
-  await expect(eighthSlot).toHaveAttribute("data-skill-id", "basic-attack");
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("bunfirvil:hotbar:v1") || "[]")[7])).toBe("basic-attack");
+  const stageBounds = await page.locator("#game-stage").boundingBox();
+  expect(stageBounds).not.toBeNull();
+  const beforeNumberTeleport = {
+    x: Number(await actor200.getAttribute("data-world-x")),
+    y: Number(await actor200.getAttribute("data-world-y")),
+  };
+  await page.mouse.move(stageBounds!.x + stageBounds!.width * 0.7, stageBounds!.y + stageBounds!.height * 0.42);
+  await observeNextMotion(actor200, "cast");
+  await page.keyboard.press("Digit1");
+  await expect(actor200).toHaveAttribute("data-observed-motion", "cast");
+  await expect.poll(async () => `${await actor200.getAttribute("data-world-x")},${await actor200.getAttribute("data-world-y")}`)
+    .not.toBe(`${beforeNumberTeleport.x},${beforeNumberTeleport.y}`);
+
+  const beforeWheelTeleport = `${await actor200.getAttribute("data-world-x")},${await actor200.getAttribute("data-world-y")}`;
+  await page.mouse.move(stageBounds!.x + stageBounds!.width * 0.32, stageBounds!.y + stageBounds!.height * 0.52);
+  await page.mouse.down({ button: "middle" });
+  await page.mouse.up({ button: "middle" });
+  await expect.poll(async () => `${await actor200.getAttribute("data-world-x")},${await actor200.getAttribute("data-world-y")}`)
+    .not.toBe(beforeWheelTeleport);
+
+  const secondSlot = page.locator('#hotbar [data-slot="1"]');
+  const fourthSlot = page.locator('#hotbar [data-slot="3"]');
+  await secondSlot.dragTo(fourthSlot);
+  await expect(secondSlot).toHaveAttribute("data-skill-id", "common-double-arrow");
+  await expect(fourthSlot).toHaveAttribute("data-skill-id", "basic-attack");
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("bunfirvil:hotbar:v1") || "[]")[3])).toBe("basic-attack");
 
   const firstOption = page.locator('.option-card input[type="checkbox"]').first();
   const firstOptionPreview = page.locator(".option-card .option-preview img").first();
@@ -130,7 +150,7 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(page.getByLabel("검수맵 선택")).toHaveValue(savedMapId);
   await expect(page.locator(`#option-list input[data-option-id="${firstOptionId}"]`)).toBeChecked();
   await expect(page.locator("#option-total")).toHaveText(savedQuote);
-  await expect(page.locator('#hotbar [data-slot="7"]')).toHaveAttribute("data-skill-id", "basic-attack");
+  await expect(page.locator('#hotbar [data-slot="3"]')).toHaveAttribute("data-skill-id", "basic-attack");
 
   await page.goto("manage/");
   await expect(page.locator("#loadingState")).toBeHidden();

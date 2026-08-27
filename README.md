@@ -14,7 +14,7 @@
 - 원본 Three.js 소품 레시피 83종과 Blender GLB 중간 LOD 5종
 - 캐릭터 에셋 키 100·200
 - 기본 공격, 쇼크스턴, 더블애로우, 텔레포트와 원본 스킬 아이콘·효과
-- 인게임 CSS 형태를 옮긴 8칸 로컬 핫바, B옵션 팔레트와 견적·소품 갱신
+- 인게임 CSS 형태를 옮긴 4칸 로컬 핫바, 커서 텔레포트, B옵션 팔레트와 견적·소품 갱신
 - FPS·p95 frame time·렌더러·활성 chunk·자산 캐시 표시
 - 맵별 로컬 검수 상태, 메모, 옵션 조합, JSON 백업·복원
 
@@ -59,7 +59,7 @@ npm run sync:assets -- --source ../pvp
 
 ## 현재 원본 snapshot
 
-- export ID: `5847f2bc6867-dirty-7942dc85bf92`
+- export ID: `5847f2bc6867-dirty-5ab1342c3e1c`
 - PVP HEAD: `5847f2bc68678bdb8fe65d3a5399018f3fae1284`
 - 작업 트리 상태: `dirty` 선별 snapshot
 - canonical pointer: [`public/generated/current.json`](public/generated/current.json)
@@ -79,7 +79,7 @@ npm run sync:assets -- --source ../pvp
 - 사용자·작업자 식별자와 절대 로컬 경로
 - 재배포 권리를 확인하지 못한 외부 자산
 
-원본 런타임의 raster `hud_bottom.png`는 출처가 프로젝트 밖으로 연결되어 공개본에서 제외했습니다. 대신 같은 런타임의 4+4 슬롯 배치, 크기, 간격, 키 표기와 쿨다운 형태를 CSS로 옮겼습니다.
+원본 런타임의 raster `hud_bottom.png`는 출처가 프로젝트 밖으로 연결되어 공개본에서 제외했습니다. 대신 같은 런타임의 슬롯 크기, 간격, 키 표기와 쿨다운 형태를 CSS로 옮기고 서버리스 데모 액션 4개만 남겼습니다.
 
 GitHub Pages에 포함된 파일은 누구나 내려받을 수 있습니다. `operatorOnly`나 `privateMap` 같은 원본 서버 플래그를 보안 경계로 사용하지 않습니다.
 

@@ -16,7 +16,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const EXPORTER_VERSION = "bunfirvil-static-export-v3";
+const EXPORTER_VERSION = "bunfirvil-static-export-v4";
 const EXPORTER_FILE = fileURLToPath(import.meta.url);
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_ROOT = path.join(PROJECT_ROOT, "public");
@@ -85,7 +85,7 @@ const SKILLS = Object.freeze([
   Object.freeze({
     id: "common-teleport",
     name: "텔레포트",
-    description: "로컬 맵의 이동 가능한 셀로 순간이동하고 효과를 재생합니다.",
+    description: "마우스 커서가 가리키는 이동 가능한 셀로 순간이동하고 효과를 재생합니다.",
     icon: Object.freeze({
       source: "assets/rpg/skills/icons/regenerated/lk/053.png",
       output: "icons/teleport.png",
@@ -1383,7 +1383,7 @@ async function main() {
       cooldownMs: skill.cooldownMs,
       manaCost: 0,
     })),
-    defaultHotbar: ["basic-attack", "warrior-shock-stun", "common-double-arrow", "common-teleport", null, null, null, null],
+    defaultHotbar: ["common-teleport", "basic-attack", "warrior-shock-stun", "common-double-arrow"],
     bOptions: stableOptions,
     renderAssets: {
       interiorCatalogUrl: addPrefix("interior/catalog.json"),

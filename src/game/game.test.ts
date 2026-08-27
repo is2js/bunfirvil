@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeHotbar } from './catalog';
 import { resolveEffectSource, selectEffectVariant, type EffectManifest } from './effect-player';
-import { reorderHotbar } from './hotbar';
+import { readHotbar, reorderHotbar } from './hotbar';
 import { applyOptionToggle, calculateOptionPrice } from './options';
 import type { BOptionEntry } from './types';
-import { expandTileRuns } from './world';
+import { canTraverse, crossesApartmentWall, expandTileRuns } from './world';
+import type { WorldData, WorldObject } from './types';
 
 const options: BOptionEntry[] = [
   {
@@ -83,11 +84,40 @@ describe('game-local state helpers', () => {
       .toBe('https://example.test/effects/variants/n.png');
   });
 
-  it('normalizes and reorders an eight-slot hotbar', () => {
+  it('normalizes and reorders a four-slot hotbar', () => {
     const slots = normalizeHotbar(['basic-attack', '', 'common-teleport']);
-    expect(slots).toHaveLength(8);
-    expect(slots).toEqual(['basic-attack', null, 'common-teleport', null, null, null, null, null]);
-    expect(reorderHotbar(slots, 0, 7)).toEqual([null, null, 'common-teleport', null, null, null, null, 'basic-attack']);
+    expect(slots).toHaveLength(4);
+    expect(slots).toEqual(['basic-attack', null, 'common-teleport', null]);
+    expect(reorderHotbar(slots, 0, 3)).toEqual([null, null, 'common-teleport', 'basic-attack']);
+  });
+
+  it('migrates the legacy eight-slot browser value to the new teleport-first default', () => {
+    const legacyStorage = {
+      getItem: () => JSON.stringify(['basic-attack', 'warrior-shock-stun', 'common-double-arrow', 'common-teleport', null, null, null, null]),
+    } as unknown as Storage;
+    const currentDefault = ['common-teleport', 'basic-attack', 'warrior-shock-stun', 'common-double-arrow'];
+    expect(readHotbar(currentDefault, legacyStorage)).toEqual(currentDefault);
+  });
+
+  it('blocks diagonal corner cutting and movement across apartment wall segments', () => {
+    const wallObject: WorldObject = {
+      originCell: { x: 0, y: 0 },
+      geometry: {
+        cellSizeMeters: 1,
+        wallSegments: [{ a: [1, 0], b: [1, 2], baseMeters: 0 }],
+      },
+    };
+    expect(crossesApartmentWall([wallObject], 0, 1, 2, 1)).toBe(true);
+    expect(crossesApartmentWall([wallObject], 0, 2.5, 2, 2.5)).toBe(false);
+
+    const cornerWorld = {
+      width: 4,
+      height: 4,
+      blocked: new Set(['1,0']),
+      objects: [],
+    } as unknown as WorldData;
+    expect(canTraverse(cornerWorld, 0, 0, 1, 1)).toBe(false);
+    expect(canTraverse({ ...cornerWorld, blocked: new Set() }, 0, 0, 1, 1)).toBe(true);
   });
 
   it('adds requirements and removes mutually exclusive B options', () => {

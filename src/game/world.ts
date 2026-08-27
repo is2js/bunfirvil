@@ -277,6 +277,14 @@ export class IsometricWorldRenderer {
     };
   }
 
+  unproject(x: number, y: number): ProjectedPoint {
+    const cameraX = (this.camera.x - this.camera.y) * (this.tileWidth / 2);
+    const cameraY = (this.camera.x + this.camera.y) * (this.tileHeight / 2);
+    const difference = (x - this.cssWidth * 0.48 + cameraX) / (this.tileWidth / 2);
+    const sum = (y - this.cssHeight * 0.47 + cameraY) / (this.tileHeight / 2);
+    return { x: (sum + difference) / 2, y: (sum - difference) / 2 };
+  }
+
   private resize(): number {
     const bounds = this.canvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -459,6 +467,85 @@ export function isWalkable(world: WorldData | null, x: number, y: number): boole
     roundedY < world.height &&
     !world.blocked.has(cellKey(roundedX, roundedY))
   );
+}
+
+interface CollisionPoint {
+  x: number;
+  y: number;
+}
+
+function finite(value: unknown, fallback = 0): number {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function worldCollisionPoint(object: WorldObject, value: unknown): CollisionPoint | null {
+  if (!Array.isArray(value) || value.length < 2) return null;
+  const sourceX = finite(value[0]);
+  const sourceY = finite(value[1]);
+  const transform = object.transform || {};
+  const mirrorX = transform.mirrorX ? -sourceX : sourceX;
+  const mirrorY = transform.mirrorY ? -sourceY : sourceY;
+  const radians = finite(transform.rotationDeg) * Math.PI / 180;
+  const localX = mirrorX * Math.cos(radians) - mirrorY * Math.sin(radians);
+  const localY = mirrorX * Math.sin(radians) + mirrorY * Math.cos(radians);
+  const cellSize = Math.max(0.01, finite(object.geometry?.cellSizeMeters, 0.5));
+  return {
+    x: finite(object.originCell?.x, finite(object.x)) + localX / cellSize,
+    y: finite(object.originCell?.y, finite(object.y)) + localY / cellSize,
+  };
+}
+
+function movementIntersectsWall(
+  from: CollisionPoint,
+  to: CollisionPoint,
+  wallStart: CollisionPoint,
+  wallEnd: CollisionPoint,
+): boolean {
+  const moveX = to.x - from.x;
+  const moveY = to.y - from.y;
+  const wallX = wallEnd.x - wallStart.x;
+  const wallY = wallEnd.y - wallStart.y;
+  const denominator = moveX * wallY - moveY * wallX;
+  if (Math.abs(denominator) < 1e-7) return false;
+  const offsetX = wallStart.x - from.x;
+  const offsetY = wallStart.y - from.y;
+  const moveRatio = (offsetX * wallY - offsetY * wallX) / denominator;
+  const wallRatio = (offsetX * moveY - offsetY * moveX) / denominator;
+  return moveRatio > 0.02 && moveRatio < 0.98 && wallRatio >= -0.01 && wallRatio <= 1.01;
+}
+
+export function crossesApartmentWall(
+  objects: WorldObject[],
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+): boolean {
+  const from = { x: fromX, y: fromY };
+  const to = { x: toX, y: toY };
+  for (const object of objects) {
+    for (const value of object.geometry?.wallSegments || []) {
+      const segment = value as Record<string, unknown>;
+      // 문틀 상부처럼 바닥에서 떠 있는 벽 조각은 통행을 막지 않는다.
+      if (finite(segment.baseMeters) > 0.35) continue;
+      const wallStart = worldCollisionPoint(object, segment.a);
+      const wallEnd = worldCollisionPoint(object, segment.b);
+      if (wallStart && wallEnd && movementIntersectsWall(from, to, wallStart, wallEnd)) return true;
+    }
+  }
+  return false;
+}
+
+export function canTraverse(world: WorldData | null, fromX: number, fromY: number, toX: number, toY: number): boolean {
+  if (!world || !isWalkable(world, toX, toY)) return false;
+  const deltaX = Math.round(toX - fromX);
+  const deltaY = Math.round(toY - fromY);
+  if (Math.abs(deltaX) === 1 && Math.abs(deltaY) === 1) {
+    // 화면상 동서남북도 world grid에서는 대각선이므로 벽 모서리 사이를 비집고 지나가지 못하게 한다.
+    if (!isWalkable(world, fromX + deltaX, fromY) || !isWalkable(world, fromX, fromY + deltaY)) return false;
+  }
+  return !crossesApartmentWall(world.objects, fromX, fromY, toX, toY);
 }
 
 export function nearestWalkable(world: WorldData, x: number, y: number): { x: number; y: number } {

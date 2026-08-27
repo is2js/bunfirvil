@@ -30,7 +30,7 @@ const validCatalog = {
     { id: "common-double-arrow" },
     { id: "common-teleport" },
   ],
-  defaultHotbar: ["basic-attack", "warrior-shock-stun", "common-double-arrow", "common-teleport", null, null, null, null],
+  defaultHotbar: ["common-teleport", "basic-attack", "warrior-shock-stun", "common-double-arrow"],
   bOptions: [],
 };
 

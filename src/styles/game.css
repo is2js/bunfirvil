@@ -506,11 +506,11 @@ input:focus-visible {
 }
 
 .actor-sprite {
-  width: 110px;
-  height: 110px;
+  width: 96px;
+  height: 96px;
   position: absolute;
-  left: -7px;
-  top: -15px;
+  left: 0;
+  top: -2px;
   display: grid;
   place-items: center;
   background-repeat: no-repeat;
@@ -1073,7 +1073,7 @@ input:focus-visible {
   transform: translate(-50%, -50%);
 }
 
-/* /play/runtime의 50px 4+4 전투 핫바 계약을 서버리스 데모에도 그대로 사용한다. */
+/* /play/runtime의 50px 슬롯 형태를 유지하되 데모 액션 4개만 노출한다. */
 .stage-scanlines { display: none; }
 
 .game-stage {
@@ -1086,7 +1086,7 @@ input:focus-visible {
   left: auto;
   right: 22px;
   bottom: 22px;
-  width: 456px;
+  width: 215px;
   height: 62px;
   padding: 4px 0 8px;
   border: 0;
@@ -1100,10 +1100,10 @@ input:focus-visible {
 .active-actor-card { display: none; }
 
 .hotbar {
-  width: 456px;
+  width: 215px;
   height: 62px;
   display: grid;
-  grid-template-columns: repeat(4, 50px) 16px repeat(4, 50px);
+  grid-template-columns: repeat(4, 50px);
   gap: 5px;
   overflow: visible;
 }
@@ -1127,8 +1127,6 @@ input:focus-visible {
   transform: translateZ(0);
   transition: border-color 90ms linear, box-shadow 90ms linear, filter 90ms linear, transform 70ms linear;
 }
-
-.hotbar-slot[data-slot="4"] { grid-column: 6; }
 
 .hotbar-slot::before {
   content: "";
@@ -1604,7 +1602,7 @@ input:focus-visible {
   .map-identity > div { max-width: 145px; }
   .active-actor-card { display: none; }
   .combat-dock { height: 72px; bottom: 8px; padding: 7px; overflow-x: auto; justify-content: flex-start; }
-  .hotbar { min-width: 408px; }
+  .hotbar { min-width: 203px; }
   .hotbar-slot { width: 47px; height: 55px; }
   .stage-tip { bottom: 88px; }
   .option-list { display: flex; max-height: 420px; }

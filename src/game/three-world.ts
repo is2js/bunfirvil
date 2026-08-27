@@ -225,6 +225,20 @@ export class ThreeWorldRenderer {
     return { x: (vector.x * 0.5 + 0.5) * this.cssWidth, y: (-vector.y * 0.5 + 0.5) * this.cssHeight };
   }
 
+  unproject(x: number, y: number): ProjectedPoint | null {
+    if (!this.world) return null;
+    this.resize();
+    this.camera.updateMatrixWorld();
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2((x / this.cssWidth) * 2 - 1, 1 - (y / this.cssHeight) * 2), this.camera);
+    const intersection = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), intersection)) return null;
+    return {
+      x: intersection.x + this.world.width / 2 - 0.5,
+      y: intersection.z + this.world.height / 2 - 0.5,
+    };
+  }
+
   render(): void {
     this.resize();
     this.renderer.render(this.scene, this.camera);

@@ -25,7 +25,7 @@ import type {
   StaticSkillEntry,
   WorldData,
 } from './types';
-import { IsometricWorldRenderer, isWalkable, loadWorld, nearestWalkable } from './world';
+import { IsometricWorldRenderer, canTraverse, isWalkable, loadWorld, nearestWalkable } from './world';
 
 const numberFormat = new Intl.NumberFormat('ko-KR');
 // 원본 RPG의 기본 walk/movement duration과 동일한 한 cell cadence.
@@ -36,6 +36,7 @@ interface WorldRendererPort {
   setSelectedOptions(optionIds: string[]): void;
   follow(target: ActorState, smoothing?: number): void;
   project(x: number, y: number): { x: number; y: number };
+  unproject(x: number, y: number): { x: number; y: number } | null;
   render(time: number): void;
 }
 
@@ -91,6 +92,7 @@ export class ShowcaseApp {
   private readonly frameMetrics = new FrameMetrics();
   private readonly abortController = new AbortController();
   private selectedOptionIds: string[] = [];
+  private cursorScreenPoint: { x: number; y: number } | null = null;
   private optionCategory = '전체';
   private animationFrame = 0;
   private lastMoveAt = 0;
@@ -290,7 +292,7 @@ export class ShowcaseApp {
           <h2>로컬 렌더 랩 조작법</h2>
           <div class="help-grid">
             <div><span class="help-icon">⌨</span><b>캐릭터 이동</b><p>WASD 또는 방향키로 8방향 이동합니다. 정적 chunk의 막힌 셀은 통과하지 않습니다.</p></div>
-            <div><span class="help-icon">1–8</span><b>스킬 재생</b><p>숫자키 또는 핫바 클릭으로 모션과 효과를 재생합니다. 슬롯은 드래그해 맞바꿀 수 있습니다.</p></div>
+            <div><span class="help-icon">1–4</span><b>스킬 재생</b><p>1번 또는 휠 클릭은 현재 커서 위치로 텔레포트합니다. 2–4번은 전투 모션과 효과를 재생하며 슬롯은 드래그해 맞바꿀 수 있습니다.</p></div>
             <div><span class="help-icon">B</span><b>옵션 프리뷰</b><p>B팔레트 선택은 맵의 미리보기 프롭과 견적에 반영되고 이 브라우저에 저장됩니다.</p></div>
           </div>
           <p class="dialog-note">이 사이트는 시각·성능 검수용입니다. 피해, 명중, MP, 사용자 인증과 공용 저장은 처리하지 않습니다.</p>
@@ -349,9 +351,9 @@ export class ShowcaseApp {
     window.addEventListener('keydown', (event) => {
       if (isFormTarget(event.target)) return;
       const key = event.key.toLowerCase();
-      if (/^[1-8]$/.test(key)) {
+      if (/^[1-4]$/.test(key)) {
         event.preventDefault();
-        this.activateHotbarSlot(Number(key) - 1);
+        this.activateHotbarSlot(Number(key) - 1, this.cursorScreenPoint);
         return;
       }
       if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
@@ -361,6 +363,30 @@ export class ShowcaseApp {
     }, { signal });
     window.addEventListener('keyup', (event) => this.pressedKeys.delete(event.key.toLowerCase()), { signal });
     window.addEventListener('blur', () => this.pressedKeys.clear(), { signal });
+    const stage = this.get<HTMLElement>('#game-stage');
+    stage.addEventListener('pointermove', (event) => {
+      this.cursorScreenPoint = this.screenPoint(event.clientX, event.clientY);
+    }, { signal });
+    stage.addEventListener('pointerdown', (event) => {
+      if (event.button !== 1) return;
+      event.preventDefault();
+      const point = this.screenPoint(event.clientX, event.clientY);
+      if (point) this.activateSkill('common-teleport', point, true);
+    }, { signal });
+    stage.addEventListener('auxclick', (event) => {
+      if (event.button === 1) event.preventDefault();
+    }, { signal });
+  }
+
+  private screenPoint(clientX: number, clientY: number): { x: number; y: number } | null {
+    const canvas = this.renderer === this.threeRenderer
+      ? this.get<HTMLCanvasElement>('#three-world-canvas')
+      : this.get<HTMLCanvasElement>('#world-canvas');
+    const bounds = canvas.getBoundingClientRect();
+    const x = clientX - bounds.left;
+    const y = clientY - bounds.top;
+    if (x < 0 || y < 0 || x > bounds.width || y > bounds.height) return null;
+    return { x, y };
   }
 
   private async selectMap(mapId: string, updateUrl = true): Promise<void> {
@@ -472,7 +498,7 @@ export class ShowcaseApp {
       .join('');
 
     element.querySelectorAll<HTMLButtonElement>('.hotbar-slot').forEach((slot) => {
-      slot.addEventListener('click', () => this.activateHotbarSlot(Number(slot.dataset.slot)), { signal: this.abortController.signal });
+      slot.addEventListener('click', () => this.activateHotbarSlot(Number(slot.dataset.slot), this.cursorScreenPoint), { signal: this.abortController.signal });
       slot.addEventListener('dragstart', (event) => {
         event.dataTransfer?.setData('text/plain', slot.dataset.slot || '');
         event.dataTransfer?.setDragImage(slot, slot.clientWidth / 2, slot.clientHeight / 2);
@@ -512,20 +538,37 @@ export class ShowcaseApp {
     };
   }
 
-  private activateHotbarSlot(index: number): void {
+  private activateHotbarSlot(index: number, target: { x: number; y: number } | null = null): void {
     const skillId = this.hotbar[index];
     if (!skillId) {
       this.toast(`${index + 1}번 슬롯이 비어 있습니다.`, 'notice');
       return;
     }
-    this.activateSkill(skillId);
+    this.activateSkill(skillId, target);
   }
 
-  private activateSkill(skillId: string): void {
+  private activateSkill(skillId: string, target: { x: number; y: number } | null = null, ignoreCooldown = false): void {
+    let teleportDestination: { x: number; y: number } | null = null;
+    if (skillId === 'common-teleport') {
+      if (!this.world || !target) {
+        this.toast('맵 위에 마우스 커서를 둔 뒤 텔레포트하세요.', 'notice');
+        return;
+      }
+      const worldPoint = this.renderer.unproject(target.x, target.y);
+      if (!worldPoint) {
+        this.toast('현재 커서 위치의 월드 좌표를 찾지 못했습니다.', 'notice');
+        return;
+      }
+      teleportDestination = nearestWalkable(this.world, worldPoint.x, worldPoint.y);
+      if (!isWalkable(this.world, teleportDestination.x, teleportDestination.y)) {
+        this.toast('해당 위치로 텔레포트할 수 없습니다.', 'notice');
+        return;
+      }
+    }
     const now = performance.now();
     const skill = this.skillById(skillId);
     const remaining = (this.cooldowns.get(skillId) || 0) - now;
-    if (remaining > 0) {
+    if (!ignoreCooldown && remaining > 0) {
       this.toast(`${skill.label} 준비 중 · ${(remaining / 1_000).toFixed(1)}초`, 'notice');
       return;
     }
@@ -535,15 +578,17 @@ export class ShowcaseApp {
     actor.motion = skillId === 'basic-attack' || skillId === 'common-double-arrow' ? 'attack' : 'cast';
     actor.motionUntil = now + Math.min(900, Math.max(360, skill.cooldownMs * 0.28));
     actor.moving = false;
-    this.triggerEffect(skillId, actor);
+    this.triggerEffect(skillId, actor, teleportDestination);
     this.toast(`${actor.label} · ${skill.label}`, 'skill');
   }
 
-  private triggerEffect(skillId: string, actor: ActorState): void {
+  private triggerEffect(skillId: string, actor: ActorState, teleportDestination: { x: number; y: number } | null = null): void {
     const layer = this.get<HTMLElement>('#effect-layer');
     const from = this.renderer.project(actor.x, actor.y);
     const other = this.actors.get(actor.key === '100' ? '200' : '100');
-    const to = other ? this.renderer.project(other.x, other.y) : { x: from.x + 110, y: from.y - 22 };
+    const to = teleportDestination
+      ? this.renderer.project(teleportDestination.x, teleportDestination.y)
+      : other ? this.renderer.project(other.x, other.y) : { x: from.x + 110, y: from.y - 22 };
     const manifestUrls = this.catalog.skills.find((skill) => skill.id === skillId)?.effectUrls || [];
     this.effectPlayer.playMany(manifestUrls, {
       direction: actor.direction,
@@ -552,18 +597,12 @@ export class ShowcaseApp {
       target: to,
     });
 
-    if (skillId === 'common-teleport' && this.world) {
+    if (skillId === 'common-teleport' && this.world && teleportDestination) {
       this.spawnEffect('teleport-burst', from.x, from.y, 850);
-      const offsets = [[5, -3], [4, 4], [-4, 3], [-3, -4], [2, -5]];
-      const destination = offsets
-        .map(([dx, dy]) => ({ x: actor.x + dx, y: actor.y + dy }))
-        .find((point) => isWalkable(this.world, point.x, point.y));
-      if (destination) {
-        actor.x = destination.x;
-        actor.y = destination.y;
-        const projected = this.renderer.project(actor.x, actor.y);
-        this.spawnEffect('teleport-burst is-arrival', projected.x, projected.y, 850);
-      }
+      actor.x = teleportDestination.x;
+      actor.y = teleportDestination.y;
+      const projected = this.renderer.project(actor.x, actor.y);
+      this.spawnEffect('teleport-burst is-arrival', projected.x, projected.y, 850);
       return;
     }
 
@@ -688,7 +727,7 @@ export class ShowcaseApp {
     const worldDelta = screenVectorToWorldDelta(horizontal, vertical);
     const nextX = actor.x + worldDelta.dx;
     const nextY = actor.y + worldDelta.dy;
-    if (isWalkable(this.world, nextX, nextY)) {
+    if (canTraverse(this.world, actor.x, actor.y, nextX, nextY)) {
       actor.x = nextX;
       actor.y = nextY;
       actor.moving = true;
