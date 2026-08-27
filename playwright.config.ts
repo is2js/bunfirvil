@@ -6,7 +6,9 @@ export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
   workers: 1,
-  timeout: 90_000,
+  // GitHub's software WebGL runner needs more time than a local GPU for four
+  // full structure rebuilds and the GLB/recipe smoke path.
+  timeout: 180_000,
   reporter: [["list"]],
   use: {
     ...devices["Desktop Chrome"],
