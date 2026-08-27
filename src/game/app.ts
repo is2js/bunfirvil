@@ -6,9 +6,13 @@ import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from
 import { FrameMetrics } from './metrics';
 import {
   applyOptionToggle,
+  adjustSystemAcSelection,
   calculateOptionPrice,
   compatibleOptions,
   readSelectedOptions,
+  systemAcChoice,
+  systemAcChoices,
+  type SystemAcTier,
   writeSelectedOptions,
 } from './options';
 import { ActorView } from './sprite';
@@ -30,6 +34,7 @@ import { IsometricWorldRenderer, canTraverse, isWalkable, loadWorld, nearestWalk
 const numberFormat = new Intl.NumberFormat('ko-KR');
 // 원본 RPG의 기본 walk/movement duration과 동일한 한 cell cadence.
 const MOVEMENT_INTERVAL_MS = 420;
+const TURN_ONLY_HOLD_TO_MOVE_MS = 96;
 
 interface WorldRendererPort {
   setWorld(world: WorldData): void;
@@ -112,6 +117,7 @@ export class ShowcaseApp {
 
     this.renderShell(fallback);
     this.get<HTMLElement>('#game-stage').dataset.movementIntervalMs = String(MOVEMENT_INTERVAL_MS);
+    this.get<HTMLElement>('#game-stage').dataset.cellProjection = '32x24';
     this.canvasRenderer = new IsometricWorldRenderer(this.get<HTMLCanvasElement>('#world-canvas'));
     this.renderer = this.canvasRenderer;
     this.effectPlayer = new ManifestEffectPlayer(this.get<HTMLElement>('#effect-layer'), () => this.trackAsset());
@@ -241,6 +247,12 @@ export class ShowcaseApp {
                 <small>manifest와 chunk를 조합하고 있습니다</small>
               </div>
 
+              <div class="stage-option-quote" aria-label="선택 B옵션과 합계">
+                <div class="stage-option-title"><b>B</b><span>선택 옵션</span><em id="stage-option-count">0개</em></div>
+                <div class="stage-option-chips" id="stage-option-chips"><span>기본 마감</span></div>
+                <strong id="stage-option-total">0<small>원</small></strong>
+              </div>
+
               <div class="combat-dock">
                 <div class="active-actor-card">
                   <span class="portrait portrait--${this.activeActor}" id="active-portrait">${this.activeActor}</span>
@@ -321,6 +333,7 @@ export class ShowcaseApp {
         moving: false,
         displayX: this.currentMap.spawn.x,
         displayY: this.currentMap.spawn.y,
+        turnReadyAt: 0,
         travel: null,
       };
       const view = new ActorView(entry, (key) => this.setActiveActor(key));
@@ -465,6 +478,7 @@ export class ShowcaseApp {
       motionUntil: 0,
       moving: false,
       travel: null,
+      turnReadyAt: 0,
     });
     if (actor200) Object.assign(actor200, second, {
       displayX: second.x,
@@ -475,6 +489,7 @@ export class ShowcaseApp {
       motionUntil: 0,
       moving: false,
       travel: null,
+      turnReadyAt: 0,
     });
   }
 
@@ -688,28 +703,79 @@ export class ShowcaseApp {
     });
 
     const visibleOptions = options.filter((option) => this.optionCategory === '전체' || option.category === this.optionCategory);
+    const renderedOptions = visibleOptions.filter((option) => {
+      const ac = systemAcChoice(option.id);
+      return !ac || ac.count === systemAcChoices(options, ac.tier)[0]?.count;
+    });
     this.get<HTMLElement>('#option-list').innerHTML = visibleOptions.length
-      ? visibleOptions.map((option) => this.optionCard(option, options)).join('')
+      ? renderedOptions.map((option) => {
+          const ac = systemAcChoice(option.id);
+          return ac ? this.systemAcCard(ac.tier, options) : this.optionCard(option, options);
+        }).join('')
       : '<div class="empty-options"><b>이 세대형의 옵션이 없습니다.</b><span>기본 마감 렌더를 확인해 주세요.</span></div>';
 
     this.get<HTMLElement>('#option-list').querySelectorAll<HTMLInputElement>('input[data-option-id]').forEach((input) => {
       input.addEventListener('change', () => {
         this.selectedOptionIds = applyOptionToggle(options, this.selectedOptionIds, input.dataset.optionId || '');
-        writeSelectedOptions(this.currentMap.id, this.selectedOptionIds);
-        this.canvasRenderer.setSelectedOptions(this.selectedOptionIds);
-        this.threeRenderer?.setSelectedOptions(this.selectedOptionIds);
-        this.renderOptions();
-        this.toast('B옵션 프리뷰를 로컬에 저장했습니다.', 'success');
+        this.commitSelectedOptions();
+      }, { signal: this.abortController.signal });
+    });
+    this.get<HTMLElement>('#option-list').querySelectorAll<HTMLButtonElement>('[data-system-ac-adjust]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const tier = button.dataset.systemAcTier as SystemAcTier;
+        const delta = button.dataset.systemAcAdjust === 'increase' ? 1 : -1;
+        this.selectedOptionIds = adjustSystemAcSelection(options, this.selectedOptionIds, tier, delta);
+        this.commitSelectedOptions();
       }, { signal: this.abortController.signal });
     });
 
     const selectedOptions = options.filter((option) => this.selectedOptionIds.includes(option.id));
     this.get<HTMLElement>('#option-count').textContent = String(selectedOptions.length).padStart(2, '0');
     this.get<HTMLElement>('#option-selected-count').textContent = `${selectedOptions.length}개`;
-    this.get<HTMLElement>('#option-total').innerHTML = `${numberFormat.format(calculateOptionPrice(options, this.selectedOptionIds))}<small>원</small>`;
+    const total = calculateOptionPrice(options, this.selectedOptionIds);
+    this.get<HTMLElement>('#option-total').innerHTML = `${numberFormat.format(total)}<small>원</small>`;
     this.get<HTMLElement>('#selected-option-chips').innerHTML = selectedOptions.length
       ? selectedOptions.map((option) => `<span>${escapeHtml(option.label)}</span>`).join('')
       : '<span>기본 마감</span>';
+    this.get<HTMLElement>('#stage-option-count').textContent = `${selectedOptions.length}개`;
+    this.get<HTMLElement>('#stage-option-total').innerHTML = `${numberFormat.format(total)}<small>원</small>`;
+    this.get<HTMLElement>('#stage-option-chips').innerHTML = selectedOptions.length
+      ? selectedOptions.map((option) => `<span><b>${escapeHtml(option.label)}</b><em>+${numberFormat.format(option.price)}원</em></span>`).join('')
+      : '<span><b>기본 마감</b><em>+0원</em></span>';
+  }
+
+  private commitSelectedOptions(): void {
+    writeSelectedOptions(this.currentMap.id, this.selectedOptionIds);
+    this.canvasRenderer.setSelectedOptions(this.selectedOptionIds);
+    this.threeRenderer?.setSelectedOptions(this.selectedOptionIds);
+    this.renderOptions();
+    this.toast('B옵션 프리뷰를 로컬에 저장했습니다.', 'success');
+  }
+
+  private systemAcCard(tier: SystemAcTier, allOptions: BOptionEntry[]): string {
+    const choices = systemAcChoices(allOptions, tier);
+    const active = choices.find((choice) => this.selectedOptionIds.includes(choice.id)) || null;
+    const option = allOptions.find((candidate) => candidate.id === (active?.id || choices[0]?.id));
+    const count = active?.count || 0;
+    const canIncrease = !active || choices.some((choice) => choice.count > active.count);
+    const preview = option?.previewUrl
+      ? `<img src="${escapeHtml(resolveProjectUrl(option.previewUrl))}" alt="" loading="lazy" />`
+      : '';
+    return `
+      <article class="option-card system-ac-card ${active ? 'is-selected' : ''}" data-system-ac-tier="${tier}">
+        <span class="option-preview ${option?.previewUrl ? '' : 'is-fallback'}">${preview}<i>空</i><em>${active ? '적용됨' : '2대부터'}</em></span>
+        <span class="option-copy">
+          <span class="option-category">시스템에어컨</span>
+          <b>시스템에어컨 · ${tier === 'premium' ? '고급형' : '일반형'}</b>
+          <small>거실 기본 설치 후 침실 순서대로 대수를 추가합니다.</small>
+          <strong>${active && option ? `+ ${numberFormat.format(option.price)}원` : '2대부터 선택'}</strong>
+        </span>
+        <span class="system-ac-stepper" aria-label="${tier === 'premium' ? '고급형' : '일반형'} 설치 대수">
+          <button type="button" data-system-ac-adjust="decrease" data-system-ac-tier="${tier}" ${active ? '' : 'disabled'} aria-label="설치 대수 1 감소">−</button>
+          <output>${count ? `${count}대` : '미적용'}</output>
+          <button type="button" data-system-ac-adjust="increase" data-system-ac-tier="${tier}" ${canIncrease ? '' : 'disabled'} aria-label="설치 대수 1 증가">＋</button>
+        </span>
+      </article>`;
   }
 
   private optionCard(option: BOptionEntry, allOptions: BOptionEntry[]): string {
@@ -755,8 +821,18 @@ export class ShowcaseApp {
       }
       return;
     }
-    actor.direction = screenDirection(horizontal, vertical);
+    const nextDirection = screenDirection(horizontal, vertical);
+    if (!actor.travel && actor.direction !== nextDirection) {
+      actor.direction = nextDirection;
+      actor.turnReadyAt = time + TURN_ONLY_HOLD_TO_MOVE_MS;
+      actor.moving = false;
+      actor.motion = 'idle';
+      actor.motionStartedAt = time;
+      return;
+    }
+    actor.direction = nextDirection;
     if (actor.travel || actor.motionUntil > time) return;
+    if (actor.turnReadyAt > time) return;
     const worldDelta = screenVectorToWorldDelta(horizontal, vertical);
     const nextX = actor.x + worldDelta.dx;
     const nextY = actor.y + worldDelta.dy;
@@ -774,6 +850,7 @@ export class ShowcaseApp {
       actor.moving = true;
       actor.motion = 'walk';
       actor.motionStartedAt = time;
+      actor.turnReadyAt = 0;
     } else {
       actor.moving = false;
       this.get<HTMLElement>('#game-stage').classList.remove('hit-boundary');

@@ -238,7 +238,7 @@ export class IsometricWorldRenderer {
   private readonly context: CanvasRenderingContext2D;
   private world: WorldData | null = null;
   private camera = { x: 32, y: 32 };
-  private tileWidth = 48;
+  private tileWidth = 32;
   private tileHeight = 24;
   private cssWidth = 1;
   private cssHeight = 1;
@@ -252,8 +252,9 @@ export class IsometricWorldRenderer {
 
   setWorld(world: WorldData): void {
     this.world = world;
-    this.tileWidth = Math.max(30, Math.min(58, world.manifest.projection?.tileWidth || 48));
-    this.tileHeight = Math.max(16, Math.min(34, world.manifest.projection?.tileHeight || 24));
+    // /rpg root-y1000-grid-math의 고정 셀 투영(32×24px)을 그대로 쓴다.
+    this.tileWidth = 32;
+    this.tileHeight = 24;
     this.camera.x = world.entry.spawn.x;
     this.camera.y = world.entry.spawn.y;
   }

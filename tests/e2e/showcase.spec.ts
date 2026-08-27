@@ -79,8 +79,9 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
 
   await page.getByRole("button", { name: "200", exact: true }).click();
   await expect(page.locator("#active-actor-label")).toHaveText("여자의료진");
-  expect(await actor200.locator(".actor-sprite").evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBe(96);
+  expect(await actor200.locator(".actor-sprite").evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBe(58);
   await expect(page.locator("#game-stage")).toHaveAttribute("data-movement-interval-ms", "420");
+  await expect(page.locator("#game-stage")).toHaveAttribute("data-cell-projection", "32x24");
   const startX = Number(await actor200.getAttribute("data-world-x"));
   const startY = Number(await actor200.getAttribute("data-world-y"));
   await page.keyboard.down("KeyD");
@@ -145,6 +146,16 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await firstOption.setChecked(true, { force: true });
   await expect(page.locator("#option-selected-count")).toHaveText("1개");
   await expect(page.locator("#option-total")).not.toHaveText(/^0/);
+  await expect(page.locator("#stage-option-chips")).not.toContainText("기본 마감");
+  await expect(page.locator("#stage-option-total")).toHaveText(await page.locator("#option-total").innerText());
+  await page.locator('#option-categories button', { hasText: '시스템에어컨' }).click();
+  const generalAcCard = page.locator('.system-ac-card[data-system-ac-tier="general"]');
+  await expect(generalAcCard).toBeVisible();
+  await generalAcCard.getByRole('button', { name: '설치 대수 1 증가' }).click();
+  await expect(generalAcCard.locator('output')).toHaveText('2대');
+  await generalAcCard.getByRole('button', { name: '설치 대수 1 증가' }).click();
+  // 59A 공개 계약은 3대 패키지가 없어 원본 팔레트와 같이 다음 제공 대수인 4대로 이동한다.
+  await expect(page.locator('.system-ac-card[data-system-ac-tier="general"] output')).toHaveText('4대');
   await expect.poll(async () => Number(await threeCanvas.getAttribute("data-apartment-prop-count"))).toBeGreaterThan(propsBeforeOption);
   await expect(threeCanvas).toHaveAttribute("data-interior-placement-status", "verified");
   const savedQuote = await page.locator("#option-total").innerText();
@@ -163,6 +174,16 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(page.locator(".map-card")).toHaveCount(4);
   await expect(page.locator(".map-card img").first()).toBeVisible();
   expect(await page.locator(".map-card img").first().evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await expect(page.locator("#interiorEditor")).toHaveAttribute("data-loading", "false");
+  await expect.poll(async () => page.locator("#editorAssetList .editor-asset").count()).toBeGreaterThan(30);
+  await page.locator("#editorAssetList .editor-asset").first().click();
+  await expect(page.locator("#interiorEditor")).toHaveAttribute("data-local-prop-count", "1");
+  await expect(page.locator("#editorPlanCanvas")).toHaveAttribute("data-local-prop-count", "1");
+  await expect.poll(async () => Number(await page.locator("#editorThreeCanvas").getAttribute("data-apartment-prop-count"))).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "+90°" }).click();
+  await page.getByRole("button", { name: "⇆ 좌우 반전" }).click();
+  const editorMapId = await page.locator("#editorMapSelect").inputValue();
+  expect(await page.evaluate((mapId) => JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.yawDeg, editorMapId)).toBe(90);
 
   const map55b = page.locator(".map-card").filter({ hasText: "55B 세대 검증" });
   await map55b.getByLabel("검수 상태").selectOption("pass");

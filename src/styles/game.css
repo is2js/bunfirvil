@@ -489,9 +489,9 @@ input:focus-visible {
 }
 
 .rpg-actor {
-  width: 96px;
-  height: 116px;
-  margin: -92px 0 0 -48px;
+  width: 58px;
+  height: 88px;
+  margin: -76px 0 0 -29px;
   padding: 0;
   position: absolute;
   left: 0;
@@ -506,11 +506,11 @@ input:focus-visible {
 }
 
 .actor-sprite {
-  width: 96px;
-  height: 96px;
+  width: 58px;
+  height: 78px;
   position: absolute;
   left: 0;
-  top: -2px;
+  top: -1px;
   display: grid;
   place-items: center;
   background-repeat: no-repeat;
@@ -520,7 +520,8 @@ input:focus-visible {
 }
 
 .rpg-actor[data-motion="walk"] .actor-sprite {
-  animation: actor-bob 420ms linear infinite;
+  /* 원본 /rpg는 walk sheet의 발 디딤만 쓰고 별도 bob 변형을 더하지 않는다. */
+  animation: none;
 }
 
 .rpg-actor[data-motion="attack"] .actor-sprite { animation: actor-strike 320ms cubic-bezier(.2,.8,.2,1); }
@@ -561,22 +562,22 @@ input:focus-visible {
 .rpg-actor.has-sprite .actor-fallback { display: none; }
 
 .actor-shadow {
-  width: 44px;
-  height: 15px;
+  width: 30px;
+  height: 10px;
   position: absolute;
-  left: 26px;
-  top: 80px;
+  left: 14px;
+  top: 64px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.45);
   filter: blur(3px);
 }
 
 .actor-select-ring {
-  width: 53px;
-  height: 20px;
+  width: 37px;
+  height: 14px;
   position: absolute;
-  left: 21px;
-  top: 78px;
+  left: 10px;
+  top: 62px;
   border: 1px solid rgba(105, 232, 208, 0);
   border-radius: 50%;
   transform: rotate(-2deg);
@@ -590,10 +591,10 @@ input:focus-visible {
 }
 
 .actor-meta {
-  width: 84px;
+  width: 76px;
   position: absolute;
-  left: 6px;
-  top: 92px;
+  left: -9px;
+  top: 74px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -602,7 +603,7 @@ input:focus-visible {
 }
 
 .actor-name {
-  max-width: 84px;
+  max-width: 76px;
   overflow: hidden;
   font-size: 9px;
   font-weight: 750;
@@ -611,7 +612,7 @@ input:focus-visible {
 }
 
 .actor-health {
-  width: 52px;
+  width: 38px;
   height: 3px;
   overflow: hidden;
   border-radius: 4px;
@@ -1412,6 +1413,37 @@ input:focus-visible {
 .option-card:hover { border-color: rgba(139, 183, 176, 0.25); background: rgba(14, 33, 37, 0.72); transform: translateX(-2px); }
 .option-card.is-selected { border-color: rgba(225, 185, 99, 0.35); background: linear-gradient(90deg, rgba(225, 185, 99, 0.09), rgba(8, 23, 27, 0.7)); }
 
+.system-ac-card {
+  min-height: 106px;
+  padding-right: 8px;
+  grid-template-columns: 72px minmax(0, 1fr);
+  cursor: default;
+}
+
+.system-ac-stepper {
+  grid-column: 1 / -1;
+  height: 30px;
+  display: grid;
+  grid-template-columns: 31px minmax(70px, 1fr) 31px;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid rgba(225, 185, 99, .2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, .2);
+}
+
+.system-ac-stepper button {
+  padding: 0;
+  border: 0;
+  color: #e6cf98;
+  background: rgba(225, 185, 99, .08);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.system-ac-stepper button:disabled { color: #43504e; cursor: default; }
+.system-ac-stepper output { display: grid; place-items: center; border-inline: 1px solid rgba(225, 185, 99, .14); color: #f0d18b; font: 800 9px ui-monospace, monospace; }
+
 .option-preview {
   min-height: 65px;
   overflow: hidden;
@@ -1495,6 +1527,38 @@ input:focus-visible {
 .quote-row strong { color: #f0d18b; font: 800 17px ui-monospace, monospace; letter-spacing: -.04em; }
 .quote-row strong small { margin-left: 3px; color: #b9a169; font: 650 8px inherit; }
 .option-summary > p { margin: 7px 0 0; color: #4f6662; font-size: 6px; text-align: right; }
+
+.stage-option-quote {
+  width: min(500px, calc(100% - 270px));
+  min-width: 310px;
+  height: 64px;
+  padding: 7px 12px 8px 9px;
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 2009;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: 20px 24px;
+  align-items: center;
+  column-gap: 9px;
+  border: 1px solid rgba(213, 183, 112, .26);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(28, 26, 21, .94), rgba(7, 10, 10, .96));
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .48), inset 0 1px rgba(255, 255, 255, .04);
+}
+
+.stage-option-title { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.stage-option-title b { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid #a98a47; color: #f0d18b; background: #332b1b; font: 800 12px Georgia, serif; }
+.stage-option-title span { color: #ddd2b8; font-size: 8px; font-weight: 800; }
+.stage-option-title em { color: #776e5b; font: normal 650 7px ui-monospace, monospace; }
+.stage-option-chips { min-width: 0; grid-column: 1 / 3; display: flex; gap: 4px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; white-space: nowrap; }
+.stage-option-chips::-webkit-scrollbar { display: none; }
+.stage-option-chips span { min-width: max-content; height: 22px; display: inline-flex; align-items: center; gap: 6px; padding: 0 7px; border: 1px solid rgba(179, 167, 137, .14); background: rgba(255, 255, 255, .025); }
+.stage-option-chips b { color: #aca38e; font-size: 7px; }
+.stage-option-chips em { color: #d5b96f; font: normal 650 6px ui-monospace, monospace; }
+.stage-option-quote > strong { grid-column: 3; grid-row: 1 / 3; padding-left: 11px; border-left: 1px solid rgba(213, 183, 112, .14); color: #f0d18b; font: 800 16px ui-monospace, monospace; white-space: nowrap; }
+.stage-option-quote > strong small { margin-left: 2px; color: #9c8755; font-size: 7px; }
 
 .app-footer {
   min-height: 34px;
@@ -1608,6 +1672,7 @@ input:focus-visible {
   .hotbar { min-width: 203px; }
   .hotbar-slot { width: 47px; height: 55px; }
   .stage-tip { bottom: 88px; }
+  .stage-option-quote { left: 8px; bottom: 84px; width: calc(100% - 16px); min-width: 0; }
   .option-list { display: flex; max-height: 420px; }
   .help-grid { grid-template-columns: 1fr; }
   .help-grid > div { min-height: 110px; }

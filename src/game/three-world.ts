@@ -266,10 +266,12 @@ export class ThreeWorldRenderer {
   private world: WorldData | null = null;
   private apartment: WorldObject | null = null;
   private focus = new THREE.Vector3();
-  private readonly cameraOffset = new THREE.Vector3(18, 23, 18);
+  // 32×24px 셀 비율이 나오는 root-y1000 등각 카메라 각도(약 48.6°).
+  private readonly cameraOffset = new THREE.Vector3(18, 28.64, 18);
   private cssWidth = 1;
   private cssHeight = 1;
   private selectedOptionIds: string[] = [];
+  private editorProps: ApartmentInteriorProp[] | null = null;
   private loadToken = 0;
   private propLoadToken = 0;
   private contractsReady: Promise<void>;
@@ -330,6 +332,18 @@ export class ThreeWorldRenderer {
     this.selectedOptionIds = [...optionIds];
     this.rebuildProps();
     void this.contractsReady.then(() => this.rebuildProps());
+  }
+
+  setEditorProps(props: ApartmentInteriorProp[] | null): void {
+    this.editorProps = props ? props.map((prop) => ({ ...prop, positionMeters: [...(prop.positionMeters || [])] })) : null;
+    this.rebuildProps();
+    void this.contractsReady.then(() => this.rebuildProps());
+  }
+
+  focusAt(x: number, y: number): void {
+    if (!this.world) return;
+    this.focus.copy(this.worldPoint(x, y, 0));
+    this.updateCamera();
   }
 
   follow(target: ActorState, smoothing = 0.095): void {
@@ -428,8 +442,9 @@ export class ThreeWorldRenderer {
     this.cssWidth = width;
     this.cssHeight = height;
     this.renderer.setSize(width, height, false);
-    // 원본 검수맵처럼 세대 구조가 화면을 충분히 차지하도록 약 14% 당겨서 표시한다.
-    const viewHeight = 25.5;
+    // 화면 크기가 달라도 원본 RPG의 한 셀은 항상 약 32×24 CSS px로 보인다.
+    const viewHeight = height * Math.SQRT2 / 32;
+    this.canvas.dataset.cellProjection = '32x24';
     const viewWidth = viewHeight * width / height;
     this.camera.left = -viewWidth / 2;
     this.camera.right = viewWidth / 2;
@@ -688,9 +703,10 @@ export class ThreeWorldRenderer {
     const object = this.apartment;
     const geometry = object?.geometry;
     if (!object || !geometry) return;
-    const props = this.optionRuntime
+    const baseProps = this.optionRuntime
       ? this.optionRuntime.bundangPrototypeOptionProps(geometry, object.unitTypeId || this.world?.entry.unitType || '', this.selectedOptionIds)
       : geometry.interiorProps || [];
+    const props = this.editorProps ? [...baseProps, ...this.editorProps] : baseProps;
     this.canvas.dataset.apartmentPropCount = String(props.length);
     const audit = auditApartmentPropPlacements(object, props);
     const missingAssetIds = props

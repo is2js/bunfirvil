@@ -211,6 +211,8 @@ export interface ActorState {
   moving: boolean;
   displayX: number;
   displayY: number;
+  /** 원본 RPG의 방향 전환 후 이동 승격(96ms)을 재현한다. */
+  turnReadyAt: number;
   travel: {
     fromX: number;
     fromY: number;

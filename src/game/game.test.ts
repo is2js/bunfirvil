@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { normalizeHotbar } from './catalog';
 import { resolveEffectSource, selectEffectVariant, type EffectManifest } from './effect-player';
 import { readHotbar, reorderHotbar } from './hotbar';
-import { applyOptionToggle, calculateOptionPrice } from './options';
+import { adjustSystemAcSelection, applyOptionToggle, calculateOptionPrice } from './options';
 import type { BOptionEntry } from './types';
 import { canTraverse, crossesApartmentWall, expandTileRuns } from './world';
 import {
@@ -179,5 +179,19 @@ describe('game-local state helpers', () => {
       { tileId: 'floor', count: 3 },
       { tileId: 'ignored', count: 100 },
     ], 6)).toEqual(['soil', 'soil', 'floor', 'floor', 'floor', 'ignored']);
+  });
+
+  it('adjusts a system-air-conditioner tier one offered package at a time', () => {
+    const packages: BOptionEntry[] = [2, 3, 4].map((count) => ({
+      id: `system-ac-${count}-general`, label: `${count}대`, category: '시스템에어컨', price: count * 100,
+      description: '', compatibleUnitTypes: ['55B'], requires: [], requiresAny: [],
+      excludes: [2, 3, 4].filter((other) => other !== count).map((other) => `system-ac-${other}-general`),
+    }));
+    const two = adjustSystemAcSelection(packages, [], 'general', 1);
+    expect(two).toEqual(['system-ac-2-general']);
+    const three = adjustSystemAcSelection(packages, two, 'general', 1);
+    expect(three).toEqual(['system-ac-3-general']);
+    expect(adjustSystemAcSelection(packages, three, 'general', -1)).toEqual(['system-ac-2-general']);
+    expect(adjustSystemAcSelection(packages, two, 'general', -1)).toEqual([]);
   });
 });

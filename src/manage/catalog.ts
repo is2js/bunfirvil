@@ -172,6 +172,16 @@ export function validateCatalog(value: unknown): ValidationResult<ShowcaseCatalo
     }
   }
 
+  if (!isRecord(value.renderAssets)) {
+    errors.push("catalog.renderAssets가 객체가 아닙니다.");
+  } else {
+    for (const key of ["interiorCatalogUrl", "recipeCatalogUrl", "optionModuleUrl", "materialManifestUrl"] as const) {
+      if (!isProjectRelativeUrl(value.renderAssets[key])) {
+        errors.push(`catalog.renderAssets.${key}는 프로젝트 기준 상대경로여야 합니다.`);
+      }
+    }
+  }
+
   if (Array.isArray(value.bOptions)) {
     value.bOptions.forEach((option, index) => validateOption(option, index, errors));
     const validOptions = value.bOptions.filter(isRecord);

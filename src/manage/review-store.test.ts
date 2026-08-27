@@ -27,6 +27,12 @@ const catalog: ShowcaseCatalogV1 = {
   characters: [],
   skills: [],
   defaultHotbar: [],
+  renderAssets: {
+    interiorCatalogUrl: "generated/interior/catalog.json",
+    recipeCatalogUrl: "generated/interior/recipes.json",
+    optionModuleUrl: "generated/options/runtime.mjs",
+    materialManifestUrl: "generated/materials/materials.json",
+  },
   bOptions: [],
 };
 

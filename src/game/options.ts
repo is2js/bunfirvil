@@ -1,5 +1,52 @@
 import type { BOptionEntry, ReviewPayload } from './types';
 
+const SYSTEM_AC_ID = /^system-ac-(\d+)-(general|premium)$/;
+
+export type SystemAcTier = 'general' | 'premium';
+
+export interface SystemAcChoice {
+  id: string;
+  count: number;
+  tier: SystemAcTier;
+}
+
+export function systemAcChoice(optionId: string): SystemAcChoice | null {
+  const match = optionId.match(SYSTEM_AC_ID);
+  if (!match) return null;
+  return { id: optionId, count: Number(match[1]), tier: match[2] as SystemAcTier };
+}
+
+export function systemAcChoices(options: BOptionEntry[], tier: SystemAcTier): SystemAcChoice[] {
+  return options
+    .map((option) => systemAcChoice(option.id))
+    .filter((choice): choice is SystemAcChoice => choice?.tier === tier)
+    .sort((left, right) => left.count - right.count);
+}
+
+/** 원본 B팔레트처럼 한 tier 카드 안에서 적용 해제 → 2대 → 3대 → 4대를 순환한다. */
+export function adjustSystemAcSelection(
+  options: BOptionEntry[],
+  current: Iterable<string>,
+  tier: SystemAcTier,
+  delta: -1 | 1,
+): string[] {
+  const available = systemAcChoices(options, tier);
+  if (!available.length) return [...current];
+  const selected = [...current];
+  const active = selected.map(systemAcChoice).find((choice) => choice?.tier === tier) || null;
+  let target: SystemAcChoice | null = null;
+  if (delta > 0) {
+    target = active
+      ? available.find((choice) => choice.count > active.count) || active
+      : available[0];
+  } else if (active) {
+    const previous = [...available].reverse().find((choice) => choice.count < active.count);
+    target = previous || null;
+  }
+  const withoutPackages = selected.filter((id) => !systemAcChoice(id));
+  return target ? applyOptionToggle(options, withoutPackages, target.id) : withoutPackages;
+}
+
 export function reviewStorageKey(mapId: string): string {
   return `bunfirvil:review:v1:${mapId}`;
 }

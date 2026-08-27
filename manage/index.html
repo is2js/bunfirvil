@@ -91,6 +91,60 @@
           </article>
         </section>
 
+        <section id="interiorEditor" class="interior-editor" data-mode="split" data-loading="true" aria-labelledby="editorTitle">
+          <header class="editor-header">
+            <div>
+              <p class="editor-kicker">INTERIOR AUTHORING · LOCAL GHOST</p>
+              <h2 id="editorTitle">평면도 · Three.js PBR 가구 배치</h2>
+              <p>인게임 관리자와 같은 로컬 meter 좌표를 2D 평면도와 3D 검수 화면에서 함께 편집합니다.</p>
+            </div>
+            <div class="editor-head-actions">
+              <label>검수맵<select id="editorMapSelect" aria-label="가구 배치 검수맵"></select></label>
+              <span id="editorLocalCount" class="editor-count">0개 로컬 배치</span>
+              <button id="editorExport" class="button secondary" type="button">배치 JSON 내보내기</button>
+              <input id="editorImportFile" class="visually-hidden" type="file" accept="application/json,.json" />
+              <label class="button secondary" for="editorImportFile">배치 JSON 가져오기</label>
+              <button id="editorReset" class="button danger" type="button">배치 초기화</button>
+            </div>
+          </header>
+          <div id="editorStatus" class="editor-status" role="status" aria-live="polite">인테리어 카탈로그를 불러오는 중입니다.</div>
+          <div class="editor-commandbar">
+            <div class="editor-transform-actions">
+              <button id="editorRotateLeft" type="button">−90°</button>
+              <button id="editorRotateRight" type="button">+90°</button>
+              <button id="editorMirror" type="button">⇆ 좌우 반전</button>
+              <button id="editorDelete" class="is-danger" type="button">선택 삭제</button>
+            </div>
+            <div class="editor-mode-switch" role="group" aria-label="편집 화면 모드">
+              <button type="button" data-editor-mode="2d">2D 평면도</button>
+              <button type="button" data-editor-mode="split" class="is-active">분할</button>
+              <button type="button" data-editor-mode="3d">PBR 3D</button>
+            </div>
+          </div>
+          <div class="editor-workbench">
+            <aside class="editor-palette" aria-label="가구 팔레트">
+              <div class="editor-pane-title"><b>가구 · 가전 팔레트</b><small>카드를 누르면 GHOST 배치</small></div>
+              <input id="editorAssetSearch" type="search" placeholder="가구, 가전, asset id 검색" autocomplete="off" />
+              <div id="editorAssetList" class="editor-asset-list"></div>
+            </aside>
+            <main class="editor-viewport">
+              <section class="editor-plan-view">
+                <span class="editor-view-label">2D · LOCAL METER · 0.05m SNAP</span>
+                <canvas id="editorPlanCanvas" aria-label="아파트 평면도 가구 배치 편집기"></canvas>
+              </section>
+              <section class="editor-three-view">
+                <span class="editor-view-label is-pbr">THREE.JS · PBR CUTAWAY</span>
+                <canvas id="editorThreeCanvas" aria-label="아파트 Three.js PBR 가구 배치 미리보기"></canvas>
+              </section>
+            </main>
+            <aside class="editor-inspector" aria-label="선택 소품 속성">
+              <div class="editor-pane-title"><b>선택 · GHOST 속성</b><small>브라우저 로컬 저장</small></div>
+              <div id="editorInspector"></div>
+              <div class="editor-shortcuts"><b>빠른 조작</b><span>팔레트 클릭 추가 · 평면도 드래그 이동 · 0.05m 스냅 · ±90° 회전 · 좌우 반전</span></div>
+            </aside>
+          </div>
+        </section>
+
         <section class="toolbar" aria-label="검수자료 도구">
           <div>
             <h2>세대형별 검수</h2>

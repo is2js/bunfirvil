@@ -45,6 +45,12 @@ export interface ShowcaseCatalogV1 {
   skills: unknown[];
   defaultHotbar: unknown[];
   bOptions: BOptionV1[];
+  renderAssets: {
+    interiorCatalogUrl: string;
+    recipeCatalogUrl: string;
+    optionModuleUrl: string;
+    materialManifestUrl: string;
+  };
 }
 
 export interface LocalReviewV1 {

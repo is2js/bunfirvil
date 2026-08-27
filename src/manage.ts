@@ -9,6 +9,7 @@ import {
   validateReviewBundle,
 } from "./manage/review-model";
 import { loadReview, removeReview, saveReview } from "./manage/review-store";
+import { InteriorEditor } from "./manage/interior-editor";
 import type {
   BOptionV1,
   LocalReviewV1,
@@ -91,6 +92,7 @@ class ReviewWorkspace {
   private readonly reviews = new Map<string, LocalReviewV1>();
   private readonly cards = new Map<string, CardView>();
   private messageTimer: number | undefined;
+  private interiorEditor: InteriorEditor | null = null;
 
   private readonly loadingState = mustElement<HTMLElement>("loadingState");
   private readonly errorState = mustElement<HTMLElement>("errorState");
@@ -133,6 +135,13 @@ class ReviewWorkspace {
       this.updateSummary();
       this.loadingState.hidden = true;
       this.workspace.hidden = false;
+      if (!this.interiorEditor) {
+        this.interiorEditor = new InteriorEditor(
+          this.catalog,
+          (mapId) => [...(this.reviews.get(mapId)?.selectedOptionIds || [])],
+        );
+        await this.interiorEditor.initialize();
+      }
       if (warnings.length > 0) {
         this.showMessage(warnings.join(" "), true, 9_000);
       }
@@ -398,6 +407,7 @@ class ReviewWorkspace {
     this.saveCurrentReview(mapId, announceSave);
     this.refreshCard(mapId);
     this.updateSummary();
+    this.interiorEditor?.refreshSelectedOptions(mapId);
   }
 
   private saveCurrentReview(mapId: string, announceSave = true): void {
