@@ -213,6 +213,8 @@ export interface ActorState {
   displayY: number;
   /** 원본 RPG의 방향 전환 후 이동 승격(96ms)을 재현한다. */
   turnReadyAt: number;
+  /** 현재 cell travel이 끝난 뒤에만 반영할 다음 화면 방향. */
+  queuedDirection: Direction | null;
   travel: {
     fromX: number;
     fromY: number;
@@ -220,6 +222,8 @@ export interface ActorState {
     toY: number;
     startedAt: number;
     endsAt: number;
+    /** 이동 중 sprite row를 잠그는 출발 시점 방향. */
+    direction: Direction;
   } | null;
 }
 

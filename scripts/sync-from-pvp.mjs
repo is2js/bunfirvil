@@ -225,6 +225,34 @@ const OPTION_PREVIEW_IDS = Object.freeze([
   "refrigerator-cabinet-bespoke-alt2",
   "refrigerator-cabinet-lg-built-in",
 ]);
+const INTERIOR_PREVIEW_IDS = Object.freeze([
+  "bed-single", "bed-queen", "nightstand-compact", "sofa-three-seat", "coffee-table-low",
+  "tv-media-unit", "dining-table-four-seat", "dining-chair", "work-desk", "office-chair",
+  "wardrobe-two-door", "bookshelf-tall", "refrigerator-two-door", "washer-front-load",
+  "toilet-floor-mounted", "vanity-basin-compact", "clothes-styler-tall", "refrigerator-cabinet-wide",
+  "washer-dryer-tower", "bathtub-built-in", "desktop-computer-desk-set", "cordless-vacuum-dock",
+  "island-counter-modern", "air-conditioner-outdoor-unit", "ceiling-cassette-air-conditioner",
+  "entry-sliding-partition-door", "wide-plank-floor-finish", "bathroom-combination-ventilator",
+  "toilet-integrated-bidet", "utility-ceramic-elastic-coat", "air-planner-ceiling-vent",
+  "bedroom-smart-display-switch", "closet-breeze-dehumidifier", "silent-range-hood",
+  "dishwasher-built-in-die6pt", "electric-cooktop-erh-3903", "induction-cooktop-nz63b5056ak",
+  "induction-cooktop-bei3asb4bi", "notice-balcony-expansion", "notice-accessibility-entry",
+  "notice-accessibility-kitchen", "notice-accessibility-living", "notice-accessibility-bathroom",
+  "notice-accessibility-other", "notice-minus-option-package", "vanity-dressing-table",
+  "system-hanger-modular", "entry-pantry-cabinet", "entry-pantry-shelving",
+  "porcelain-tile-floor-finish", "entry-pantry-rounded-system-cabinet", "entry-shoe-bench-storage",
+  "robot-vacuum-station", "water-purifier-countertop", "air-circulator-pedestal",
+  "kitchen-pantry-tall-cabinet", "entry-shoe-cabinet-tall", "living-art-wall-fluted-oak",
+  "living-art-wall-greige-stone", "living-art-wall-porcelain-slab", "living-art-wall-microcement",
+  "baby-crib-standard", "family-bed-wide", "baby-bumper-bed", "kids-study-desk-compact",
+  "alpha-room-slim-desk", "refrigerator-fit-cabinet", "kimchi-refrigerator-fit-cabinet",
+  "coffee-home-bar-cabinet", "refrigerator-kimchi-wall-set", "refrigerator-homebar-wall-set",
+  "istarpark-owned-wall-tv", "istarpark-owned-computer-desk-1200", "istarpark-owned-computer-desk-800",
+  "istarpark-owned-dining-table", "istarpark-owned-bed", "istarpark-owned-side-storage",
+  "istarpark-owned-refrigerator", "istarpark-owned-underwear-dresser",
+  "istarpark-owned-open-bookshelf-5x3", "istarpark-owned-open-bookshelf-3x3",
+  "istarpark-owned-sofa-three-seat", "istarpark-owned-tower-air-conditioner",
+]);
 const INTERIOR_MODEL_ROWS = Object.freeze([
   Object.freeze({ assetId: "sofa-three-seat", source: "assets/rpg/objects/bundang-interior-v1/models/sofa-three-seat/a3b5553daff41d1ea18a712d01072fb06ef1dec9ca132439fa3246d35811974f/medium.glb" }),
   Object.freeze({ assetId: "dining-chair", source: "assets/rpg/objects/bundang-interior-v1/models/dining-chair/57a481718c2573c824672398c5ee519a696fa30080b0fbeca4afde38e7ed2c08/medium.glb" }),
@@ -567,6 +595,7 @@ function buildSourceAllowlist() {
   paths.add(INTERIOR_RECIPE_SOURCE);
   INTERIOR_MODEL_ROWS.forEach((row) => paths.add(row.source));
   OPTION_PREVIEW_IDS.forEach((id) => paths.add(`${OPTION_PREVIEW_SOURCE_DIR}/${id}.png`));
+  INTERIOR_PREVIEW_IDS.forEach((id) => paths.add(`${OPTION_PREVIEW_SOURCE_DIR}/${id}.png`));
   paths.add("src/rpg/bundang-apartment-options.mjs");
   return [...paths].sort();
 }
@@ -1102,6 +1131,7 @@ async function main() {
       rendererKind: model ? "glb" : "procedural",
       defaultDimensionsMeters: asset.defaultDimensionsMeters,
       materialVariantIds: Array.isArray(asset.materialVariantIds) ? asset.materialVariantIds.map(String) : [],
+      previewUrl: `previews/${assetId}.png`,
       rendererRef: model ? { lods: { medium: { url: `models/${assetId}/medium.glb` } } } : { kind: "procedural" },
     };
   });
@@ -1119,6 +1149,14 @@ async function main() {
   });
   for (const model of INTERIOR_MODEL_ROWS) {
     await copyAllowed(model.source, `interior/models/${model.assetId}/medium.glb`);
+  }
+  const sourceInteriorIds = interiorAssets.map((asset) => asset.assetId).sort();
+  const approvedInteriorIds = [...INTERIOR_PREVIEW_IDS].sort();
+  if (JSON.stringify(sourceInteriorIds) !== JSON.stringify(approvedInteriorIds)) {
+    throw new Error("인테리어 catalog와 공개 preview allowlist가 정확히 일치하지 않습니다.");
+  }
+  for (const assetId of INTERIOR_PREVIEW_IDS) {
+    await copyAllowed(`${OPTION_PREVIEW_SOURCE_DIR}/${assetId}.png`, `interior/previews/${assetId}.png`);
   }
 
   const rendererRecipes = await import(`${pathToFileURL(sourcePath(sourceRoot, INTERIOR_RECIPE_SOURCE)).href}?export=${selectedSourceFingerprint}`);
@@ -1482,7 +1520,7 @@ async function main() {
     exclusions: [
       "map plan-contract/source/audit and operator-only policy fields",
       "KTX2 loaders/transcoders and unrelated OpenMMO materials",
-      "interior model binaries and official/reference preview photographs",
+      "unapproved interior model binaries and external/reference photographs",
       "character source frames, source-export trees, hurt/death/seat sheets",
       "full skill catalog and third-party-derived LK/Y1000 icons",
       "external, unresolved, rights-unknown, and other non-approved publication categories",

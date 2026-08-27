@@ -5,10 +5,12 @@ import { readHotbar, reorderHotbar } from './hotbar';
 import { adjustSystemAcSelection, applyOptionToggle, calculateOptionPrice } from './options';
 import type { BOptionEntry } from './types';
 import { canTraverse, crossesApartmentWall, expandTileRuns } from './world';
+import { travelLockedDirection } from './grid';
 import {
   apartmentPropPlacement,
   apartmentSolidBlockVisualFootprint,
   apartmentUnitWorldPoint,
+  apartmentWorldPointToLocalMeters,
   auditApartmentPropPlacements,
 } from './apartment-transform';
 import type { WorldData, WorldObject } from './types';
@@ -73,6 +75,12 @@ const options: BOptionEntry[] = [
 ];
 
 describe('game-local state helpers', () => {
+  it('locks facing to the active cell travel until arrival', () => {
+    expect(travelLockedDirection('n', {
+      fromX: 2, fromY: 2, toX: 3, toY: 1, startedAt: 0, endsAt: 420, direction: 'e',
+    })).toBe('e');
+    expect(travelLockedDirection('n', null)).toBe('n');
+  });
   it('selects a directional effect variant and resolves manifest-relative frames', () => {
     const manifest: EffectManifest = {
       variants: [
@@ -138,6 +146,9 @@ describe('game-local state helpers', () => {
     };
     expect(apartmentUnitWorldPoint(object, [1, 0]).x).toBeCloseTo(10);
     expect(apartmentUnitWorldPoint(object, [1, 0]).y).toBeCloseTo(22);
+    const restored = apartmentWorldPointToLocalMeters(object, apartmentUnitWorldPoint(object, [1.25, 2.5]));
+    expect(restored[0]).toBeCloseTo(1.25);
+    expect(restored[1]).toBeCloseTo(2.5);
     const placement = apartmentPropPlacement(object, {
       id: 'table', assetId: 'table', roomZoneId: 'living', positionMeters: [1, 1], yawDeg: 0,
     });

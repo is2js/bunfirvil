@@ -12,6 +12,12 @@ export interface CellTravel {
   toY: number;
   startedAt: number;
   endsAt: number;
+  direction?: Direction;
+}
+
+/** 원본 RPG처럼 cell travel 중에는 다음 입력이 와도 출발 방향을 유지한다. */
+export function travelLockedDirection(direction: Direction, travel: CellTravel | null): Direction {
+  return travel?.direction || direction;
 }
 
 export function interpolateCellTravel(travel: CellTravel, time: number): { x: number; y: number; progress: number } {

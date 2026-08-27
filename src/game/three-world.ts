@@ -256,6 +256,7 @@ export class ThreeWorldRenderer {
   private readonly camera = new THREE.OrthographicCamera(-12, 12, 12, -12, 0.1, 220);
   private readonly structureRoot = new THREE.Group();
   private readonly propRoot = new THREE.Group();
+  private readonly editorSelectionRoot = new THREE.Group();
   private readonly modelLoader = new GLTFLoader();
   private readonly modelCache = new Map<string, Promise<THREE.Group>>();
   private readonly textureCache = new Map<string, THREE.Texture>();
@@ -272,6 +273,7 @@ export class ThreeWorldRenderer {
   private cssHeight = 1;
   private selectedOptionIds: string[] = [];
   private editorProps: ApartmentInteriorProp[] | null = null;
+  private editorSelectedPropId = '';
   private loadToken = 0;
   private propLoadToken = 0;
   private contractsReady: Promise<void>;
@@ -295,7 +297,7 @@ export class ThreeWorldRenderer {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene.background = new THREE.Color('#11100e');
     this.scene.fog = new THREE.FogExp2('#11100e', 0.009);
-    this.scene.add(this.structureRoot, this.propRoot);
+    this.scene.add(this.structureRoot, this.propRoot, this.editorSelectionRoot);
 
     const hemisphere = new THREE.HemisphereLight('#f8fafc', '#554a3f', 1.55);
     const sun = new THREE.DirectionalLight('#fff1d6', 2.2);
@@ -338,6 +340,12 @@ export class ThreeWorldRenderer {
     this.editorProps = props ? props.map((prop) => ({ ...prop, positionMeters: [...(prop.positionMeters || [])] })) : null;
     this.rebuildProps();
     void this.contractsReady.then(() => this.rebuildProps());
+  }
+
+  setEditorSelection(propId: string): void {
+    this.editorSelectedPropId = String(propId || '');
+    this.canvas.dataset.selectedEditorPropId = this.editorSelectedPropId;
+    this.refreshEditorSelection();
   }
 
   focusAt(x: number, y: number): void {
@@ -699,6 +707,7 @@ export class ThreeWorldRenderer {
 
   private rebuildProps(): void {
     disposeTree(this.propRoot);
+    disposeTree(this.editorSelectionRoot);
     const propLoadToken = ++this.propLoadToken;
     const object = this.apartment;
     const geometry = object?.geometry;
@@ -768,7 +777,28 @@ export class ThreeWorldRenderer {
     group.position.set(center.x, baseY, center.z);
     group.rotation.y = placement.worldYaw;
     group.renderOrder = mountingKind === 'room-finish' ? 3.04 : 3.1;
+    group.userData.editorPropId = String(prop.id || '');
     this.propRoot.add(group);
+    this.refreshEditorSelection();
+  }
+
+  private refreshEditorSelection(): void {
+    disposeTree(this.editorSelectionRoot);
+    delete this.canvas.dataset.selectedEditorX;
+    delete this.canvas.dataset.selectedEditorY;
+    if (!this.editorSelectedPropId) return;
+    const selected = this.propRoot.children.find((child) => child.userData.editorPropId === this.editorSelectedPropId);
+    if (!selected) return;
+    selected.updateWorldMatrix(true, true);
+    const bounds = new THREE.Box3().setFromObject(selected).expandByScalar(0.035);
+    this.resize();
+    this.camera.updateMatrixWorld();
+    const screen = new THREE.Vector3(selected.position.x, .05, selected.position.z).project(this.camera);
+    this.canvas.dataset.selectedEditorX = String((screen.x * .5 + .5) * this.cssWidth);
+    this.canvas.dataset.selectedEditorY = String((-screen.y * .5 + .5) * this.cssHeight);
+    const helper = new THREE.Box3Helper(bounds, new THREE.Color('#ffe58a'));
+    helper.renderOrder = 9;
+    this.editorSelectionRoot.add(helper);
   }
 
   private modelProp(template: THREE.Group, prop: ApartmentInteriorProp, asset: RuntimeAsset): THREE.Group {

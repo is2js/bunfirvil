@@ -1,4 +1,9 @@
-import { apartmentUnitWorldPoint, type NumericPoint } from '../game/apartment-transform';
+import {
+  apartmentUnitWorldPoint,
+  apartmentWorldPointToLocalMeters,
+  type NumericPoint,
+} from '../game/apartment-transform';
+import { resolveReferencedUrl } from '../game/base';
 import type { ThreeWorldRenderer } from '../game/three-world';
 import type { ApartmentInteriorProp, StaticMapEntry, WorldData, WorldObject } from '../game/types';
 import { loadWorld } from '../game/world';
@@ -78,6 +83,8 @@ export class InteriorEditor {
   private mode: EditorMode = 'split';
   private frame = 0;
   private dragPointer = -1;
+  private dragCanvas: HTMLCanvasElement | null = null;
+  private catalogUrl = '';
   private mapLoadToken = 0;
   private search = '';
   private sequence = 0;
@@ -100,8 +107,10 @@ export class InteriorEditor {
   ) {}
 
   async initialize(): Promise<void> {
+    this.section.tabIndex = -1;
     this.mapSelect.innerHTML = this.catalog.maps.map((map) => `<option value="${map.id}">${map.unitType} · ${map.label}</option>`).join('');
-    const response = await fetch(resolveAppUrl(this.catalog.renderAssets.interiorCatalogUrl));
+    this.catalogUrl = resolveAppUrl(this.catalog.renderAssets.interiorCatalogUrl);
+    const response = await fetch(this.catalogUrl);
     if (!response.ok) throw new Error(`인테리어 카탈로그를 불러오지 못했습니다. (HTTP ${response.status})`);
     const payload = await response.json() as InteriorCatalogPayload;
     this.assets = (payload.assets || []).filter((asset) => asset.assetId && asset.displayNameKo && asset.category !== 'notice' && asset.mountingKind !== 'room-finish');
@@ -136,9 +145,21 @@ export class InteriorEditor {
     this.planCanvas.addEventListener('pointermove', (event) => this.planPointerMove(event));
     this.planCanvas.addEventListener('pointerup', (event) => this.planPointerUp(event));
     this.planCanvas.addEventListener('pointercancel', (event) => this.planPointerUp(event));
+    this.threeCanvas.addEventListener('pointerdown', (event) => this.threePointerDown(event));
+    this.threeCanvas.addEventListener('pointermove', (event) => this.threePointerMove(event));
+    this.threeCanvas.addEventListener('pointerup', (event) => this.threePointerUp(event));
+    this.threeCanvas.addEventListener('pointercancel', (event) => this.threePointerUp(event));
+    for (const canvas of [this.planCanvas, this.threeCanvas]) {
+      canvas.addEventListener('wheel', (event) => this.editorWheel(event), { passive: false });
+      canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+    }
+    this.section.addEventListener('keydown', (event) => this.editorKeyDown(event));
     element<HTMLButtonElement>('editorRotateLeft').addEventListener('click', () => this.rotate(-90));
     element<HTMLButtonElement>('editorRotateRight').addEventListener('click', () => this.rotate(90));
+    element<HTMLButtonElement>('editorScaleDown').addEventListener('click', () => this.resizeSelected(-.05));
+    element<HTMLButtonElement>('editorScaleUp').addEventListener('click', () => this.resizeSelected(.05));
     element<HTMLButtonElement>('editorMirror').addEventListener('click', () => this.mirror());
+    element<HTMLButtonElement>('editorDuplicate').addEventListener('click', () => this.duplicateSelected());
     element<HTMLButtonElement>('editorDelete').addEventListener('click', () => this.deleteSelected());
     element<HTMLButtonElement>('editorReset').addEventListener('click', () => this.reset());
     element<HTMLButtonElement>('editorExport').addEventListener('click', () => this.exportLayout());
@@ -162,6 +183,7 @@ export class InteriorEditor {
     this.renderer?.setWorld(world);
     this.renderer?.setSelectedOptions(this.selectedOptions(map.id));
     this.renderer?.setEditorProps(this.props);
+    this.renderer?.setEditorSelection('');
     this.focusApartment();
     this.updateInspector();
     this.updateCount();
@@ -185,7 +207,9 @@ export class InteriorEditor {
     const matches = this.assets.filter((asset) => !this.search || `${asset.displayNameKo} ${asset.assetId} ${asset.category}`.toLowerCase().includes(this.search));
     this.assetList.innerHTML = matches.map((asset) => `
       <button type="button" class="editor-asset" data-editor-asset="${asset.assetId}">
-        <span class="editor-asset-icon" data-category="${asset.category}">${asset.displayNameKo.slice(0, 1)}</span>
+        <span class="editor-asset-icon" data-category="${asset.category}">${asset.previewUrl
+          ? `<img src="${resolveReferencedUrl(asset.previewUrl, this.catalogUrl)}" alt="" loading="lazy" />`
+          : asset.displayNameKo.slice(0, 1)}</span>
         <span><b>${asset.displayNameKo}</b><small>${asset.category} · ${asset.rendererKind === 'glb' ? 'GLB/recipe' : 'Three.js recipe'}</small></span>
         <em>＋</em>
       </button>`).join('') || '<p class="editor-empty">검색 결과가 없습니다.</p>';
@@ -214,6 +238,7 @@ export class InteriorEditor {
     prop.roomZoneId = String((room?.row as Record<string, unknown> | undefined)?.id || '');
     this.props.push(prop);
     this.selectedPropId = String(prop.id);
+    this.section.focus({ preventScroll: true });
     this.save('소품을 로컬 배치에 추가했습니다. 평면도에서 드래그해 위치를 조정하세요.');
   }
 
@@ -330,35 +355,168 @@ export class InteriorEditor {
 
   private planPointerDown(event: PointerEvent): void {
     const point = this.canvasToLocal(event);
-    const hit = [...this.props].reverse().find((prop) => {
-      const position = prop.positionMeters;
-      if (!Array.isArray(position)) return false;
-      const asset = this.assets.find((candidate) => candidate.assetId === prop.assetId);
-      const size = dimensions(prop, asset);
-      return Math.abs(point[0] - finite(position[0])) <= Math.max(.25, size[0] / 2) && Math.abs(point[1] - finite(position[1])) <= Math.max(.25, size[1] / 2);
-    });
-    this.selectedPropId = String(hit?.id || '');
+    const hit = this.hitProp(point);
+    if (hit && event.ctrlKey) {
+      const copy = this.duplicateProp(hit);
+      this.props.push(copy);
+      this.selectedPropId = String(copy.id);
+    } else {
+      this.selectedPropId = String(hit?.id || '');
+    }
+    if (hit && event.altKey) {
+      this.mirror();
+      return;
+    }
     this.dragPointer = hit ? event.pointerId : -1;
-    if (hit) this.planCanvas.setPointerCapture(event.pointerId);
+    this.dragCanvas = hit ? this.planCanvas : null;
+    if (hit) {
+      this.planCanvas.setPointerCapture(event.pointerId);
+      this.section.focus({ preventScroll: true });
+    }
     this.updateInspector();
     this.drawPlan();
+    this.renderer?.setEditorSelection(this.selectedPropId);
   }
 
   private planPointerMove(event: PointerEvent): void {
     if (event.pointerId !== this.dragPointer) return;
-    const prop = this.selectedProp();
-    const floor = polygon(this.apartment?.geometry?.floorPolygon);
     const point = this.canvasToLocal(event).map((value) => Math.round(value * 20) / 20) as NumericPoint;
-    if (!prop || (floor.length >= 3 && !this.fitsFloor(prop, point, floor))) return;
-    prop.positionMeters = point;
-    this.updateInspector();
-    this.drawPlan();
+    this.moveSelectedTo(point, true);
   }
 
   private planPointerUp(event: PointerEvent): void {
     if (event.pointerId !== this.dragPointer) return;
     this.dragPointer = -1;
+    this.dragCanvas = null;
     this.save('소품 위치를 0.05m 단위로 로컬 저장했습니다.');
+  }
+
+  private threeLocalPoint(event: PointerEvent): NumericPoint | null {
+    const apartment = this.apartment;
+    const renderer = this.renderer;
+    if (!apartment || !renderer) return null;
+    const bounds = this.threeCanvas.getBoundingClientRect();
+    const world = renderer.unproject(event.clientX - bounds.left, event.clientY - bounds.top);
+    return world ? apartmentWorldPointToLocalMeters(apartment, world) : null;
+  }
+
+  private threePointerDown(event: PointerEvent): void {
+    if (event.button !== 0) return;
+    const point = this.threeLocalPoint(event);
+    if (!point) return;
+    const hit = this.hitProp(point);
+    if (hit && event.ctrlKey) {
+      const copy = this.duplicateProp(hit);
+      this.props.push(copy);
+      this.selectedPropId = String(copy.id);
+    } else {
+      this.selectedPropId = String(hit?.id || '');
+    }
+    if (hit && event.altKey) {
+      this.mirror();
+      return;
+    }
+    this.dragPointer = hit ? event.pointerId : -1;
+    this.dragCanvas = hit ? this.threeCanvas : null;
+    if (hit) {
+      this.threeCanvas.setPointerCapture(event.pointerId);
+      this.section.focus({ preventScroll: true });
+    }
+    this.updateInspector();
+    this.drawPlan();
+    this.renderer?.setEditorSelection(this.selectedPropId);
+  }
+
+  private threePointerMove(event: PointerEvent): void {
+    if (event.pointerId !== this.dragPointer || this.dragCanvas !== this.threeCanvas) return;
+    const point = this.threeLocalPoint(event);
+    if (point) this.moveSelectedTo(point, true);
+  }
+
+  private threePointerUp(event: PointerEvent): void {
+    if (event.pointerId !== this.dragPointer || this.dragCanvas !== this.threeCanvas) return;
+    this.dragPointer = -1;
+    this.dragCanvas = null;
+    this.save('PBR 화면에서 옮긴 소품 위치를 로컬 저장했습니다.');
+  }
+
+  private hitProp(point: NumericPoint): ApartmentInteriorProp | undefined {
+    return [...this.props].reverse().find((prop) => {
+      const position = prop.positionMeters;
+      if (!Array.isArray(position)) return false;
+      const asset = this.assets.find((candidate) => candidate.assetId === prop.assetId);
+      const size = dimensions(prop, asset);
+      const angle = -finite(prop.yawDeg) * Math.PI / 180;
+      const dx = point[0] - finite(position[0]);
+      const dy = point[1] - finite(position[1]);
+      const localX = dx * Math.cos(angle) - dy * Math.sin(angle);
+      const localY = dx * Math.sin(angle) + dy * Math.cos(angle);
+      return Math.abs(localX) <= Math.max(.25, size[0] / 2)
+        && Math.abs(localY) <= Math.max(.25, size[1] / 2);
+    });
+  }
+
+  private duplicateProp(source: ApartmentInteriorProp): ApartmentInteriorProp {
+    const position = Array.isArray(source.positionMeters) ? source.positionMeters : [0, 0];
+    return {
+      ...source,
+      id: `local-${source.assetId}-${Date.now() + ++this.sequence}`,
+      positionMeters: [finite(position[0]) + .1, finite(position[1]) + .1],
+    };
+  }
+
+  private moveSelectedTo(rawPoint: NumericPoint, live = false): boolean {
+    const prop = this.selectedProp();
+    const floor = polygon(this.apartment?.geometry?.floorPolygon);
+    const point = rawPoint.map((value) => Math.round(value * 20) / 20) as NumericPoint;
+    if (!prop || (floor.length >= 3 && !this.fitsFloor(prop, point, floor))) return false;
+    prop.positionMeters = point;
+    this.updateInspector();
+    this.drawPlan();
+    if (live) this.renderer?.setEditorProps(this.props);
+    return true;
+  }
+
+  private editorWheel(event: WheelEvent): void {
+    if (!event.shiftKey || !this.selectedProp()) return;
+    event.preventDefault();
+    this.rotate(event.deltaY < 0 ? -90 : 90);
+  }
+
+  private editorKeyDown(event: KeyboardEvent): void {
+    if (!this.selectedProp() || event.target instanceof HTMLInputElement) return;
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      event.preventDefault();
+      this.deleteSelected();
+      return;
+    }
+    if (event.key.toLowerCase() === 'r') {
+      event.preventDefault();
+      this.rotate(event.shiftKey ? -90 : 90);
+      return;
+    }
+    if (event.key.toLowerCase() === 'x') {
+      event.preventDefault();
+      this.mirror();
+      return;
+    }
+    if (event.ctrlKey && event.key.toLowerCase() === 'd') {
+      event.preventDefault();
+      this.duplicateSelected();
+      return;
+    }
+    const vector: Record<string, NumericPoint> = {
+      ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1],
+    };
+    const delta = vector[event.key];
+    if (!delta) return;
+    event.preventDefault();
+    const prop = this.selectedProp();
+    const position = prop?.positionMeters || [0, 0];
+    const step = event.altKey ? .01 : event.ctrlKey ? .25 : .05;
+    if (this.moveSelectedTo([finite(position[0]) + delta[0] * step, finite(position[1]) + delta[1] * step])) {
+      this.save(`소품을 ${step.toFixed(2)}m 이동해 저장했습니다.`);
+    }
   }
 
   private selectedProp(): ApartmentInteriorProp | undefined {
@@ -418,6 +576,31 @@ export class InteriorEditor {
     this.save(`좌우 반전을 ${prop.mirrored ? '적용' : '해제'}했습니다.`);
   }
 
+  private resizeSelected(delta: number): void {
+    const prop = this.selectedProp();
+    if (!prop) return;
+    const asset = this.assets.find((candidate) => candidate.assetId === prop.assetId);
+    const size = dimensions(prop, asset);
+    prop.dimensionsMeters = [
+      Math.max(.15, Math.round((size[0] + delta) * 20) / 20),
+      Math.max(.15, Math.round((size[1] + delta) * 20) / 20),
+      size[2],
+    ];
+    this.save(`가구 폭·깊이를 ${delta > 0 ? '확대' : '축소'}해 저장했습니다.`);
+  }
+
+  private duplicateSelected(): void {
+    const prop = this.selectedProp();
+    if (!prop) return;
+    const copy = this.duplicateProp(prop);
+    const floor = polygon(this.apartment?.geometry?.floorPolygon);
+    const position = copy.positionMeters as NumericPoint;
+    if (floor.length >= 3 && !this.fitsFloor(copy, position, floor)) copy.positionMeters = [...(prop.positionMeters || [0, 0])];
+    this.props.push(copy);
+    this.selectedPropId = String(copy.id);
+    this.save('선택 소품을 복제해 로컬 저장했습니다.');
+  }
+
   private deleteSelected(): void {
     if (!this.selectedPropId) return;
     this.props = this.props.filter((prop) => String(prop.id) !== this.selectedPropId);
@@ -430,6 +613,7 @@ export class InteriorEditor {
     const layout: LocalInteriorLayoutV1 = { schemaVersion: 1, mapId: this.world.entry.id, props: this.props, updatedAt: new Date().toISOString() };
     writeLayout(layout);
     this.renderer?.setEditorProps(this.props);
+    this.renderer?.setEditorSelection(this.selectedPropId);
     this.updateInspector();
     this.updateCount();
     this.drawPlan();

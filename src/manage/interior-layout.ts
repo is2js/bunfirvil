@@ -7,6 +7,7 @@ export interface InteriorAssetEntry {
   displayNameKo: string;
   category: string;
   rendererKind?: 'glb' | 'procedural' | string;
+  previewUrl?: string;
   defaultDimensionsMeters?: { width?: number; depth?: number; height?: number } | number[];
   materialVariantIds?: string[];
   mountingKind?: string;

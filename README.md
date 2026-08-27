@@ -18,18 +18,19 @@
 - 시스템에어컨 일반형·고급형 카드별 설치 대수 증감과 인게임형 좌하단 선택 옵션·합계 바
 - FPS·p95 frame time·렌더러·활성 chunk·자산 캐시 표시
 - 맵별 로컬 검수 상태, 메모, 옵션 조합, JSON 백업·복원
-- 검수 관리자 2D 평면도·Three.js PBR 분할 화면, 가구·가전 GHOST 배치·이동·회전·반전·JSON 백업
+- 원본 인테리어 미리보기 83개를 쓰는 메인 PBR 가구 배치와 검수 관리자 2D·3D 배치·이동·회전·반전·복제·크기 조절·JSON 백업
 
 단지 전체맵, 구조·벽 자체 편집, 서버 publish와 revision 복구는 공개본에서 제외합니다. 관리자의 가구 배치는 브라우저 로컬 초안일 뿐 원본 PVP에 반영되지 않습니다.
 
 ## 조작법
 
-- `WASD` 또는 방향키: 인게임과 동일한 32×24px 투영에서 방향 전환 후 420ms마다 정수 셀 한 칸 이동
+- `WASD` 또는 방향키: 인게임과 동일한 32×24px 투영에서 420ms마다 정수 셀 한 칸 이동. 이동 중에는 출발 방향을 유지하고 셀 도착 뒤 다음 입력 방향을 적용
 - 캐릭터 클릭 또는 상단 선택기: 100·200 조작 대상 전환
 - 숫자키 `1`–`4` 또는 핫바 클릭: 액션 실행
 - 핫바 드래그: 슬롯 순서 변경
 - `1` 또는 마우스 휠 클릭: 현재 커서 위치로 로컬 텔레포트
-- 관리 페이지 평면도: 팔레트 클릭 추가, 초록 소품 드래그 이동, 0.05m 스냅, ±90° 회전·반전·삭제
+- 메인 `가구 배치`: 원본 이미지 카드 선택 후 PBR 바닥 클릭, 기존 가구 드래그 이동, ±90° 회전·반전·삭제
+- 관리 페이지 2D·3D: 양쪽 화면에서 드래그 이동, 0.05m 스냅, ±90° 회전·반전·복제·크기 조절·삭제
 
 이 사이트의 스킬 쿨다운과 효과는 프론트엔드 시연용입니다. 실제 피해, 명중, MP, 서버 판정을 표현하지 않습니다.
 
@@ -58,11 +59,11 @@ PVP 원본의 선별 자산 snapshot을 갱신할 때만 다음 명령을 사용
 npm run sync:assets -- --source ../pvp
 ```
 
-추출 결과는 `public/generated/exports/<exportId>/`에 버전 고정되며 `source-export.json`에 원본 HEAD, dirty 여부, 파일별 SHA-256이 기록됩니다. 맵 구조물 JSON, 공개 승인된 GLB, Three.js 소품 레시피, B옵션 배치 모듈과 옵션별 미리보기 41개도 같은 snapshot에 고정됩니다.
+추출 결과는 `public/generated/exports/<exportId>/`에 버전 고정되며 `source-export.json`에 원본 HEAD, dirty 여부, 파일별 SHA-256이 기록됩니다. 맵 구조물 JSON, 공개 승인된 GLB, Three.js 소품 레시피, B옵션 미리보기 41개와 가구·가전 팔레트 미리보기 83개도 같은 snapshot에 고정됩니다.
 
 ## 현재 원본 snapshot
 
-- export ID: `5847f2bc6867-dirty-5ab1342c3e1c`
+- export ID: `5847f2bc6867-dirty-f1070a816e46`
 - PVP HEAD: `5847f2bc68678bdb8fe65d3a5399018f3fae1284`
 - 작업 트리 상태: `dirty` 선별 snapshot
 - canonical pointer: [`public/generated/current.json`](public/generated/current.json)

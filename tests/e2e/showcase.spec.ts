@@ -95,6 +95,19 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   const endY = Number(await actor200.getAttribute("data-world-y"));
   expect(endX - startX).toBeGreaterThanOrEqual(1);
   expect(startY - endY).toBe(endX - startX);
+
+  // 현재 cell이 끝나기 전에는 다음 키의 방향 row로 선회하지 않는다.
+  await page.getByRole("button", { name: "스폰 위치로 돌아가기" }).click();
+  await page.keyboard.down("KeyD");
+  await expect(actor200).toHaveAttribute("data-travel-state", "moving");
+  await actor200.evaluate(async () => {
+    window.dispatchEvent(new KeyboardEvent("keyup", { key: "d", code: "KeyD", bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "w", code: "KeyW", bubbles: true }));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  });
+  await actor200.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW", bubbles: true })));
+  await expect(actor200).toHaveAttribute("data-travel-state", "settled");
+  await expect(actor200).toHaveAttribute("data-direction", "n");
   await observeNextMotion(actor200, "cast");
   await page.getByRole("button", { name: "3번 쇼크스턴" }).click();
   await expect(actor200).toHaveAttribute("data-observed-motion", "cast");
@@ -161,6 +174,30 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   const savedQuote = await page.locator("#option-total").innerText();
   const savedMapId = await mapSelect.inputValue();
 
+  await page.getByRole("button", { name: "가구 배치", exact: true }).click();
+  const furnitureCards = page.locator("#furniture-list .furniture-card");
+  await expect.poll(async () => furnitureCards.count()).toBeGreaterThan(30);
+  const furniturePreview = furnitureCards.first().locator("img");
+  await expect(furniturePreview).toBeVisible();
+  expect(await furniturePreview.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await furnitureCards.first().click();
+  const authoringCanvas = page.locator("#three-world-canvas");
+  const authoringBounds = await authoringCanvas.boundingBox();
+  expect(authoringBounds).not.toBeNull();
+  await page.mouse.click(authoringBounds!.x + authoringBounds!.width / 2, authoringBounds!.y + authoringBounds!.height / 2);
+  await expect(page.locator("#furniture-count")).toHaveText("1개");
+  const placedMapId = await mapSelect.inputValue();
+  await page.getByRole("button", { name: "+90°", exact: true }).first().click();
+  expect(await page.evaluate((mapId) => JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.yawDeg, placedMapId)).toBe(90);
+  const mainSelectionX = Number(await authoringCanvas.getAttribute("data-selected-editor-x"));
+  const mainSelectionY = Number(await authoringCanvas.getAttribute("data-selected-editor-y"));
+  const beforeMainDrag = await page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId);
+  await page.mouse.move(authoringBounds!.x + mainSelectionX, authoringBounds!.y + mainSelectionY);
+  await page.mouse.down();
+  await page.mouse.move(authoringBounds!.x + mainSelectionX + 24, authoringBounds!.y + mainSelectionY, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(async () => page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId)).not.toBe(beforeMainDrag);
+
   await page.reload();
   await expect(page.locator("#stage-loader")).toBeHidden();
   await expect(page.getByLabel("검수맵 선택")).toHaveValue(savedMapId);
@@ -176,6 +213,9 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   expect(await page.locator(".map-card img").first().evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   await expect(page.locator("#interiorEditor")).toHaveAttribute("data-loading", "false");
   await expect.poll(async () => page.locator("#editorAssetList .editor-asset").count()).toBeGreaterThan(30);
+  const editorPreview = page.locator("#editorAssetList .editor-asset img").first();
+  await expect(editorPreview).toBeVisible();
+  expect(await editorPreview.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   await page.locator("#editorAssetList .editor-asset").first().click();
   await expect(page.locator("#interiorEditor")).toHaveAttribute("data-local-prop-count", "1");
   await expect(page.locator("#editorPlanCanvas")).toHaveAttribute("data-local-prop-count", "1");
@@ -184,6 +224,18 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await page.getByRole("button", { name: "⇆ 좌우 반전" }).click();
   const editorMapId = await page.locator("#editorMapSelect").inputValue();
   expect(await page.evaluate((mapId) => JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.yawDeg, editorMapId)).toBe(90);
+  const editorCanvas = page.locator("#editorThreeCanvas");
+  await expect(editorCanvas).toHaveAttribute("data-selected-editor-prop-id", /local-/);
+  const editorBounds = await editorCanvas.boundingBox();
+  expect(editorBounds).not.toBeNull();
+  const selectedX = Number(await editorCanvas.getAttribute("data-selected-editor-x"));
+  const selectedY = Number(await editorCanvas.getAttribute("data-selected-editor-y"));
+  const beforeEditorDrag = await page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), editorMapId);
+  await page.mouse.move(editorBounds!.x + selectedX, editorBounds!.y + selectedY);
+  await page.mouse.down();
+  await page.mouse.move(editorBounds!.x + selectedX + 20, editorBounds!.y + selectedY + 4, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(async () => page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), editorMapId)).not.toBe(beforeEditorDrag);
 
   const map55b = page.locator(".map-card").filter({ hasText: "55B 세대 검증" });
   await map55b.getByLabel("검수 상태").selectOption("pass");

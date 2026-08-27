@@ -1,4 +1,5 @@
 import { fetchJson, resolveProjectUrl, resolveReferencedUrl } from './base';
+import { travelLockedDirection } from './grid';
 import type {
   ActorState,
   CharacterManifest,
@@ -58,7 +59,9 @@ export class ActorView {
   update(actor: ActorState, point: ProjectedPoint, time: number): void {
     this.element.style.transform = `translate3d(${point.x}px, ${point.y}px, 0)`;
     this.element.style.zIndex = String(1_000 + Math.round(point.y));
-    this.element.dataset.direction = actor.direction;
+    const renderDirection = travelLockedDirection(actor.direction, actor.travel);
+    this.element.dataset.direction = renderDirection;
+    this.element.dataset.queuedDirection = actor.queuedDirection || '';
     this.element.dataset.motion = actor.motion;
     this.element.dataset.worldX = actor.displayX.toFixed(4);
     this.element.dataset.worldY = actor.displayY.toFixed(4);
@@ -86,7 +89,7 @@ export class ActorView {
     const frame = Math.floor((elapsed % duration) / duration * frameCount) % frameCount;
     this.element.dataset.animationCycleProgress = String((elapsed % duration) / duration);
     const directionOrder = this.manifest.directions || ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
-    const row = Math.max(0, directionOrder.indexOf(actor.direction));
+    const row = Math.max(0, directionOrder.indexOf(renderDirection));
     const sheetUrl = resolveReferencedUrl(action.sheet, this.manifestUrl);
 
     if (sheetUrl !== this.lastSheet) {

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "ShowcaseCatalogV1-rich",
-  "exportId": "5847f2bc6867-dirty-5ab1342c3e1c",
-  "generatedAt": "2026-08-27T10:52:59.065Z",
+  "exportId": "5847f2bc6867-dirty-f1070a816e46",
+  "generatedAt": "2026-08-27T13:10:11.966Z",
   "maps": [
     {
       "id": "bundang-first-village-51a-prototype",
@@ -198,9 +198,9 @@
     ]
   },
   "renderAssets": {
-    "interiorCatalogUrl": "generated/exports/5847f2bc6867-dirty-5ab1342c3e1c/interior/catalog.json",
-    "recipeCatalogUrl": "generated/exports/5847f2bc6867-dirty-5ab1342c3e1c/interior/recipes.json",
-    "optionModuleUrl": "generated/exports/5847f2bc6867-dirty-5ab1342c3e1c/options/runtime.mjs",
-    "materialManifestUrl": "generated/exports/5847f2bc6867-dirty-5ab1342c3e1c/maps/bundang-first-village-55b-prototype/materials/materials.json"
+    "interiorCatalogUrl": "generated/exports/5847f2bc6867-dirty-f1070a816e46/interior/catalog.json",
+    "recipeCatalogUrl": "generated/exports/5847f2bc6867-dirty-f1070a816e46/interior/recipes.json",
+    "optionModuleUrl": "generated/exports/5847f2bc6867-dirty-f1070a816e46/options/runtime.mjs",
+    "materialManifestUrl": "generated/exports/5847f2bc6867-dirty-f1070a816e46/maps/bundang-first-village-55b-prototype/materials/materials.json"
   }
 }

@@ -24,6 +24,21 @@ export function apartmentUnitWorldPoint(object: WorldObject, point: NumericPoint
   };
 }
 
+/** 월드(cell) 포인터를 세대 로컬 meter로 되돌리는 정확한 역변환. */
+export function apartmentWorldPointToLocalMeters(object: WorldObject, point: { x: number; y: number }): NumericPoint {
+  const transform = object.transform || {};
+  const cellSize = Math.max(0.01, finite(object.geometry?.cellSizeMeters, 0.5));
+  const rotatedX = (finite(point.x) - finite(object.originCell?.x, finite(object.x))) * cellSize;
+  const rotatedY = (finite(point.y) - finite(object.originCell?.y, finite(object.y))) * cellSize;
+  const radians = -finite(transform.rotationDeg) * Math.PI / 180;
+  const mirroredX = rotatedX * Math.cos(radians) - rotatedY * Math.sin(radians);
+  const mirroredY = rotatedX * Math.sin(radians) + rotatedY * Math.cos(radians);
+  return [
+    transform.mirrorX ? -mirroredX : mirroredX,
+    transform.mirrorY ? -mirroredY : mirroredY,
+  ];
+}
+
 /** 미러/회전이 있는 세대에서도 소품의 중심과 yaw를 원본 렌더러와 똑같이 계산한다. */
 export function apartmentPropPlacement(object: WorldObject, prop: ApartmentInteriorProp): {
   center: { x: number; y: number };

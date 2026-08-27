@@ -17,6 +17,7 @@
         "warm-oak-ivory",
         "greige-fabric"
       ],
+      "previewUrl": "previews/bed-single.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -36,6 +37,7 @@
         "warm-oak-ivory",
         "greige-fabric"
       ],
+      "previewUrl": "previews/bed-queen.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -55,6 +57,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/nightstand-compact.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -74,6 +77,7 @@
         "greige-fabric",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/sofa-three-seat.png",
       "rendererRef": {
         "lods": {
           "medium": {
@@ -97,6 +101,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/coffee-table-low.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -116,6 +121,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/tv-media-unit.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -135,6 +141,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/dining-table-four-seat.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -154,6 +161,7 @@
         "warm-oak-ivory",
         "greige-fabric"
       ],
+      "previewUrl": "previews/dining-chair.png",
       "rendererRef": {
         "lods": {
           "medium": {
@@ -177,6 +185,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/work-desk.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -196,6 +205,7 @@
         "charcoal-accent",
         "greige-fabric"
       ],
+      "previewUrl": "previews/office-chair.png",
       "rendererRef": {
         "lods": {
           "medium": {
@@ -219,6 +229,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/wardrobe-two-door.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -238,6 +249,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/bookshelf-tall.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -257,6 +269,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/refrigerator-two-door.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -276,6 +289,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/washer-front-load.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -294,6 +308,7 @@
       "materialVariantIds": [
         "white-ceramic"
       ],
+      "previewUrl": "previews/toilet-floor-mounted.png",
       "rendererRef": {
         "lods": {
           "medium": {
@@ -317,6 +332,7 @@
         "warm-oak-ivory",
         "white-ceramic"
       ],
+      "previewUrl": "previews/vanity-basin-compact.png",
       "rendererRef": {
         "lods": {
           "medium": {
@@ -340,6 +356,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/clothes-styler-tall.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -359,6 +376,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/refrigerator-cabinet-wide.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -378,6 +396,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/washer-dryer-tower.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -396,6 +415,7 @@
       "materialVariantIds": [
         "white-ceramic"
       ],
+      "previewUrl": "previews/bathtub-built-in.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -415,6 +435,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/desktop-computer-desk-set.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -434,6 +455,7 @@
         "charcoal-accent",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/cordless-vacuum-dock.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -453,6 +475,7 @@
         "warm-oak-ivory",
         "white-ceramic"
       ],
+      "previewUrl": "previews/island-counter-modern.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -471,6 +494,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/air-conditioner-outdoor-unit.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -489,6 +513,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/ceiling-cassette-air-conditioner.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -508,6 +533,7 @@
         "charcoal-accent",
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/entry-sliding-partition-door.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -526,6 +552,7 @@
       "materialVariantIds": [
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/wide-plank-floor-finish.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -544,6 +571,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/bathroom-combination-ventilator.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -562,6 +590,7 @@
       "materialVariantIds": [
         "white-ceramic"
       ],
+      "previewUrl": "previews/toilet-integrated-bidet.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -580,6 +609,7 @@
       "materialVariantIds": [
         "greige-fabric"
       ],
+      "previewUrl": "previews/utility-ceramic-elastic-coat.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -598,6 +628,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/air-planner-ceiling-vent.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -617,6 +648,7 @@
         "charcoal-accent",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/bedroom-smart-display-switch.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -635,6 +667,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/closet-breeze-dehumidifier.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -654,6 +687,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/silent-range-hood.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -672,6 +706,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/dishwasher-built-in-die6pt.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -690,6 +725,7 @@
       "materialVariantIds": [
         "charcoal-accent"
       ],
+      "previewUrl": "previews/electric-cooktop-erh-3903.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -708,6 +744,7 @@
       "materialVariantIds": [
         "charcoal-accent"
       ],
+      "previewUrl": "previews/induction-cooktop-nz63b5056ak.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -726,6 +763,7 @@
       "materialVariantIds": [
         "charcoal-accent"
       ],
+      "previewUrl": "previews/induction-cooktop-bei3asb4bi.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -744,6 +782,7 @@
       "materialVariantIds": [
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/notice-balcony-expansion.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -762,6 +801,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/notice-accessibility-entry.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -780,6 +820,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/notice-accessibility-kitchen.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -798,6 +839,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/notice-accessibility-living.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -816,6 +858,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/notice-accessibility-bathroom.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -834,6 +877,7 @@
       "materialVariantIds": [
         "ivory-appliance"
       ],
+      "previewUrl": "previews/notice-accessibility-other.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -852,6 +896,7 @@
       "materialVariantIds": [
         "charcoal-accent"
       ],
+      "previewUrl": "previews/notice-minus-option-package.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -871,6 +916,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/vanity-dressing-table.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -890,6 +936,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/system-hanger-modular.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -909,6 +956,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/entry-pantry-cabinet.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -928,6 +976,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/entry-pantry-shelving.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -947,6 +996,7 @@
         "white-ceramic",
         "greige-fabric"
       ],
+      "previewUrl": "previews/porcelain-tile-floor-finish.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -966,6 +1016,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/entry-pantry-rounded-system-cabinet.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -985,6 +1036,7 @@
         "warm-oak-ivory",
         "greige-fabric"
       ],
+      "previewUrl": "previews/entry-shoe-bench-storage.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1004,6 +1056,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/robot-vacuum-station.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1023,6 +1076,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/water-purifier-countertop.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1042,6 +1096,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/air-circulator-pedestal.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1061,6 +1116,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/kitchen-pantry-tall-cabinet.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1081,6 +1137,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/entry-shoe-cabinet-tall.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1100,6 +1157,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/living-art-wall-fluted-oak.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1119,6 +1177,7 @@
         "greige-fabric",
         "white-ceramic"
       ],
+      "previewUrl": "previews/living-art-wall-greige-stone.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1138,6 +1197,7 @@
         "white-ceramic",
         "greige-fabric"
       ],
+      "previewUrl": "previews/living-art-wall-porcelain-slab.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1157,6 +1217,7 @@
         "greige-fabric",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/living-art-wall-microcement.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1176,6 +1237,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/baby-crib-standard.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1195,6 +1257,7 @@
         "greige-fabric",
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/family-bed-wide.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1214,6 +1277,7 @@
         "greige-fabric",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/baby-bumper-bed.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1233,6 +1297,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/kids-study-desk-compact.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1252,6 +1317,7 @@
         "warm-oak-ivory",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/alpha-room-slim-desk.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1271,6 +1337,7 @@
         "ivory-appliance",
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/refrigerator-fit-cabinet.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1290,6 +1357,7 @@
         "ivory-appliance",
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/kimchi-refrigerator-fit-cabinet.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1310,6 +1378,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/coffee-home-bar-cabinet.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1329,6 +1398,7 @@
         "ivory-appliance",
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/refrigerator-kimchi-wall-set.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1349,6 +1419,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/refrigerator-homebar-wall-set.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1367,6 +1438,7 @@
       "materialVariantIds": [
         "charcoal-accent"
       ],
+      "previewUrl": "previews/istarpark-owned-wall-tv.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1386,6 +1458,7 @@
         "ivory-appliance",
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/istarpark-owned-computer-desk-1200.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1405,6 +1478,7 @@
         "ivory-appliance",
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/istarpark-owned-computer-desk-800.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1424,6 +1498,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/istarpark-owned-dining-table.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1443,6 +1518,7 @@
         "warm-oak-ivory",
         "greige-fabric"
       ],
+      "previewUrl": "previews/istarpark-owned-bed.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1461,6 +1537,7 @@
       "materialVariantIds": [
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/istarpark-owned-side-storage.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1480,6 +1557,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/istarpark-owned-refrigerator.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1498,6 +1576,7 @@
       "materialVariantIds": [
         "warm-oak-ivory"
       ],
+      "previewUrl": "previews/istarpark-owned-underwear-dresser.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1517,6 +1596,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/istarpark-owned-open-bookshelf-5x3.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1536,6 +1616,7 @@
         "warm-oak-ivory",
         "ivory-appliance"
       ],
+      "previewUrl": "previews/istarpark-owned-open-bookshelf-3x3.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1555,6 +1636,7 @@
         "greige-fabric",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/istarpark-owned-sofa-three-seat.png",
       "rendererRef": {
         "kind": "procedural"
       }
@@ -1574,6 +1656,7 @@
         "ivory-appliance",
         "charcoal-accent"
       ],
+      "previewUrl": "previews/istarpark-owned-tower-air-conditioner.png",
       "rendererRef": {
         "kind": "procedural"
       }
