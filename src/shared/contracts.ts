@@ -77,6 +77,12 @@ export interface ShowcaseCatalogV1 {
     null,
   ];
   bOptions: BOptionEntryV1[];
+  renderAssets?: {
+    interiorCatalogUrl: string;
+    recipeCatalogUrl: string;
+    optionModuleUrl: string;
+    materialManifestUrl: string;
+  };
 }
 
 export interface SourceExportFileV1 {

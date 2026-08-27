@@ -10,9 +10,11 @@
 ## 포함 범위
 
 - 검수맵 4종: 51A, 55A, 55B, 59A
+- 원본 검수맵의 바닥·방·벽·창호·문·주방 fixture·충돌 구조
+- 원본 Three.js 소품 레시피 83종과 Blender GLB 중간 LOD 5종
 - 캐릭터 에셋 키 100·200
-- 기본 공격, 쇼크스턴, 더블애로우, 텔레포트
-- 8칸 로컬 핫바, B옵션 팔레트와 견적
+- 기본 공격, 쇼크스턴, 더블애로우, 텔레포트와 원본 스킬 아이콘·효과
+- 인게임 CSS 형태를 옮긴 8칸 로컬 핫바, B옵션 팔레트와 견적·소품 갱신
 - FPS·p95 frame time·렌더러·활성 chunk·자산 캐시 표시
 - 맵별 로컬 검수 상태, 메모, 옵션 조합, JSON 백업·복원
 
@@ -20,7 +22,7 @@
 
 ## 조작법
 
-- `WASD` 또는 방향키: 선택 캐릭터 이동
+- `WASD` 또는 방향키: 인게임과 동일한 화면 동·서·남·북 방향으로 선택 캐릭터 이동
 - 캐릭터 클릭 또는 상단 선택기: 100·200 조작 대상 전환
 - 숫자키 `1`–`8` 또는 핫바 클릭: 액션 실행
 - 핫바 드래그: 슬롯 순서 변경
@@ -53,11 +55,11 @@ PVP 원본의 선별 자산 snapshot을 갱신할 때만 다음 명령을 사용
 npm run sync:assets -- --source ../pvp
 ```
 
-추출 결과는 `public/generated/exports/<exportId>/`에 버전 고정되며 `source-export.json`에 원본 HEAD, dirty 여부, 파일별 SHA-256이 기록됩니다.
+추출 결과는 `public/generated/exports/<exportId>/`에 버전 고정되며 `source-export.json`에 원본 HEAD, dirty 여부, 파일별 SHA-256이 기록됩니다. 맵 구조물 JSON, 공개 승인된 GLB, Three.js 소품 레시피, B옵션 배치 모듈도 같은 snapshot에 고정됩니다.
 
 ## 현재 원본 snapshot
 
-- export ID: `cfdeea65422f-dirty-1066b632f6df`
+- export ID: `cfdeea65422f-dirty-ea8b7d874c79`
 - PVP HEAD: `cfdeea65422f581ef67c1aa11421924fdc29bc39`
 - 작업 트리 상태: `dirty` 선별 snapshot
 - canonical pointer: [`public/generated/current.json`](public/generated/current.json)
@@ -66,7 +68,7 @@ npm run sync:assets -- --source ../pvp
 
 ## 공개 자산 정책
 
-추출기는 명시적 화이트리스트만 허용합니다. runtime에 필요한 맵 JSON, minimap, 정제된 캐릭터 manifest와 sheet, 선택된 스킬 효과, 공개 승인된 B옵션 데이터만 포함합니다. 하드코딩된 추출 경로는 [`config/public-assets.allowlist.json`](config/public-assets.allowlist.json)의 유지관리자 검토 공개 승인 목록과 정확히 일치해야 하며, 외부·미확인·권리 불명 자산은 기본 거부됩니다.
+추출기는 명시적 화이트리스트만 허용합니다. runtime에 필요한 맵 JSON, minimap, 정제된 캐릭터 manifest와 sheet, 선택된 스킬 아이콘·효과, 공개 승인된 Blender GLB·Three.js 레시피·B옵션 데이터만 포함합니다. 하드코딩된 추출 경로는 [`config/public-assets.allowlist.json`](config/public-assets.allowlist.json)의 유지관리자 검토 공개 승인 목록과 정확히 일치해야 하며, 외부·미확인·권리 불명 자산은 기본 거부됩니다.
 
 이 승인 목록은 프로젝트 운영을 위한 maintainer-reviewed publication approval이며, 소유권이나 재배포 권리에 대한 법적 증명이 아닙니다. 공개 전 최종 권리 확인 책임을 대체하지 않습니다.
 
@@ -76,6 +78,8 @@ npm run sync:assets -- --source ../pvp
 - 참조 사진, 감사 로그, draft, DB와 환경 파일
 - 사용자·작업자 식별자와 절대 로컬 경로
 - 재배포 권리를 확인하지 못한 외부 자산
+
+원본 런타임의 raster `hud_bottom.png`는 출처가 프로젝트 밖으로 연결되어 공개본에서 제외했습니다. 대신 같은 런타임의 4+4 슬롯 배치, 크기, 간격, 키 표기와 쿨다운 형태를 CSS로 옮겼습니다.
 
 GitHub Pages에 포함된 파일은 누구나 내려받을 수 있습니다. `operatorOnly`나 `privateMap` 같은 원본 서버 플래그를 보안 경계로 사용하지 않습니다.
 

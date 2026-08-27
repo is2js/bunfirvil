@@ -1,35 +1,163 @@
 import * as THREE from 'three';
-import type { ActorState, ProjectedPoint, WorldData } from './types';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { fetchJson, resolveProjectUrl, resolveReferencedUrl } from './base';
+import type {
+  ActorState,
+  ApartmentGeometry,
+  ApartmentInteriorProp,
+  ProjectedPoint,
+  ShowcaseRenderAssets,
+  WorldData,
+  WorldObject,
+} from './types';
 
-function parseColor(value: string | undefined, fallback: number): THREE.Color {
-  try {
-    return new THREE.Color(value || fallback);
-  } catch {
-    return new THREE.Color(fallback);
+type NumericPoint = [number, number];
+
+interface RuntimePart {
+  shape?: 'box' | 'cylinder' | 'vertical-cylinder' | 'ellipsoid' | 'rounded-l-shelf' | string;
+  scale?: number[];
+  offset?: number[];
+  materialRole?: string;
+}
+
+interface RuntimeAsset {
+  assetId: string;
+  rendererKind?: 'glb' | 'procedural';
+  defaultDimensionsMeters?: { width?: number; depth?: number; height?: number } | number[];
+  mountingKind?: 'floor' | 'ceiling' | 'wall' | 'anchored' | 'room-finish' | string;
+  defaultMountHeightMeters?: number;
+  parts?: RuntimePart[];
+  rendererRef?: { lods?: Record<string, { url?: string }> };
+}
+
+interface RuntimeInteriorCatalog {
+  assets?: RuntimeAsset[];
+  materialVariants?: Array<{ id?: string; primary?: string; secondary?: string; accent?: string }>;
+}
+
+interface RuntimeRecipeCatalog {
+  assets?: Array<Pick<RuntimeAsset, 'assetId' | 'mountingKind' | 'defaultMountHeightMeters' | 'parts'>>;
+}
+
+interface RuntimeMaterialManifest {
+  materials?: Array<{
+    id?: string;
+    roughness?: number;
+    maps?: { diffuse?: { webp?: string; png?: string } };
+  }>;
+}
+
+interface OptionRuntimeModule {
+  bundangPrototypeOptionProps(
+    geometry: ApartmentGeometry,
+    unitTypeId: string,
+    selectedIds: string[],
+  ): ApartmentInteriorProp[];
+}
+
+const DEFAULT_VARIANTS: Record<string, Record<string, string>> = {
+  'warm-oak-ivory': { primary: '#b58f62', secondary: '#efe9dc', accent: '#72563c' },
+  'greige-fabric': { primary: '#a9a096', secondary: '#d8d0c7', accent: '#655f59' },
+  'charcoal-accent': { primary: '#393b3e', secondary: '#77736e', accent: '#17191b' },
+  'ivory-appliance': { primary: '#e8e5dd', secondary: '#c9c7c0', accent: '#4b5054' },
+  'white-ceramic': { primary: '#f4f5f2', secondary: '#d8dcda', accent: '#9ba4a2' },
+  'ceramic-white': { primary: '#f7f7f2', secondary: '#dfe3e0', accent: '#98a3a1' },
+  'integrated-bidet-white': { primary: '#f8f8f4', secondary: '#e3e7e4', accent: '#aeb8b5' },
+  'brushed-chrome': { primary: '#c9cece', secondary: '#eef1ef', accent: '#6f797a' },
+  'new-apartment-warm-white-glass': { primary: '#ecebe4', secondary: '#b8d0cf', accent: '#d8d5ca' },
+  'e-pyeonhansesang-wide-greige-oak': { primary: '#b7aa99', secondary: '#c9beae', accent: '#8f8273' },
+  'golden-shore-engineered-stone': { primary: '#e3dfd4', secondary: '#f2efe7', accent: '#b8b1a2' },
+  'pet-warm-ivory': { primary: '#e8e5dc', secondary: '#f5f3ec', accent: '#aaa79f' },
+  'mma-sanded-goose-panel': { primary: '#8f918d', secondary: '#d4d4ce', accent: '#767974' },
+  'system-ac-light-gray': { primary: '#d8dadd', secondary: '#eef0f2', accent: '#aeb3b9' },
+  'system-ac-premium-light-gray': { primary: '#e4e6e8', secondary: '#f5f6f7', accent: '#b8bdc3' },
+};
+
+function finite(value: unknown, fallback = 0): number {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function points(value: unknown): NumericPoint[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((point): NumericPoint[] => (
+    Array.isArray(point) && point.length >= 2
+      ? [[finite(point[0]), finite(point[1])]]
+      : []
+  ));
+}
+
+function rowPolygon(row: Record<string, unknown>): NumericPoint[] {
+  const explicit = points(row.footprintPolygonMeters || row.polygon);
+  if (explicit.length >= 3) return explicit;
+  const bounds = Array.isArray(row.boundsMeters) ? row.boundsMeters.map((value) => finite(value)) : [];
+  if (bounds.length !== 4) return [];
+  return [[bounds[0], bounds[1]], [bounds[2], bounds[1]], [bounds[2], bounds[3]], [bounds[0], bounds[3]]];
+}
+
+function verticalWallSpan(segment: Record<string, unknown>): { base: number; height: number } {
+  const id = String(segment.id || '');
+  const role = String(segment.verticalRole || '');
+  const fragment = ['sill', 'lintel', 'header', 'partial'].includes(role) || /-(?:sill|lintel|header)$/.test(id);
+  if (!fragment) return { base: 0, height: 2.3 };
+  const base = Math.max(0, Math.min(2.3, finite(segment.baseMeters)));
+  return { base, height: Math.max(0.02, Math.min(2.3 - base, finite(segment.heightMeters, 2.3 - base))) };
+}
+
+function dimensions(source: ApartmentInteriorProp, asset?: RuntimeAsset): [number, number, number] {
+  const candidate = source.renderDimensionsMeters || source.dimensionsMeters || asset?.defaultDimensionsMeters;
+  if (Array.isArray(candidate)) {
+    return [Math.max(0.02, finite(candidate[0], 0.8)), Math.max(0.02, finite(candidate[1], 0.8)), Math.max(0.002, finite(candidate[2], 0.8))];
+  }
+  const value = candidate && typeof candidate === 'object' ? candidate : {};
+  return [
+    Math.max(0.02, finite((value as { width?: number }).width, 0.8)),
+    Math.max(0.02, finite((value as { depth?: number }).depth, 0.8)),
+    Math.max(0.002, finite((value as { height?: number }).height, 0.8)),
+  ];
+}
+
+function disposeTree(group: THREE.Group): void {
+  for (const child of [...group.children]) {
+    child.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      if (!mesh.userData.sharedGeometry) mesh.geometry?.dispose?.();
+      const materials = Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : [];
+      materials.forEach((material) => material.dispose());
+    });
+    group.remove(child);
   }
 }
 
-function optionHash(value: string): number {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) hash = (Math.imul(hash, 31) + value.charCodeAt(index)) | 0;
-  return Math.abs(hash);
-}
-
 export class ThreeWorldRenderer {
-  readonly label = 'THREE·PBR';
+  readonly label = 'THREE·PBR·원본구조';
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.OrthographicCamera(-12, 12, 12, -12, 0.1, 180);
-  private readonly worldRoot = new THREE.Group();
-  private readonly optionRoot = new THREE.Group();
+  private readonly camera = new THREE.OrthographicCamera(-12, 12, 12, -12, 0.1, 220);
+  private readonly structureRoot = new THREE.Group();
+  private readonly propRoot = new THREE.Group();
+  private readonly modelLoader = new GLTFLoader();
+  private readonly modelCache = new Map<string, Promise<THREE.Group>>();
+  private readonly textureCache = new Map<string, THREE.Texture>();
+  private readonly assets = new Map<string, RuntimeAsset>();
+  private readonly variants = new Map<string, Record<string, string>>(Object.entries(DEFAULT_VARIANTS));
+  private optionRuntime: OptionRuntimeModule | null = null;
+  private interiorCatalogUrl = '';
   private world: WorldData | null = null;
+  private apartment: WorldObject | null = null;
   private focus = new THREE.Vector3();
-  private cameraOffset = new THREE.Vector3(18, 23, 18);
+  private readonly cameraOffset = new THREE.Vector3(18, 23, 18);
   private cssWidth = 1;
   private cssHeight = 1;
   private selectedOptionIds: string[] = [];
+  private loadToken = 0;
+  private contractsReady: Promise<void>;
 
-  constructor(private readonly canvas: HTMLCanvasElement) {
+  constructor(
+    private readonly canvas: HTMLCanvasElement,
+    private readonly renderAssets?: ShowcaseRenderAssets,
+    private readonly onAssetLoaded: () => void = () => undefined,
+  ) {
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -39,44 +167,53 @@ export class ThreeWorldRenderer {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
-    this.renderer.shadowMap.enabled = false;
-    this.scene.background = new THREE.Color(0x07141a);
-    this.scene.fog = new THREE.FogExp2(0x07141a, 0.018);
-    this.scene.add(this.worldRoot, this.optionRoot);
+    this.renderer.toneMappingExposure = 1.04;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.scene.background = new THREE.Color('#11100e');
+    this.scene.fog = new THREE.FogExp2('#11100e', 0.009);
+    this.scene.add(this.structureRoot, this.propRoot);
 
-    const hemisphere = new THREE.HemisphereLight(0xbff8ee, 0x243128, 1.65);
-    const keyLight = new THREE.DirectionalLight(0xffefd0, 2.1);
-    keyLight.position.set(-16, 28, 12);
-    const fillLight = new THREE.DirectionalLight(0x5ad5c4, 0.8);
-    fillLight.position.set(18, 10, -20);
-    this.scene.add(hemisphere, keyLight, fillLight);
+    const hemisphere = new THREE.HemisphereLight('#f8fafc', '#554a3f', 1.55);
+    const sun = new THREE.DirectionalLight('#fff1d6', 2.2);
+    sun.position.set(-7, 13, -5);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.left = -22;
+    sun.shadow.camera.right = 22;
+    sun.shadow.camera.top = 22;
+    sun.shadow.camera.bottom = -22;
+    const fill = new THREE.DirectionalLight('#a5d8ff', 0.6);
+    fill.position.set(12, 8, 12);
+    this.scene.add(hemisphere, sun, fill);
+    this.contractsReady = this.loadContracts();
   }
 
   setWorld(world: WorldData): void {
-    this.disposeGroup(this.worldRoot);
-    this.disposeGroup(this.optionRoot);
     this.world = world;
+    this.apartment = world.objects.find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry) || null;
     this.focus.copy(this.worldPoint(world.entry.spawn.x, world.entry.spawn.y, 0));
-    this.buildGround(world);
-    this.buildTiles(world);
-    this.buildBlockers(world);
-    this.buildObjectVolumes(world);
-    this.buildOptionProps();
+    const token = ++this.loadToken;
+    this.rebuildStructure();
+    this.rebuildProps();
+    void this.contractsReady.then(() => {
+      if (token !== this.loadToken || this.world !== world) return;
+      this.rebuildStructure();
+      this.rebuildProps();
+    });
     this.resize();
     this.updateCamera();
   }
 
   setSelectedOptions(optionIds: string[]): void {
-    this.selectedOptionIds = optionIds;
-    this.disposeGroup(this.optionRoot);
-    this.buildOptionProps();
+    this.selectedOptionIds = [...optionIds];
+    this.rebuildProps();
+    void this.contractsReady.then(() => this.rebuildProps());
   }
 
   follow(target: ActorState, smoothing = 0.095): void {
     if (!this.world) return;
-    const destination = this.worldPoint(target.x, target.y, 0);
-    this.focus.lerp(destination, smoothing);
+    this.focus.lerp(this.worldPoint(target.x, target.y, 0), smoothing);
     this.updateCamera();
   }
 
@@ -85,25 +222,64 @@ export class ThreeWorldRenderer {
     this.resize();
     this.camera.updateMatrixWorld();
     const vector = this.worldPoint(x, y, 0.78).project(this.camera);
-    return {
-      x: (vector.x * 0.5 + 0.5) * this.cssWidth,
-      y: (-vector.y * 0.5 + 0.5) * this.cssHeight,
-    };
+    return { x: (vector.x * 0.5 + 0.5) * this.cssWidth, y: (-vector.y * 0.5 + 0.5) * this.cssHeight };
   }
 
-  render(time: number): void {
+  render(): void {
     this.resize();
-    this.optionRoot.children.forEach((child, index) => {
-      child.position.y = 0.32 + Math.sin(time / 650 + index) * 0.035;
-    });
     this.renderer.render(this.scene, this.camera);
   }
 
   dispose(): void {
-    this.disposeGroup(this.worldRoot);
-    this.disposeGroup(this.optionRoot);
+    disposeTree(this.structureRoot);
+    disposeTree(this.propRoot);
+    this.textureCache.forEach((texture) => texture.dispose());
+    this.textureCache.clear();
     this.renderer.dispose();
     this.renderer.forceContextLoss();
+  }
+
+  private async loadContracts(): Promise<void> {
+    if (!this.renderAssets) return;
+    this.interiorCatalogUrl = resolveProjectUrl(this.renderAssets.interiorCatalogUrl);
+    const [catalog, recipes, materialManifest, optionRuntime] = await Promise.all([
+      fetchJson<RuntimeInteriorCatalog>(this.interiorCatalogUrl),
+      fetchJson<RuntimeRecipeCatalog>(resolveProjectUrl(this.renderAssets.recipeCatalogUrl)),
+      fetchJson<RuntimeMaterialManifest>(resolveProjectUrl(this.renderAssets.materialManifestUrl)),
+      import(/* @vite-ignore */ resolveProjectUrl(this.renderAssets.optionModuleUrl)) as Promise<OptionRuntimeModule>,
+    ]);
+    const recipesById = new Map((recipes.assets || []).map((asset) => [asset.assetId, asset]));
+    for (const asset of catalog.assets || []) {
+      if (!asset.assetId) continue;
+      this.assets.set(asset.assetId, { ...asset, ...recipesById.get(asset.assetId) });
+    }
+    this.canvas.dataset.interiorAssetCount = String(this.assets.size);
+    this.canvas.dataset.recipePartCount = String(
+      [...this.assets.values()].reduce((sum, asset) => sum + (asset.parts?.length || 0), 0),
+    );
+    for (const variant of catalog.materialVariants || []) {
+      if (!variant.id) continue;
+      this.variants.set(variant.id, {
+        primary: variant.primary || '#b58f62',
+        secondary: variant.secondary || '#efe9dc',
+        accent: variant.accent || '#72563c',
+      });
+    }
+    this.optionRuntime = optionRuntime;
+    const materialUrl = resolveProjectUrl(this.renderAssets.materialManifestUrl);
+    await Promise.all((materialManifest.materials || []).map(async (material) => {
+      const source = material.maps?.diffuse?.webp || material.maps?.diffuse?.png;
+      if (!material.id || !source) return;
+      const url = resolveReferencedUrl(source, materialUrl);
+      const texture = await new THREE.TextureLoader().loadAsync(url);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(2, 2);
+      this.textureCache.set(material.id, texture);
+      this.onAssetLoaded();
+    }));
+    this.onAssetLoaded();
   }
 
   private resize(): void {
@@ -114,7 +290,7 @@ export class ThreeWorldRenderer {
     this.cssWidth = width;
     this.cssHeight = height;
     this.renderer.setSize(width, height, false);
-    const viewHeight = 27;
+    const viewHeight = 29;
     const viewWidth = viewHeight * width / height;
     this.camera.left = -viewWidth / 2;
     this.camera.right = viewWidth / 2;
@@ -125,7 +301,7 @@ export class ThreeWorldRenderer {
 
   private updateCamera(): void {
     this.camera.position.copy(this.focus).add(this.cameraOffset);
-    this.camera.lookAt(this.focus.x, this.focus.y - 0.3, this.focus.z);
+    this.camera.lookAt(this.focus.x, this.focus.y + 0.25, this.focus.z);
     this.camera.updateMatrixWorld();
   }
 
@@ -135,137 +311,421 @@ export class ThreeWorldRenderer {
     return new THREE.Vector3(x - width / 2 + 0.5, elevation, y - height / 2 + 0.5);
   }
 
-  private buildGround(world: WorldData): void {
-    const geometry = new THREE.PlaneGeometry(world.width + 32, world.height + 32);
-    geometry.rotateX(-Math.PI / 2);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x33483e,
-      roughness: 0.98,
-      metalness: 0,
-    });
-    const ground = new THREE.Mesh(geometry, material);
-    ground.position.y = -0.085;
-    this.worldRoot.add(ground);
-
-    const grid = new THREE.GridHelper(Math.max(world.width, world.height), Math.max(world.width, world.height), 0x3a756b, 0x23473f);
-    const materials = Array.isArray(grid.material) ? grid.material : [grid.material];
-    materials.forEach((item) => {
-      item.transparent = true;
-      item.opacity = 0.2;
-    });
-    grid.position.y = -0.035;
-    this.worldRoot.add(grid);
+  private localPoint(object: WorldObject, point: NumericPoint, elevation = 0): THREE.Vector3 {
+    const sourceX = finite(point[0]);
+    const sourceY = finite(point[1]);
+    const transform = object.transform || {};
+    const mirrorX = transform.mirrorX ? -sourceX : sourceX;
+    const mirrorY = transform.mirrorY ? -sourceY : sourceY;
+    const radians = finite(transform.rotationDeg) * Math.PI / 180;
+    const localX = mirrorX * Math.cos(radians) - mirrorY * Math.sin(radians);
+    const localY = mirrorX * Math.sin(radians) + mirrorY * Math.cos(radians);
+    const cellSize = Math.max(0.01, finite(object.geometry?.cellSizeMeters, 0.5));
+    const originX = finite(object.originCell?.x, finite(object.x));
+    const originY = finite(object.originCell?.y, finite(object.y));
+    return this.worldPoint(originX + localX / cellSize, originY + localY / cellSize, elevation);
   }
 
-  private buildTiles(world: WorldData): void {
-    const tileEntries = world.tiles.size > 0
-      ? [...world.tiles.entries()]
-      : Array.from({ length: world.width * world.height }, (_, index) => [`${index % world.width},${Math.floor(index / world.width)}`, 'light-soil'] as const);
-    const geometry = new THREE.BoxGeometry(0.98, 0.08, 0.98);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      vertexColors: true,
-      roughness: 0.86,
-      metalness: 0.01,
+  private shapeGeometry(object: WorldObject, polygon: NumericPoint[]): THREE.ShapeGeometry | null {
+    if (polygon.length < 3) return null;
+    const shape = new THREE.Shape();
+    polygon.forEach((point, index) => {
+      const world = this.localPoint(object, point);
+      if (index === 0) shape.moveTo(world.x, world.z);
+      else shape.lineTo(world.x, world.z);
     });
-    const tiles = new THREE.InstancedMesh(geometry, material, tileEntries.length);
-    const matrix = new THREE.Matrix4();
-    const position = new THREE.Vector3();
-    tileEntries.forEach(([key, tileId], index) => {
-      const [x, y] = key.split(',').map(Number);
-      position.copy(this.worldPoint(x, y, 0));
-      matrix.makeTranslation(position.x, position.y, position.z);
-      tiles.setMatrixAt(index, matrix);
-      const color = parseColor(world.palette.get(tileId), 0x637160);
-      const variation = ((x * 13 + y * 7) % 5 - 2) * 0.018;
-      color.offsetHSL(0, 0, variation);
-      tiles.setColorAt(index, color);
-    });
-    tiles.instanceMatrix.needsUpdate = true;
-    if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true;
-    this.worldRoot.add(tiles);
+    shape.closePath();
+    const geometry = new THREE.ShapeGeometry(shape);
+    geometry.rotateX(Math.PI / 2);
+    return geometry;
   }
 
-  private buildBlockers(world: WorldData): void {
-    if (world.blocked.size === 0) return;
-    const geometry = new THREE.BoxGeometry(0.9, 0.48, 0.9);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x36574f,
-      roughness: 0.72,
-      metalness: 0.04,
-      emissive: 0x071713,
-    });
-    const blockers = new THREE.InstancedMesh(geometry, material, world.blocked.size);
-    const matrix = new THREE.Matrix4();
-    [...world.blocked].forEach((key, index) => {
-      const [x, y] = key.split(',').map(Number);
-      const position = this.worldPoint(x, y, 0.26);
-      matrix.makeTranslation(position.x, position.y, position.z);
-      blockers.setMatrixAt(index, matrix);
-    });
-    blockers.instanceMatrix.needsUpdate = true;
-    this.worldRoot.add(blockers);
-  }
-
-  private buildObjectVolumes(world: WorldData): void {
-    for (const object of world.objects) {
-      if (!object.bounds) continue;
-      const x1 = Number(object.bounds.x1) || 0;
-      const y1 = Number(object.bounds.y1) || 0;
-      const x2 = Number(object.bounds.x2) || x1 + 1;
-      const y2 = Number(object.bounds.y2) || y1 + 1;
-      const width = Math.max(1, x2 - x1 + 1);
-      const depth = Math.max(1, y2 - y1 + 1);
-      const geometry = new THREE.BoxGeometry(width, 0.12, depth);
-      const material = new THREE.MeshStandardMaterial({
-        color: 0x6fcab9,
+  private material(
+    color: string,
+    options: { roughness?: number; metalness?: number; opacity?: number; mapId?: string; glass?: boolean } = {},
+  ): THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial {
+    if (options.glass) {
+      return new THREE.MeshPhysicalMaterial({
+        color,
+        roughness: 0.12,
+        metalness: 0,
         transparent: true,
-        opacity: 0.1,
-        roughness: 0.45,
-        metalness: 0.08,
-        wireframe: true,
+        opacity: options.opacity ?? 0.32,
+        transmission: 0.35,
+        thickness: 0.02,
+        depthWrite: false,
+        side: THREE.DoubleSide,
       });
-      const volume = new THREE.Mesh(geometry, material);
-      volume.position.copy(this.worldPoint(x1 + (width - 1) / 2, y1 + (depth - 1) / 2, 0.15));
-      this.worldRoot.add(volume);
     }
-  }
-
-  private buildOptionProps(): void {
-    if (!this.world || this.selectedOptionIds.length === 0) return;
-    const bounds = this.world.objects[0]?.bounds;
-    const originX = Number(bounds?.x1) || this.world.entry.spawn.x - 4;
-    const originY = Number(bounds?.y1) || this.world.entry.spawn.y - 4;
-    this.selectedOptionIds.forEach((id, index) => {
-      const hash = optionHash(id);
-      const width = 0.42 + (hash % 4) * 0.12;
-      const height = 0.35 + (Math.floor(hash / 5) % 4) * 0.14;
-      const depth = 0.4 + (Math.floor(hash / 17) % 4) * 0.1;
-      const geometry = new THREE.BoxGeometry(width, height, depth);
-      const material = new THREE.MeshStandardMaterial({
-        color: index % 2 ? 0xe2b963 : 0x88d9c8,
-        roughness: 0.38,
-        metalness: 0.16,
-        emissive: index % 2 ? 0x2d1b05 : 0x08221d,
-        emissiveIntensity: 0.32,
-      });
-      const prop = new THREE.Mesh(geometry, material);
-      const x = originX + 2 + ((hash + index * 3) % 10);
-      const y = originY + 2 + ((Math.floor(hash / 11) + index * 2) % 8);
-      prop.position.copy(this.worldPoint(x, y, 0.32));
-      this.optionRoot.add(prop);
+    const opacity = options.opacity ?? 1;
+    return new THREE.MeshStandardMaterial({
+      color,
+      map: options.mapId ? this.textureCache.get(options.mapId) || null : null,
+      roughness: options.roughness ?? 0.88,
+      metalness: options.metalness ?? 0.01,
+      transparent: opacity < 1,
+      opacity,
+      depthWrite: opacity >= 0.7,
+      side: THREE.DoubleSide,
     });
   }
 
-  private disposeGroup(group: THREE.Group): void {
-    for (const child of [...group.children]) {
-      child.traverse((object) => {
-        const renderable = object as THREE.Mesh;
-        renderable.geometry?.dispose();
-        const materials = Array.isArray(renderable.material) ? renderable.material : renderable.material ? [renderable.material] : [];
-        materials.forEach((material) => material.dispose());
-      });
-      group.remove(child);
+  private rebuildStructure(): void {
+    disposeTree(this.structureRoot);
+    if (!this.world) return;
+    const foundation = new THREE.Mesh(
+      new THREE.PlaneGeometry(this.world.width + 24, this.world.height + 24),
+      this.material('#393a36', { roughness: 0.98 }),
+    );
+    foundation.geometry.rotateX(-Math.PI / 2);
+    foundation.position.y = -0.08;
+    foundation.receiveShadow = true;
+    this.structureRoot.add(foundation);
+    if (!this.apartment?.geometry) return;
+    this.buildApartment(this.apartment);
+    this.canvas.dataset.apartmentStructure = 'ready';
+    this.canvas.dataset.structureMeshCount = String(this.structureRoot.children.length);
+  }
+
+  private buildApartment(object: WorldObject): void {
+    const geometry = object.geometry as ApartmentGeometry;
+    const floorPolygon = points(geometry.floorPolygon);
+    const floorGeometry = this.shapeGeometry(object, floorPolygon);
+    if (!floorGeometry) return;
+    const cellSize = Math.max(0.01, finite(geometry.cellSizeMeters, 0.5));
+    const floor = new THREE.Mesh(
+      floorGeometry,
+      this.material('#b9aa9b', { roughness: 0.86, mapId: String(geometry.materials?.wood || 'bundang-55b-greige-oak-v1') }),
+    );
+    floor.position.y = 0.035;
+    floor.receiveShadow = true;
+    floor.userData.structureKind = 'apartment-floor';
+    this.structureRoot.add(floor);
+
+    for (const roomValue of geometry.roomZones || []) {
+      const room = roomValue as Record<string, unknown>;
+      const polygon = rowPolygon(room);
+      if (polygon.length < 3 || String(room.material || 'wood') === 'wood') continue;
+      const roomGeometry = this.shapeGeometry(object, polygon);
+      if (!roomGeometry) continue;
+      const wet = ['tile-wet', 'tile-gray-grout'].includes(String(room.material || ''));
+      const overlay = new THREE.Mesh(
+        roomGeometry,
+        this.material(wet ? '#aaa9a6' : '#a9a59d', {
+          roughness: 0.94,
+          mapId: wet ? 'bundang-55b-gray-grout-tile-v1' : undefined,
+        }),
+      );
+      overlay.position.y = 0.052;
+      overlay.receiveShadow = true;
+      this.structureRoot.add(overlay);
     }
+
+    for (const fixtureValue of geometry.kitchenFixtures || []) {
+      const fixture = fixtureValue as Record<string, unknown>;
+      const polygon = rowPolygon(fixture);
+      if (polygon.length < 3) continue;
+      const xs = polygon.map(([x]) => x);
+      const ys = polygon.map(([, y]) => y);
+      const x1 = Math.min(...xs); const x2 = Math.max(...xs);
+      const y1 = Math.min(...ys); const y2 = Math.max(...ys);
+      const center = this.localPoint(object, [(x1 + x2) / 2, (y1 + y2) / 2]);
+      const totalHeight = Math.max(0.2, finite(fixture.heightMeters, 0.9)) / cellSize;
+      const topHeight = Math.max(0.03, finite(fixture.countertopThicknessMeters, 0.06)) / cellSize;
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(Math.abs(x2 - x1) / cellSize, totalHeight - topHeight, Math.abs(y2 - y1) / cellSize),
+        this.material('#c8c5bf', { roughness: 0.78 }),
+      );
+      body.position.set(center.x, (totalHeight - topHeight) / 2 + 0.045, center.z);
+      body.castShadow = true;
+      this.structureRoot.add(body);
+      const top = new THREE.Mesh(
+        new THREE.BoxGeometry(Math.abs(x2 - x1) / cellSize + 0.06, topHeight, Math.abs(y2 - y1) / cellSize + 0.06),
+        this.material('#aaa8a4', { roughness: 0.58 }),
+      );
+      top.position.set(center.x, totalHeight - topHeight / 2 + 0.045, center.z);
+      top.castShadow = true;
+      this.structureRoot.add(top);
+    }
+
+    for (const blockValue of geometry.solidBlocks || []) {
+      const block = blockValue as Record<string, unknown>;
+      const polygon = rowPolygon(block);
+      if (polygon.length < 3) continue;
+      const shape = new THREE.Shape();
+      polygon.forEach((point, index) => {
+        const world = this.localPoint(object, point);
+        if (index === 0) shape.moveTo(world.x, world.z); else shape.lineTo(world.x, world.z);
+      });
+      shape.closePath();
+      const height = Math.max(0.2, finite(block.heightMeters, 2.3)) / cellSize;
+      const blockGeometry = new THREE.ExtrudeGeometry(shape, { depth: height, steps: 1, bevelEnabled: false });
+      blockGeometry.rotateX(Math.PI / 2);
+      blockGeometry.translate(0, height, 0);
+      const mesh = new THREE.Mesh(blockGeometry, this.material('#c9c3bb', { roughness: 0.92 }));
+      mesh.castShadow = true;
+      this.structureRoot.add(mesh);
+    }
+
+    const localCenter = floorPolygon.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 });
+    localCenter.x /= Math.max(1, floorPolygon.length);
+    localCenter.y /= Math.max(1, floorPolygon.length);
+    for (const segmentValue of geometry.wallSegments || []) {
+      const segment = segmentValue as Record<string, unknown>;
+      const ends = points([segment.a, segment.b]);
+      if (ends.length !== 2) continue;
+      const start = this.localPoint(object, ends[0]);
+      const end = this.localPoint(object, ends[1]);
+      const length = Math.max(0.02, Math.hypot(end.x - start.x, end.z - start.z));
+      const span = verticalWallSpan(segment);
+      const height = span.height / cellSize;
+      const thickness = Math.max(0.04, finite(segment.thicknessMeters, 0.12) / cellSize);
+      const midpointLocal = { x: (ends[0][0] + ends[1][0]) / 2, y: (ends[0][1] + ends[1][1]) / 2 };
+      const frontCutaway = String(segment.kind || '').includes('exterior')
+        && (midpointLocal.x > localCenter.x + 2 || midpointLocal.y > localCenter.y + 2);
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(length, height, thickness),
+        this.material('#b8b0a7', {
+          roughness: 0.94,
+          mapId: String(geometry.materials?.plaster || 'bundang-55b-warm-gray-wall-v1'),
+          opacity: frontCutaway ? 0.38 : 1,
+        }),
+      );
+      mesh.position.set((start.x + end.x) / 2, span.base / cellSize + height / 2, (start.z + end.z) / 2);
+      mesh.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
+      mesh.castShadow = !frontCutaway;
+      mesh.receiveShadow = true;
+      this.structureRoot.add(mesh);
+    }
+
+    for (const openingValue of geometry.openings || []) {
+      const opening = openingValue as Record<string, unknown>;
+      const ends = points([opening.a, opening.b]);
+      if (ends.length !== 2) continue;
+      const start = this.localPoint(object, ends[0]);
+      const end = this.localPoint(object, ends[1]);
+      const length = Math.max(0.1, Math.hypot(end.x - start.x, end.z - start.z));
+      const isWindow = String(opening.type || '').includes('window');
+      if (isWindow) {
+        const height = Math.max(0.15, finite(opening.heightMeters, 1.2) / cellSize);
+        const pane = new THREE.Mesh(
+          new THREE.BoxGeometry(length, height, Math.max(0.035, finite(opening.frameThicknessMeters, 0.06) / cellSize)),
+          this.material('#a9c9d4', { glass: true }),
+        );
+        pane.position.set((start.x + end.x) / 2, finite(opening.baseMeters, 0.9) / cellSize + height / 2, (start.z + end.z) / 2);
+        pane.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
+        this.structureRoot.add(pane);
+        continue;
+      }
+      this.addDoor(object, opening, start, end, cellSize);
+    }
+  }
+
+  private addDoor(object: WorldObject, opening: Record<string, unknown>, start: THREE.Vector3, end: THREE.Vector3, cellSize: number): void {
+    if (opening.leafState === 'none' || opening.leafVisible === false) return;
+    const width = Math.max(0.2, Math.hypot(end.x - start.x, end.z - start.z));
+    const leafCount = Math.max(1, Math.min(2, Math.round(finite(opening.leafCount, 1))));
+    const widthScale = Math.max(0.4, Math.min(1, finite(opening.leafWidthScale, 0.82)));
+    const leafWidth = width / leafCount * widthScale;
+    const height = Math.max(0.2, finite(opening.leafHeightMeters, finite(opening.heightMeters, 2.1) * 0.92) / cellSize);
+    const thickness = Math.max(0.04, finite(opening.leafThicknessMeters, 0.045) / cellSize);
+    const center = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+    for (let index = 0; index < leafCount; index += 1) {
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(leafWidth, height, thickness), this.material('#b8afa3', { roughness: 0.68 }));
+      const hinge = leafCount > 1 ? (index === 0 ? start : end) : String(opening.hingeEndpoint || 'b') === 'a' ? start : end;
+      const handle = leafCount > 1 ? center : hinge === start ? end : start;
+      const closed = new THREE.Vector2((handle.x - hinge.x) * widthScale, (handle.z - hinge.z) * widthScale);
+      let opened = closed.clone();
+      if (!['closed', 'closed-passable'].includes(String(opening.leafState || 'open'))) {
+        const angle = Math.abs(finite(opening.leafOpenAngleDeg, 82)) * Math.PI / 180;
+        opened.rotateAround(new THREE.Vector2(0, 0), index === 0 ? angle : -angle);
+      }
+      panel.position.set(hinge.x + opened.x / 2, height / 2, hinge.z + opened.y / 2);
+      panel.rotation.y = -Math.atan2(opened.y, opened.x);
+      panel.castShadow = true;
+      panel.receiveShadow = true;
+      this.structureRoot.add(panel);
+    }
+    void object;
+  }
+
+  private rebuildProps(): void {
+    disposeTree(this.propRoot);
+    const object = this.apartment;
+    const geometry = object?.geometry;
+    if (!object || !geometry) return;
+    const props = this.optionRuntime
+      ? this.optionRuntime.bundangPrototypeOptionProps(geometry, object.unitTypeId || this.world?.entry.unitType || '', this.selectedOptionIds)
+      : geometry.interiorProps || [];
+    this.canvas.dataset.apartmentPropCount = String(props.length);
+    for (const prop of props) void this.addProp(object, prop);
+  }
+
+  private async modelTemplate(asset: RuntimeAsset): Promise<THREE.Group | null> {
+    const url = asset.rendererRef?.lods?.medium?.url || asset.rendererRef?.lods?.high?.url || asset.rendererRef?.lods?.low?.url;
+    if (!url || !this.interiorCatalogUrl) return null;
+    const resolved = resolveReferencedUrl(url, this.interiorCatalogUrl);
+    if (!this.modelCache.has(resolved)) {
+      this.modelCache.set(resolved, this.modelLoader.loadAsync(resolved).then((gltf) => {
+        this.onAssetLoaded();
+        this.canvas.dataset.loadedGlbCount = String(this.modelCache.size);
+        return gltf.scene;
+      }));
+    }
+    return this.modelCache.get(resolved) || null;
+  }
+
+  private async addProp(object: WorldObject, prop: ApartmentInteriorProp): Promise<void> {
+    const assetId = String(prop.assetId || '');
+    const asset = this.assets.get(assetId);
+    const token = this.loadToken;
+    let group: THREE.Group;
+    try {
+      const template = asset?.rendererKind === 'glb' ? await this.modelTemplate(asset) : null;
+      group = template && asset ? this.modelProp(template, prop, asset) : this.proceduralProp(prop, asset);
+    } catch {
+      group = this.proceduralProp(prop, asset);
+    }
+    if (token !== this.loadToken || object !== this.apartment) {
+      disposeTree(group);
+      return;
+    }
+    const source = Array.isArray(prop.positionMeters) ? prop.positionMeters : [0, 0];
+    const center = this.localPoint(object, [finite(source[0]), finite(source[1])]);
+    const size = dimensions(prop, asset);
+    const cellSize = Math.max(0.01, finite(object.geometry?.cellSizeMeters, 0.5));
+    const mountingKind = asset?.mountingKind || 'floor';
+    const clearHeight = finite(object.geometry?.clearHeightMeters, 2.3);
+    const mountHeight = Number.isFinite(Number(prop.mountHeightMeters))
+      ? Math.max(0, finite(prop.mountHeightMeters))
+      : mountingKind === 'ceiling'
+        ? Math.max(0, clearHeight - size[2])
+        : mountingKind === 'room-finish'
+          ? 0.002
+          : ['wall', 'anchored'].includes(mountingKind)
+            ? Math.max(0, finite(asset?.defaultMountHeightMeters))
+            : 0.018;
+    group.position.set(center.x, mountHeight / cellSize, center.z);
+    group.rotation.y = -(finite(prop.yawDeg) + finite(object.transform?.rotationDeg)) * Math.PI / 180;
+    this.propRoot.add(group);
+  }
+
+  private modelProp(template: THREE.Group, prop: ApartmentInteriorProp, asset: RuntimeAsset): THREE.Group {
+    const group = template.clone(true);
+    const palette = this.palette(prop.materialVariantId);
+    group.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      mesh.geometry = prop.mirrored ? this.reflectedGeometry(mesh.geometry) : mesh.geometry.clone();
+      mesh.material = this.material(palette.primary, { roughness: 0.82 });
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    });
+    const target = dimensions(prop, asset);
+    const cellSize = Math.max(0.01, finite(this.apartment?.geometry?.cellSizeMeters, 0.5));
+    const box = new THREE.Box3().setFromObject(group);
+    const source = box.getSize(new THREE.Vector3());
+    group.scale.set(
+      target[0] / cellSize / Math.max(0.001, source.x),
+      target[2] / cellSize / Math.max(0.001, source.y),
+      target[1] / cellSize / Math.max(0.001, source.z),
+    );
+    const scaled = new THREE.Box3().setFromObject(group);
+    group.position.y -= scaled.min.y;
+    return group;
+  }
+
+  private proceduralProp(prop: ApartmentInteriorProp, asset?: RuntimeAsset): THREE.Group {
+    const group = new THREE.Group();
+    const size = dimensions(prop, asset);
+    const cellSize = Math.max(0.01, finite(this.apartment?.geometry?.cellSizeMeters, 0.5));
+    const palette = this.palette(prop.materialVariantId);
+    const roomFinish = asset?.mountingKind === 'room-finish';
+    for (const part of asset?.parts?.length ? asset.parts : [{ shape: 'box', scale: [1, 1, 1], offset: [0, 0, 0.5] }]) {
+      const width = size[0] * finite(part.scale?.[0], 1) / cellSize;
+      const depth = size[1] * finite(part.scale?.[1], 1) / cellSize;
+      const height = size[2] * finite(part.scale?.[2], 1) / cellSize;
+      const shape = String(part.shape || 'box');
+      let geometry: THREE.BufferGeometry;
+      if (shape === 'vertical-cylinder') {
+        const radius = Math.max(0.02, Math.min(width, depth) / 2);
+        geometry = new THREE.CylinderGeometry(radius, radius, Math.max(0.02, height), 18);
+      } else if (shape === 'cylinder') {
+        const radius = Math.max(0.02, Math.min(width, height) / 2);
+        geometry = new THREE.CylinderGeometry(radius, radius, Math.max(0.02, depth), 18);
+        geometry.rotateX(Math.PI / 2);
+      } else if (shape === 'ellipsoid') {
+        geometry = new THREE.SphereGeometry(0.5, 20, 12);
+        geometry.scale(width, height, depth);
+      } else if (shape === 'rounded-l-shelf') {
+        geometry = this.roundedShelf(width, depth, height);
+      } else {
+        geometry = new THREE.BoxGeometry(Math.max(0.02, width), Math.max(roomFinish ? 0.002 : 0.02, height), Math.max(0.02, depth));
+      }
+      const finalGeometry = prop.mirrored ? this.reflectedGeometry(geometry) : geometry;
+      if (prop.mirrored) geometry.dispose();
+      const role = String(part.materialRole || 'primary');
+      const material = role === 'glass'
+        ? this.material('#d9f0ef', { glass: true })
+        : this.material(palette[role] || palette.primary, { roughness: prop.materialVariantId === 'charcoal-accent' ? 0.62 : 0.88 });
+      const mesh = new THREE.Mesh(finalGeometry, material);
+      mesh.position.set(
+        size[0] * finite(part.offset?.[0]) / cellSize,
+        size[2] * finite(part.offset?.[2], 0.5) / cellSize,
+        size[1] * finite(part.offset?.[1]) / cellSize,
+      );
+      mesh.castShadow = !roomFinish && role !== 'glass';
+      mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+    return group;
+  }
+
+  /** 원본 interior preview와 같은 winding-safe X축 반사. */
+  private reflectedGeometry(source: THREE.BufferGeometry): THREE.BufferGeometry {
+    const geometry = source.clone();
+    const position = geometry.attributes.position;
+    for (let index = 0; position && index < position.count; index += 1) {
+      position.setX(index, -position.getX(index));
+    }
+    const normal = geometry.attributes.normal;
+    for (let index = 0; normal && index < normal.count; index += 1) {
+      normal.setX(index, -normal.getX(index));
+    }
+    if (geometry.index) {
+      const indices = geometry.index.array;
+      for (let index = 0; index + 2 < indices.length; index += 3) {
+        const second = indices[index + 1];
+        indices[index + 1] = indices[index + 2];
+        indices[index + 2] = second;
+      }
+      geometry.index.needsUpdate = true;
+    }
+    if (position) position.needsUpdate = true;
+    if (normal) normal.needsUpdate = true;
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    return geometry;
+  }
+
+  private roundedShelf(width: number, depth: number, height: number): THREE.ExtrudeGeometry {
+    const shape = new THREE.Shape();
+    shape.moveTo(-width * 0.5, -depth * 0.5);
+    shape.lineTo(width * 0.5, -depth * 0.5);
+    shape.lineTo(width * 0.5, -depth * 0.1);
+    shape.lineTo(-width * 0.08, -depth * 0.1);
+    shape.quadraticCurveTo(-width * 0.26, -depth * 0.1, -width * 0.26, depth * 0.08);
+    shape.lineTo(-width * 0.26, depth * 0.5);
+    shape.lineTo(-width * 0.5, depth * 0.5);
+    shape.closePath();
+    const bevel = Math.max(0.002, Math.min(width, depth, height) * 0.08);
+    const geometry = new THREE.ExtrudeGeometry(shape, { depth: Math.max(0.01, height), steps: 1, curveSegments: 8, bevelEnabled: true, bevelSegments: 2, bevelSize: bevel, bevelThickness: bevel });
+    geometry.rotateX(-Math.PI / 2);
+    geometry.translate(0, -height / 2, 0);
+    return geometry;
+  }
+
+  private palette(variantId: unknown): Record<string, string> {
+    return this.variants.get(String(variantId || '')) || this.variants.get('warm-oak-ivory') || DEFAULT_VARIANTS['warm-oak-ivory'];
   }
 }

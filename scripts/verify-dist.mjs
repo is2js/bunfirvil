@@ -421,6 +421,18 @@ async function verifyCatalog(distRoot, failures) {
   if (!Array.isArray(catalog.defaultHotbar) || catalog.defaultHotbar.length !== 8) failures.push("catalog.defaultHotbar는 8칸이어야 합니다.");
   if (!Array.isArray(catalog.bOptions) || catalog.bOptions.length !== 41) failures.push("catalog.bOptions에는 41개 옵션이 필요합니다.");
 
+  const renderAssets = catalog.renderAssets;
+  const requiredRenderAssets = ["interiorCatalogUrl", "recipeCatalogUrl", "optionModuleUrl", "materialManifestUrl"];
+  if (!renderAssets || typeof renderAssets !== "object") {
+    failures.push("catalog.renderAssets 원본 구조물 렌더 계약이 없습니다.");
+  } else {
+    for (const field of requiredRenderAssets) {
+      if (typeof renderAssets[field] !== "string" || !renderAssets[field]) {
+        failures.push(`catalog.renderAssets.${field}가 없습니다.`);
+      }
+    }
+  }
+
   const mapIds = new Set((catalog.maps || []).map((entry) => entry?.id));
   if (mapIds.size !== EXPECTED_MAP_IDS.size || [...EXPECTED_MAP_IDS].some((id) => !mapIds.has(id))) {
     failures.push("catalog의 51A/55A/55B/59A 검수맵 구성이 올바르지 않습니다.");
@@ -457,6 +469,9 @@ async function verifyCatalog(distRoot, failures) {
   for (const [index, option] of (catalog.bOptions || []).entries()) {
     if (option?.previewUrl) references.push([option.previewUrl, `bOptions[${index}].previewUrl`, distRoot]);
   }
+  for (const field of requiredRenderAssets) {
+    if (renderAssets?.[field]) references.push([renderAssets[field], `renderAssets.${field}`, distRoot]);
+  }
   references.push([current.sourceExportUrl, "current.sourceExportUrl", generatedRoot]);
   for (const [relativeUrl, label, referenceRoot] of references) {
     const resolved = safeCatalogAsset(referenceRoot, relativeUrl, label, failures);
@@ -473,6 +488,36 @@ async function verifyCatalog(distRoot, failures) {
     for (const [effectIndex, effectUrl] of (skill.effectUrls || []).entries()) {
       await verifyEffectManifest(effectUrl, skill, effectIndex, distRoot, exportRoot, failures);
     }
+  }
+
+  const interiorCatalogPath = renderAssets?.interiorCatalogUrl
+    ? safeCatalogAsset(distRoot, renderAssets.interiorCatalogUrl, "renderAssets.interiorCatalogUrl", failures)
+    : null;
+  const recipeCatalogPath = renderAssets?.recipeCatalogUrl
+    ? safeCatalogAsset(distRoot, renderAssets.recipeCatalogUrl, "renderAssets.recipeCatalogUrl", failures)
+    : null;
+  if (interiorCatalogPath) {
+    const interiorCatalog = await readJson(interiorCatalogPath, "interior runtime catalog", failures);
+    const assets = Array.isArray(interiorCatalog?.assets) ? interiorCatalog.assets : [];
+    if (assets.length !== 83) failures.push(`interior runtime catalog에는 정확히 83개 자산이 필요합니다 (${assets.length}).`);
+    let glbCount = 0;
+    for (const [assetIndex, asset] of assets.entries()) {
+      const lods = asset?.rendererRef?.lods;
+      if (!lods || typeof lods !== "object") continue;
+      for (const [lod, row] of Object.entries(lods)) {
+        if (!row?.url) continue;
+        glbCount += 1;
+        await requireManifestAsset(exportRoot, interiorCatalogPath, row.url, `interior.assets[${assetIndex}].rendererRef.lods.${lod}.url`, failures);
+      }
+    }
+    if (glbCount !== 5) failures.push(`interior runtime catalog에는 정확히 5개 Blender GLB가 필요합니다 (${glbCount}).`);
+  }
+  if (recipeCatalogPath) {
+    const recipes = await readJson(recipeCatalogPath, "interior recipe catalog", failures);
+    const assets = Array.isArray(recipes?.assets) ? recipes.assets : [];
+    const partCount = assets.reduce((sum, asset) => sum + (Array.isArray(asset?.parts) ? asset.parts.length : 0), 0);
+    if (assets.length !== 83) failures.push(`interior recipe catalog에는 정확히 83개 레시피가 필요합니다 (${assets.length}).`);
+    if (partCount !== 399) failures.push(`interior recipe catalog에는 정확히 399개 part가 필요합니다 (${partCount}).`);
   }
 
   const sourceExportPath = safeCatalogAsset(generatedRoot, current.sourceExportUrl, "current.sourceExportUrl", failures);

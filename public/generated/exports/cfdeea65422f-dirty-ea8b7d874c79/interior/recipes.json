@@ -1,0 +1,6172 @@
+{
+  "schemaVersion": "bunfirvil-interior-recipes-v1",
+  "assets": [
+    {
+      "assetId": "bed-single",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.96,
+            0.26
+          ],
+          "offset": [
+            0,
+            0,
+            0.13
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.94,
+            0.9,
+            0.3
+          ],
+          "offset": [
+            0,
+            0.02,
+            0.41
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.08,
+            0.72
+          ],
+          "offset": [
+            0,
+            -0.46,
+            0.36
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "bed-queen",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.96,
+            0.26
+          ],
+          "offset": [
+            0,
+            0,
+            0.13
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.94,
+            0.9,
+            0.3
+          ],
+          "offset": [
+            0,
+            0.02,
+            0.41
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.08,
+            0.72
+          ],
+          "offset": [
+            0,
+            -0.46,
+            0.36
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "nightstand-compact",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.9
+          ],
+          "offset": [
+            0,
+            0,
+            0.45
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.82,
+            0.04,
+            0.08
+          ],
+          "offset": [
+            0,
+            0.505,
+            0.56
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "sofa-three-seat",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.76,
+            0.28
+          ],
+          "offset": [
+            0,
+            0.08,
+            0.2
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.3,
+            0.26
+          ],
+          "offset": [
+            0,
+            0.08,
+            0.48
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.94,
+            0.18,
+            0.6
+          ],
+          "offset": [
+            0,
+            -0.34,
+            0.6
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.1,
+            0.82,
+            0.46
+          ],
+          "offset": [
+            -0.46,
+            0,
+            0.42
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.1,
+            0.82,
+            0.46
+          ],
+          "offset": [
+            0.46,
+            0,
+            0.42
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "coffee-table-low",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.15
+          ],
+          "offset": [
+            0,
+            0,
+            0.86
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.78
+          ],
+          "offset": [
+            -0.38,
+            -0.38,
+            0.39
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.78
+          ],
+          "offset": [
+            0.38,
+            -0.38,
+            0.39
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.78
+          ],
+          "offset": [
+            -0.38,
+            0.38,
+            0.39
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.78
+          ],
+          "offset": [
+            0.38,
+            0.38,
+            0.39
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "tv-media-unit",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.24
+          ],
+          "offset": [
+            0,
+            0,
+            0.12
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.75,
+            0.12,
+            0.58
+          ],
+          "offset": [
+            0,
+            0,
+            0.66
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.34
+          ],
+          "offset": [
+            0,
+            0,
+            0.37
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "dining-table-four-seat",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.1
+          ],
+          "offset": [
+            0,
+            0,
+            0.94
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.88
+          ],
+          "offset": [
+            -0.38,
+            -0.38,
+            0.44
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.88
+          ],
+          "offset": [
+            0.38,
+            -0.38,
+            0.44
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.88
+          ],
+          "offset": [
+            -0.38,
+            0.38,
+            0.44
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.88
+          ],
+          "offset": [
+            0.38,
+            0.38,
+            0.44
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "dining-chair",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.82,
+            0.82,
+            0.1
+          ],
+          "offset": [
+            0,
+            0.03,
+            0.48
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.82,
+            0.12,
+            0.48
+          ],
+          "offset": [
+            0,
+            -0.4,
+            0.72
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.46
+          ],
+          "offset": [
+            -0.34,
+            -0.34,
+            0.23
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.46
+          ],
+          "offset": [
+            0.34,
+            -0.34,
+            0.23
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.46
+          ],
+          "offset": [
+            -0.34,
+            0.34,
+            0.23
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.46
+          ],
+          "offset": [
+            0.34,
+            0.34,
+            0.23
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "work-desk",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.1
+          ],
+          "offset": [
+            0,
+            0,
+            0.94
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.88
+          ],
+          "offset": [
+            -0.39,
+            -0.39,
+            0.44
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.88
+          ],
+          "offset": [
+            0.39,
+            -0.39,
+            0.44
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.88
+          ],
+          "offset": [
+            -0.39,
+            0.39,
+            0.44
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.88
+          ],
+          "offset": [
+            0.39,
+            0.39,
+            0.44
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "office-chair",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.82,
+            0.82,
+            0.1
+          ],
+          "offset": [
+            0,
+            0.03,
+            0.48
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.82,
+            0.12,
+            0.48
+          ],
+          "offset": [
+            0,
+            -0.4,
+            0.72
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.46
+          ],
+          "offset": [
+            -0.34,
+            -0.34,
+            0.23
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.46
+          ],
+          "offset": [
+            0.34,
+            -0.34,
+            0.23
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.46
+          ],
+          "offset": [
+            -0.34,
+            0.34,
+            0.23
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.46
+          ],
+          "offset": [
+            0.34,
+            0.34,
+            0.23
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "wardrobe-two-door",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.02,
+            1.01,
+            0.96
+          ],
+          "offset": [
+            0,
+            0.505,
+            0.5
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "bookshelf-tall",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.05
+          ],
+          "offset": [
+            0,
+            0,
+            0.03
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            1,
+            1
+          ],
+          "offset": [
+            -0.46,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            1,
+            1
+          ],
+          "offset": [
+            0.46,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.92,
+            0.04
+          ],
+          "offset": [
+            0,
+            0,
+            0.25
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.92,
+            0.04
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.92,
+            0.04
+          ],
+          "offset": [
+            0,
+            0,
+            0.75
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.92,
+            0.04
+          ],
+          "offset": [
+            0,
+            0,
+            0.98
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "refrigerator-two-door",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.02,
+            1.01,
+            0.94
+          ],
+          "offset": [
+            0,
+            0.505,
+            0.5
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "washer-front-load",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.62,
+            0.09,
+            0.62
+          ],
+          "offset": [
+            0,
+            0.505,
+            0.52
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "toilet-floor-mounted",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.52,
+            0.42,
+            0.34
+          ],
+          "offset": [
+            0,
+            0.02,
+            0.17
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "ellipsoid",
+          "scale": [
+            0.98,
+            0.92,
+            0.34
+          ],
+          "offset": [
+            0,
+            -0.05,
+            0.4
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "ellipsoid",
+          "scale": [
+            0.9,
+            0.84,
+            0.055
+          ],
+          "offset": [
+            0,
+            -0.05,
+            0.53
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.9,
+            0.27,
+            0.56
+          ],
+          "offset": [
+            0,
+            0.35,
+            0.62
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "vanity-basin-compact",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.82
+          ],
+          "offset": [
+            0,
+            0,
+            0.41
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.9,
+            0.9,
+            0.12
+          ],
+          "offset": [
+            0,
+            0,
+            0.94
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "clothes-styler-tall",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.82,
+            0.025,
+            0.91
+          ],
+          "offset": [
+            0,
+            0.505,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.62,
+            0.03,
+            0.035
+          ],
+          "offset": [
+            0,
+            0.522,
+            0.08
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "refrigerator-cabinet-wide",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.77,
+            0.92,
+            0.78
+          ],
+          "offset": [
+            0,
+            0.04,
+            0.42
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.02,
+            0.94,
+            0.72
+          ],
+          "offset": [
+            0,
+            0.51,
+            0.42
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "washer-dryer-tower",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.64,
+            0.08,
+            0.3
+          ],
+          "offset": [
+            0,
+            0.505,
+            0.27
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.64,
+            0.08,
+            0.3
+          ],
+          "offset": [
+            0,
+            0.505,
+            0.72
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.38,
+            0.03,
+            0.055
+          ],
+          "offset": [
+            0,
+            0.525,
+            0.5
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "bathtub-built-in",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.42
+          ],
+          "offset": [
+            0,
+            0,
+            0.21
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.88,
+            0.72,
+            0.23
+          ],
+          "offset": [
+            0,
+            0.03,
+            0.32
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.09,
+            0.17
+          ],
+          "offset": [
+            0,
+            -0.455,
+            0.47
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.09,
+            0.17
+          ],
+          "offset": [
+            0,
+            0.455,
+            0.47
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "desktop-computer-desk-set",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.07
+          ],
+          "offset": [
+            0,
+            0,
+            0.57
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.53
+          ],
+          "offset": [
+            -0.39,
+            -0.39,
+            0.265
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.53
+          ],
+          "offset": [
+            0.39,
+            -0.39,
+            0.265
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.53
+          ],
+          "offset": [
+            -0.39,
+            0.39,
+            0.265
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.53
+          ],
+          "offset": [
+            0.39,
+            0.39,
+            0.265
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.48,
+            0.055,
+            0.34
+          ],
+          "offset": [
+            0,
+            -0.12,
+            0.78
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.05,
+            0.05,
+            0.18
+          ],
+          "offset": [
+            0,
+            -0.1,
+            0.61
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.2,
+            0.34,
+            0.42
+          ],
+          "offset": [
+            0.37,
+            0.18,
+            0.79
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "cordless-vacuum-dock",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.72,
+            0.72,
+            0.08
+          ],
+          "offset": [
+            0,
+            0,
+            0.04
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.28,
+            0.22,
+            0.65
+          ],
+          "offset": [
+            0,
+            0,
+            0.48
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.15,
+            0.12,
+            0.38
+          ],
+          "offset": [
+            0,
+            0,
+            0.8
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.78,
+            0.22,
+            0.08
+          ],
+          "offset": [
+            0,
+            0,
+            0.98
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "island-counter-modern",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.82,
+            0.84,
+            0.86
+          ],
+          "offset": [
+            0,
+            0,
+            0.43
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.1
+          ],
+          "offset": [
+            0,
+            0,
+            0.95
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.02,
+            0.68,
+            0.68
+          ],
+          "offset": [
+            0,
+            0.43,
+            0.43
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "air-conditioner-outdoor-unit",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.92
+          ],
+          "offset": [
+            0,
+            0,
+            0.46
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.58,
+            0.06,
+            0.58
+          ],
+          "offset": [
+            -0.16,
+            0.515,
+            0.48
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.3,
+            0.025,
+            0.025
+          ],
+          "offset": [
+            0.27,
+            0.52,
+            0.32
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.3,
+            0.025,
+            0.025
+          ],
+          "offset": [
+            0.27,
+            0.52,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.3,
+            0.025,
+            0.025
+          ],
+          "offset": [
+            0.27,
+            0.52,
+            0.6799999999999999
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "ceiling-cassette-air-conditioner",
+      "mountingKind": "ceiling",
+      "defaultMountHeightMeters": 2.0599999999999996,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.7647
+          ],
+          "offset": [
+            0,
+            0,
+            0.38235
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.76,
+            0.76,
+            0.1471
+          ],
+          "offset": [
+            0,
+            0,
+            0.8235
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.12,
+            0.84,
+            0.1176
+          ],
+          "offset": [
+            0,
+            0,
+            0.9412
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "entry-sliding-partition-door",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.94,
+            0.12,
+            0.035
+          ],
+          "offset": [
+            0,
+            -0.3,
+            0.985
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.94,
+            0.12,
+            0.035
+          ],
+          "offset": [
+            0,
+            0.3,
+            0.985
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.025,
+            0.72,
+            1
+          ],
+          "offset": [
+            -0.475,
+            0,
+            0.5
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.025,
+            0.72,
+            1
+          ],
+          "offset": [
+            0.475,
+            0,
+            0.5
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.46,
+            0.22,
+            0.86
+          ],
+          "offset": [
+            -0.245,
+            -0.22,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.46,
+            0.22,
+            0.86
+          ],
+          "offset": [
+            -0.215,
+            0.22,
+            0.5
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "wide-plank-floor-finish",
+      "mountingKind": "room-finish",
+      "defaultMountHeightMeters": 0.002,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "bathroom-combination-ventilator",
+      "mountingKind": "ceiling",
+      "defaultMountHeightMeters": 2.0999999999999996,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.7879
+          ],
+          "offset": [
+            0,
+            0,
+            0.39395
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.06,
+            0.84,
+            0.1818
+          ],
+          "offset": [
+            -0.24,
+            0,
+            0.9091
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.06,
+            0.84,
+            0.1818
+          ],
+          "offset": [
+            -0.08,
+            0,
+            0.9091
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.06,
+            0.84,
+            0.1818
+          ],
+          "offset": [
+            0.08,
+            0,
+            0.9091
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.06,
+            0.84,
+            0.1818
+          ],
+          "offset": [
+            0.24,
+            0,
+            0.9091
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "toilet-integrated-bidet",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.52,
+            0.42,
+            0.34
+          ],
+          "offset": [
+            0,
+            0.02,
+            0.17
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "ellipsoid",
+          "scale": [
+            0.98,
+            0.92,
+            0.34
+          ],
+          "offset": [
+            0,
+            -0.05,
+            0.4
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "ellipsoid",
+          "scale": [
+            0.9,
+            0.84,
+            0.055
+          ],
+          "offset": [
+            0,
+            -0.05,
+            0.53
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.9,
+            0.27,
+            0.56
+          ],
+          "offset": [
+            0,
+            0.35,
+            0.62
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.18,
+            0.3,
+            0.12
+          ],
+          "offset": [
+            0.54,
+            -0.02,
+            0.61
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "utility-ceramic-elastic-coat",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.04,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.74
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.62,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.45,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.35
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "air-planner-ceiling-vent",
+      "mountingKind": "ceiling",
+      "defaultMountHeightMeters": 2.2199999999999998,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.7879
+          ],
+          "offset": [
+            0,
+            0,
+            0.39395
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.06,
+            0.84,
+            0.1818
+          ],
+          "offset": [
+            -0.24,
+            0,
+            0.9091
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.06,
+            0.84,
+            0.1818
+          ],
+          "offset": [
+            -0.08,
+            0,
+            0.9091
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.06,
+            0.84,
+            0.1818
+          ],
+          "offset": [
+            0.08,
+            0,
+            0.9091
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.06,
+            0.84,
+            0.1818
+          ],
+          "offset": [
+            0.24,
+            0,
+            0.9091
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "bedroom-smart-display-switch",
+      "mountingKind": "anchored",
+      "defaultMountHeightMeters": 1.15,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.82,
+            0.12,
+            0.72
+          ],
+          "offset": [
+            0,
+            0.51,
+            0.52
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "closet-breeze-dehumidifier",
+      "mountingKind": "anchored",
+      "defaultMountHeightMeters": 0.3,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.72,
+            0.03,
+            0.045
+          ],
+          "offset": [
+            0,
+            0.515,
+            0.3400000000000001
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.72,
+            0.03,
+            0.045
+          ],
+          "offset": [
+            0,
+            0.515,
+            0.48000000000000004
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.72,
+            0.03,
+            0.045
+          ],
+          "offset": [
+            0,
+            0.515,
+            0.64
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.72,
+            0.03,
+            0.045
+          ],
+          "offset": [
+            0,
+            0.515,
+            0.78
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "silent-range-hood",
+      "mountingKind": "anchored",
+      "defaultMountHeightMeters": 1.35,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.42,
+            0.48,
+            0.66
+          ],
+          "offset": [
+            0,
+            -0.18,
+            0.68
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.28
+          ],
+          "offset": [
+            0,
+            0,
+            0.18
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.86,
+            0.76,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.02,
+            0.03
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "dishwasher-built-in-die6pt",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.9,
+            0.025,
+            0.76
+          ],
+          "offset": [
+            0,
+            0.505,
+            0.48
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.72,
+            0.03,
+            0.05
+          ],
+          "offset": [
+            0,
+            0.525,
+            0.88
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "electric-cooktop-erh-3903",
+      "mountingKind": "anchored",
+      "defaultMountHeightMeters": 0.9,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.54
+          ],
+          "offset": [
+            0,
+            0,
+            0.27
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.3,
+            0.04,
+            0.3
+          ],
+          "offset": [
+            -0.24,
+            -0.16,
+            0.6
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.35,
+            0.04,
+            0.35
+          ],
+          "offset": [
+            0.22,
+            -0.13,
+            0.6
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.26,
+            0.04,
+            0.26
+          ],
+          "offset": [
+            0,
+            0.23,
+            0.6
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "induction-cooktop-nz63b5056ak",
+      "mountingKind": "anchored",
+      "defaultMountHeightMeters": 0.9,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.54
+          ],
+          "offset": [
+            0,
+            0,
+            0.27
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.3,
+            0.04,
+            0.3
+          ],
+          "offset": [
+            -0.24,
+            -0.16,
+            0.6
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.35,
+            0.04,
+            0.35
+          ],
+          "offset": [
+            0.22,
+            -0.13,
+            0.6
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.26,
+            0.04,
+            0.26
+          ],
+          "offset": [
+            0,
+            0.23,
+            0.6
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "induction-cooktop-bei3asb4bi",
+      "mountingKind": "anchored",
+      "defaultMountHeightMeters": 0.9,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.54
+          ],
+          "offset": [
+            0,
+            0,
+            0.27
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.3,
+            0.04,
+            0.3
+          ],
+          "offset": [
+            -0.24,
+            -0.16,
+            0.6
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.35,
+            0.04,
+            0.35
+          ],
+          "offset": [
+            0.22,
+            -0.13,
+            0.6
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.26,
+            0.04,
+            0.26
+          ],
+          "offset": [
+            0,
+            0.23,
+            0.6
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "notice-balcony-expansion",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.04,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.74
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.62,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.45,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.35
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "notice-accessibility-entry",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.04,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.74
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.62,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.45,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.35
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "notice-accessibility-kitchen",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.04,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.74
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.62,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.45,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.35
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "notice-accessibility-living",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.04,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.74
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.62,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.45,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.35
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "notice-accessibility-bathroom",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.04,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.74
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.62,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.45,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.35
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "notice-accessibility-other",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.04,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.74
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.62,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.45,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.35
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "notice-minus-option-package",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.04,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.74
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.62,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.45,
+            0.04,
+            0.06
+          ],
+          "offset": [
+            0,
+            0.52,
+            0.35
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "vanity-dressing-table",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "system-hanger-modular",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "entry-pantry-cabinet",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "entry-pantry-shelving",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "porcelain-tile-floor-finish",
+      "mountingKind": "room-finish",
+      "defaultMountHeightMeters": 0.002,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "entry-pantry-rounded-system-cabinet",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.055,
+            0.96
+          ],
+          "offset": [
+            0,
+            -0.4725,
+            0.48
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.055,
+            1,
+            0.96
+          ],
+          "offset": [
+            -0.4725,
+            0,
+            0.48
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            0.56,
+            0.96
+          ],
+          "offset": [
+            0.4775,
+            -0.22,
+            0.48
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "rounded-l-shelf",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.08
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "rounded-l-shelf",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.3
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "rounded-l-shelf",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.52
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "rounded-l-shelf",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.74
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "rounded-l-shelf",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.96
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.66,
+            0.08,
+            0.055
+          ],
+          "offset": [
+            0.16,
+            -0.34,
+            0.025
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.7,
+            0.055
+          ],
+          "offset": [
+            -0.39,
+            0.05,
+            0.025
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "entry-shoe-bench-storage",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.68
+          ],
+          "offset": [
+            0,
+            0,
+            0.34
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1.02,
+            1.04,
+            0.16
+          ],
+          "offset": [
+            0,
+            0,
+            0.82
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.018,
+            1.02,
+            0.54
+          ],
+          "offset": [
+            -0.24,
+            0.51,
+            0.32
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.018,
+            1.02,
+            0.54
+          ],
+          "offset": [
+            0.24,
+            0.51,
+            0.32
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "robot-vacuum-station",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.62,
+            0.62,
+            1
+          ],
+          "offset": [
+            0,
+            -0.18,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.76,
+            0.22,
+            0.26
+          ],
+          "offset": [
+            0,
+            0.2,
+            0.15
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.32,
+            0.05,
+            0.1
+          ],
+          "offset": [
+            0,
+            0.32,
+            0.62
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "water-purifier-countertop",
+      "mountingKind": "anchored",
+      "defaultMountHeightMeters": 0.9,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.74,
+            0.04,
+            0.18
+          ],
+          "offset": [
+            0,
+            0.51,
+            0.72
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.08,
+            0.18,
+            0.28
+          ],
+          "offset": [
+            0.18,
+            0.42,
+            0.42
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "air-circulator-pedestal",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.72,
+            0.1,
+            0.12
+          ],
+          "offset": [
+            0,
+            0,
+            0.07
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.1,
+            0.1,
+            0.58
+          ],
+          "offset": [
+            0,
+            0,
+            0.4
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.88,
+            0.2,
+            0.42
+          ],
+          "offset": [
+            0,
+            0,
+            0.77
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.6,
+            0.23,
+            0.28
+          ],
+          "offset": [
+            0,
+            0.03,
+            0.77
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "kitchen-pantry-tall-cabinet",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.02,
+            1.02,
+            0.92
+          ],
+          "offset": [
+            0,
+            0.51,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.025,
+            0.05,
+            0.34
+          ],
+          "offset": [
+            -0.22,
+            0.54,
+            0.52
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.025,
+            0.05,
+            0.34
+          ],
+          "offset": [
+            0.22,
+            0.54,
+            0.52
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "entry-shoe-cabinet-tall",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.018,
+            1.02,
+            0.92
+          ],
+          "offset": [
+            0,
+            0.51,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.025,
+            0.05,
+            0.4
+          ],
+          "offset": [
+            -0.25,
+            0.54,
+            0.54
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.025,
+            0.05,
+            0.4
+          ],
+          "offset": [
+            0.25,
+            0.54,
+            0.54
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.94,
+            0.92,
+            0.055
+          ],
+          "offset": [
+            0,
+            0,
+            0.1
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "living-art-wall-fluted-oak",
+      "mountingKind": "wall",
+      "defaultMountHeightMeters": 0.05,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            -0.45,
+            0.09,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            -0.35,
+            0.09,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            -0.25,
+            0.09,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            -0.15,
+            0.09,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            -0.05,
+            0.09,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            0.05,
+            0.09,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            0.15,
+            0.09,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            0.25,
+            0.09,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            0.35,
+            0.09,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            0.45,
+            0.09,
+            0.5
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "living-art-wall-greige-stone",
+      "mountingKind": "wall",
+      "defaultMountHeightMeters": 0.05,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.012,
+            1.16,
+            0.96
+          ],
+          "offset": [
+            -0.22,
+            0.08,
+            0.5
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.012,
+            1.16,
+            0.96
+          ],
+          "offset": [
+            0.26,
+            0.08,
+            0.5
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.96,
+            1.16,
+            0.012
+          ],
+          "offset": [
+            0,
+            0.08,
+            0.58
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "living-art-wall-porcelain-slab",
+      "mountingKind": "wall",
+      "defaultMountHeightMeters": 0.05,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.008,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            -0.25,
+            0.09,
+            0.5
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.008,
+            1.18,
+            0.96
+          ],
+          "offset": [
+            0.25,
+            0.09,
+            0.5
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.98,
+            1.18,
+            0.008
+          ],
+          "offset": [
+            0,
+            0.09,
+            0.34
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.98,
+            1.18,
+            0.008
+          ],
+          "offset": [
+            0,
+            0.09,
+            0.67
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "living-art-wall-microcement",
+      "mountingKind": "wall",
+      "defaultMountHeightMeters": 0.05,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.96,
+            1.16,
+            0.012
+          ],
+          "offset": [
+            0,
+            0.08,
+            0.18
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.96,
+            1.16,
+            0.012
+          ],
+          "offset": [
+            0,
+            0.08,
+            0.82
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "baby-crib-standard",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.9,
+            0.12
+          ],
+          "offset": [
+            0,
+            0,
+            0.3
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.08,
+            0.78
+          ],
+          "offset": [
+            0,
+            -0.46,
+            0.52
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.08,
+            0.78
+          ],
+          "offset": [
+            0,
+            0.46,
+            0.52
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            -0.42,
+            -0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            -0.42,
+            0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            -0.28,
+            -0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            -0.28,
+            0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            -0.14,
+            -0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            -0.14,
+            0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            0,
+            -0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            0,
+            0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            0.14,
+            -0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            0.14,
+            0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            0.28,
+            -0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            0.28,
+            0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            0.42,
+            -0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            0.06,
+            0.66
+          ],
+          "offset": [
+            0.42,
+            0.47,
+            0.55
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "family-bed-wide",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.98,
+            0.2
+          ],
+          "offset": [
+            0,
+            0,
+            0.1
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.48,
+            0.92,
+            0.34
+          ],
+          "offset": [
+            -0.25,
+            0.02,
+            0.34
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.48,
+            0.92,
+            0.34
+          ],
+          "offset": [
+            0.25,
+            0.02,
+            0.34
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.08,
+            0.78
+          ],
+          "offset": [
+            0,
+            -0.46,
+            0.5
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "baby-bumper-bed",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.82,
+            0.78,
+            0.24
+          ],
+          "offset": [
+            0,
+            0.02,
+            0.18
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.13,
+            0.72
+          ],
+          "offset": [
+            0,
+            -0.435,
+            0.42
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.13,
+            0.72
+          ],
+          "offset": [
+            0,
+            0.435,
+            0.42
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.13,
+            0.74,
+            0.72
+          ],
+          "offset": [
+            -0.435,
+            0,
+            0.42
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.13,
+            0.74,
+            0.72
+          ],
+          "offset": [
+            0.435,
+            0,
+            0.42
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "kids-study-desk-compact",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.12
+          ],
+          "offset": [
+            0,
+            0,
+            0.72
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.66
+          ],
+          "offset": [
+            -0.38,
+            -0.38,
+            0.33
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.66
+          ],
+          "offset": [
+            0.38,
+            -0.38,
+            0.33
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.66
+          ],
+          "offset": [
+            -0.38,
+            0.38,
+            0.33
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.66
+          ],
+          "offset": [
+            0.38,
+            0.38,
+            0.33
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.86,
+            0.12,
+            0.16
+          ],
+          "offset": [
+            0,
+            -0.42,
+            0.88
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "alpha-room-slim-desk",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.08
+          ],
+          "offset": [
+            0,
+            0,
+            0.92
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.06,
+            0.88,
+            0.88
+          ],
+          "offset": [
+            -0.45,
+            0,
+            0.44
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.06,
+            0.88,
+            0.88
+          ],
+          "offset": [
+            0.45,
+            0,
+            0.44
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.08,
+            0.5
+          ],
+          "offset": [
+            0,
+            -0.42,
+            0.5
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "refrigerator-fit-cabinet",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1,
+            1
+          ],
+          "offset": [
+            -0.4775,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1,
+            1
+          ],
+          "offset": [
+            0.4775,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.91,
+            0.08,
+            0.92
+          ],
+          "offset": [
+            0,
+            -0.46,
+            0.46
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.91,
+            0.78
+          ],
+          "offset": [
+            0,
+            0.035,
+            0.43
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.018,
+            0.94,
+            0.72
+          ],
+          "offset": [
+            0,
+            0.51,
+            0.43
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.78,
+            0.88,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.02,
+            0.9
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "kimchi-refrigerator-fit-cabinet",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1,
+            1
+          ],
+          "offset": [
+            -0.4775,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1,
+            1
+          ],
+          "offset": [
+            0.4775,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.91,
+            0.08,
+            0.92
+          ],
+          "offset": [
+            0,
+            -0.46,
+            0.46
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.84,
+            0.91,
+            0.78
+          ],
+          "offset": [
+            0,
+            0.035,
+            0.43
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.018,
+            0.94,
+            0.72
+          ],
+          "offset": [
+            0,
+            0.51,
+            0.43
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.78,
+            0.88,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.02,
+            0.9
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "coffee-home-bar-cabinet",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1,
+            1
+          ],
+          "offset": [
+            -0.4775,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.045,
+            1,
+            1
+          ],
+          "offset": [
+            0.4775,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.91,
+            0.08,
+            0.92
+          ],
+          "offset": [
+            0,
+            -0.46,
+            0.46
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.9,
+            0.91,
+            0.36
+          ],
+          "offset": [
+            0,
+            0.035,
+            0.18
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.94,
+            0.96,
+            0.045
+          ],
+          "offset": [
+            0,
+            0.03,
+            0.4
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.9,
+            0.12,
+            0.33
+          ],
+          "offset": [
+            0,
+            -0.42,
+            0.59
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.9,
+            0.91,
+            0.22
+          ],
+          "offset": [
+            0,
+            0.035,
+            0.88
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.34,
+            0.35,
+            0.22
+          ],
+          "offset": [
+            -0.12,
+            0.1,
+            0.54
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "vertical-cylinder",
+          "scale": [
+            0.11,
+            0.11,
+            0.12
+          ],
+          "offset": [
+            0.2,
+            0.15,
+            0.47
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "refrigerator-kimchi-wall-set",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            1,
+            1
+          ],
+          "offset": [
+            -0.4825,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            1,
+            1
+          ],
+          "offset": [
+            0.4825,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.93,
+            0.08,
+            0.92
+          ],
+          "offset": [
+            0,
+            -0.46,
+            0.46
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.52,
+            0.91,
+            0.78
+          ],
+          "offset": [
+            -0.22,
+            0.035,
+            0.43
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.38,
+            0.91,
+            0.78
+          ],
+          "offset": [
+            0.29,
+            0.035,
+            0.43
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.018,
+            0.94,
+            0.72
+          ],
+          "offset": [
+            -0.22,
+            0.51,
+            0.43
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.018,
+            0.94,
+            0.72
+          ],
+          "offset": [
+            0.29,
+            0.51,
+            0.43
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.88,
+            0.12
+          ],
+          "offset": [
+            0,
+            0.02,
+            0.9
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "refrigerator-homebar-wall-set",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            1,
+            1
+          ],
+          "offset": [
+            -0.4825,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.035,
+            1,
+            1
+          ],
+          "offset": [
+            0.4825,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.93,
+            0.08,
+            0.92
+          ],
+          "offset": [
+            0,
+            -0.46,
+            0.46
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.52,
+            0.91,
+            0.78
+          ],
+          "offset": [
+            -0.23,
+            0.035,
+            0.43
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.39,
+            0.91,
+            0.34
+          ],
+          "offset": [
+            0.29,
+            0.035,
+            0.17
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.42,
+            0.96,
+            0.045
+          ],
+          "offset": [
+            0.29,
+            0.03,
+            0.39
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.39,
+            0.12,
+            0.32
+          ],
+          "offset": [
+            0.29,
+            -0.42,
+            0.58
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.39,
+            0.91,
+            0.22
+          ],
+          "offset": [
+            0.29,
+            0.035,
+            0.88
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.16,
+            0.34,
+            0.22
+          ],
+          "offset": [
+            0.24,
+            0.1,
+            0.53
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "vertical-cylinder",
+          "scale": [
+            0.055,
+            0.055,
+            0.11
+          ],
+          "offset": [
+            0.4,
+            0.15,
+            0.46
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-wall-tv",
+      "mountingKind": "wall",
+      "defaultMountHeightMeters": 1.05,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.965,
+            1.14,
+            0.93
+          ],
+          "offset": [
+            0,
+            0.07,
+            0.5
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-computer-desk-1200",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.075
+          ],
+          "offset": [
+            0,
+            0,
+            0.9625
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            -0.39,
+            -0.39,
+            0.4625
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            0.39,
+            -0.39,
+            0.4625
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            -0.39,
+            0.39,
+            0.4625
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            0.39,
+            0.39,
+            0.4625
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-computer-desk-800",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.075
+          ],
+          "offset": [
+            0,
+            0,
+            0.9625
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            -0.39,
+            -0.39,
+            0.4625
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            0.39,
+            -0.39,
+            0.4625
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            -0.39,
+            0.39,
+            0.4625
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            0.39,
+            0.39,
+            0.4625
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-dining-table",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.075
+          ],
+          "offset": [
+            0,
+            0,
+            0.9625
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            -0.39,
+            -0.39,
+            0.4625
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            0.39,
+            -0.39,
+            0.4625
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            -0.39,
+            0.39,
+            0.4625
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.08,
+            0.925
+          ],
+          "offset": [
+            0.39,
+            0.39,
+            0.4625
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-bed",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.96,
+            0.1565
+          ],
+          "offset": [
+            0,
+            0.01,
+            0.0783
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.94,
+            0.88,
+            0.313
+          ],
+          "offset": [
+            0,
+            0.03,
+            0.3478
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.065,
+            1
+          ],
+          "offset": [
+            0,
+            -0.4675,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.96,
+            0.078,
+            0.025
+          ],
+          "offset": [
+            0,
+            -0.47,
+            0.25
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.96,
+            0.078,
+            0.025
+          ],
+          "offset": [
+            0,
+            -0.47,
+            0.5
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.96,
+            0.078,
+            0.025
+          ],
+          "offset": [
+            0,
+            -0.47,
+            0.75
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-side-storage",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.035,
+            0.275
+          ],
+          "offset": [
+            0,
+            0.512,
+            0.18
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.035,
+            0.275
+          ],
+          "offset": [
+            0,
+            0.512,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.035,
+            0.275
+          ],
+          "offset": [
+            0,
+            0.512,
+            0.82
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.28,
+            0.06,
+            0.025
+          ],
+          "offset": [
+            0,
+            0.54,
+            0.18
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.28,
+            0.06,
+            0.025
+          ],
+          "offset": [
+            0,
+            0.54,
+            0.5
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.28,
+            0.06,
+            0.025
+          ],
+          "offset": [
+            0,
+            0.54,
+            0.82
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-refrigerator",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.47,
+            0.035,
+            0.59
+          ],
+          "offset": [
+            -0.245,
+            0.512,
+            0.685
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.47,
+            0.035,
+            0.59
+          ],
+          "offset": [
+            0.245,
+            0.512,
+            0.685
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.47,
+            0.035,
+            0.28
+          ],
+          "offset": [
+            -0.245,
+            0.512,
+            0.19
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.47,
+            0.035,
+            0.28
+          ],
+          "offset": [
+            0.245,
+            0.512,
+            0.19
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.025,
+            0.055,
+            0.42
+          ],
+          "offset": [
+            -0.07,
+            0.54,
+            0.65
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.025,
+            0.055,
+            0.42
+          ],
+          "offset": [
+            0.07,
+            0.54,
+            0.65
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-underwear-dresser",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.89
+          ],
+          "offset": [
+            0,
+            0,
+            0.545
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.035,
+            0.14
+          ],
+          "offset": [
+            0,
+            0.512,
+            0.18
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.035,
+            0.14
+          ],
+          "offset": [
+            0,
+            0.512,
+            0.35
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.035,
+            0.14
+          ],
+          "offset": [
+            0,
+            0.512,
+            0.52
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.035,
+            0.14
+          ],
+          "offset": [
+            0,
+            0.512,
+            0.69
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.035,
+            0.14
+          ],
+          "offset": [
+            0,
+            0.512,
+            0.86
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.3,
+            0.06,
+            0.018
+          ],
+          "offset": [
+            0,
+            0.54,
+            0.18
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.3,
+            0.06,
+            0.018
+          ],
+          "offset": [
+            0,
+            0.54,
+            0.35
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.3,
+            0.06,
+            0.018
+          ],
+          "offset": [
+            0,
+            0.54,
+            0.52
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.3,
+            0.06,
+            0.018
+          ],
+          "offset": [
+            0,
+            0.54,
+            0.69
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.3,
+            0.06,
+            0.018
+          ],
+          "offset": [
+            0,
+            0.54,
+            0.86
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.12,
+            0.11
+          ],
+          "offset": [
+            -0.38,
+            -0.34,
+            0.055
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.12,
+            0.11
+          ],
+          "offset": [
+            0.38,
+            -0.34,
+            0.055
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.12,
+            0.11
+          ],
+          "offset": [
+            -0.38,
+            0.34,
+            0.055
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.08,
+            0.12,
+            0.11
+          ],
+          "offset": [
+            0.38,
+            0.34,
+            0.055
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-open-bookshelf-5x3",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.94,
+            0.04,
+            0.96
+          ],
+          "offset": [
+            0,
+            -0.48,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.055,
+            1,
+            1
+          ],
+          "offset": [
+            -0.4725,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.055,
+            1,
+            1
+          ],
+          "offset": [
+            0.4725,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.055,
+            1,
+            1
+          ],
+          "offset": [
+            -0.1667,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.055,
+            1,
+            1
+          ],
+          "offset": [
+            0.1667,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.0175
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.2
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.4
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.6
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.8
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.9825
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-open-bookshelf-3x3",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.94,
+            0.04,
+            0.96
+          ],
+          "offset": [
+            0,
+            -0.48,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.055,
+            1,
+            1
+          ],
+          "offset": [
+            -0.4725,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.055,
+            1,
+            1
+          ],
+          "offset": [
+            0.4725,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.055,
+            1,
+            1
+          ],
+          "offset": [
+            -0.1667,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.055,
+            1,
+            1
+          ],
+          "offset": [
+            0.1667,
+            0,
+            0.5
+          ],
+          "materialRole": "secondary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.0175
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.3333333333333333
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.6666666666666666
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            1,
+            0.035
+          ],
+          "offset": [
+            0,
+            0,
+            0.9825
+          ],
+          "materialRole": "primary"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-sofa-three-seat",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            1,
+            0.78,
+            0.25
+          ],
+          "offset": [
+            0,
+            0.05,
+            0.2
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.305,
+            0.66,
+            0.19
+          ],
+          "offset": [
+            -0.325,
+            0.1,
+            0.39
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.305,
+            0.66,
+            0.19
+          ],
+          "offset": [
+            0,
+            0.1,
+            0.39
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.305,
+            0.66,
+            0.19
+          ],
+          "offset": [
+            0.325,
+            0.1,
+            0.39
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.305,
+            0.24,
+            0.47
+          ],
+          "offset": [
+            -0.325,
+            -0.34,
+            0.67
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.305,
+            0.24,
+            0.47
+          ],
+          "offset": [
+            0,
+            -0.34,
+            0.67
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.305,
+            0.24,
+            0.47
+          ],
+          "offset": [
+            0.325,
+            -0.34,
+            0.67
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.075,
+            0.84,
+            0.55
+          ],
+          "offset": [
+            -0.4625,
+            0,
+            0.44
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.075,
+            0.84,
+            0.55
+          ],
+          "offset": [
+            0.4625,
+            0,
+            0.44
+          ],
+          "materialRole": "accent"
+        }
+      ]
+    },
+    {
+      "assetId": "istarpark-owned-tower-air-conditioner",
+      "mountingKind": "floor",
+      "defaultMountHeightMeters": 0.018,
+      "parts": [
+        {
+          "shape": "box",
+          "scale": [
+            0.92,
+            0.92,
+            1
+          ],
+          "offset": [
+            0,
+            0,
+            0.5
+          ],
+          "materialRole": "primary"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.66,
+            0.08,
+            0.16
+          ],
+          "offset": [
+            0,
+            0.47,
+            0.72
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "cylinder",
+          "scale": [
+            0.66,
+            0.08,
+            0.16
+          ],
+          "offset": [
+            0,
+            0.47,
+            0.48
+          ],
+          "materialRole": "accent"
+        },
+        {
+          "shape": "box",
+          "scale": [
+            0.28,
+            0.05,
+            0.025
+          ],
+          "offset": [
+            0,
+            0.48,
+            0.22
+          ],
+          "materialRole": "secondary"
+        }
+      ]
+    }
+  ]
+}

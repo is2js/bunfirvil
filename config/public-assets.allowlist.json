@@ -106,6 +106,18 @@
           "files": ["manifest.json", "variants/00.png"],
           "template": "frames/{frame}.png",
           "variables": { "frame": ["0000", "0001", "0002", "0003", "0004", "0005", "0006", "0007"] }
+        },
+        {
+          "bases": ["assets/rpg/skills/icons/history/lk-magic-020"],
+          "files": ["20260730011220546615-b4d02ceb87f6.png"]
+        },
+        {
+          "bases": ["assets/rpg/skills/icons/history/y1000-magic-97"],
+          "files": ["20260730152752853044-724a3363a172.png"]
+        },
+        {
+          "bases": ["assets/rpg/skills/icons/regenerated/lk"],
+          "files": ["053.png"]
         }
       ]
     },
@@ -122,6 +134,35 @@
             "bundang-55b-warm-gray-wall-v1.webp",
             "bundang-55b-gray-grout-tile-v1.webp"
           ]
+        }
+      ]
+    },
+    {
+      "id": "bundang-interior-runtime",
+      "decision": "approve",
+      "rightsClass": "maintainer-reviewed-project-asset",
+      "sourceRules": [
+        {
+          "bases": ["assets/rpg/objects/bundang-interior-v1"],
+          "files": [
+            "catalog.json",
+            "models/sofa-three-seat/a3b5553daff41d1ea18a712d01072fb06ef1dec9ca132439fa3246d35811974f/medium.glb",
+            "models/dining-chair/57a481718c2573c824672398c5ee519a696fa30080b0fbeca4afde38e7ed2c08/medium.glb",
+            "models/office-chair/7b67a38957f2f69cafe61e1258e4af933c8f8bb18bfe51864c5492c3cc1e349c/medium.glb",
+            "models/toilet-floor-mounted/c94a4d9cbf991c353ef725367a5407765cf968ab65651b5c423870637ad560cb/medium.glb",
+            "models/vanity-basin-compact/1f229cad6af98b1ea44761948b25651b3f74029d476070da44835333a17b8588/medium.glb"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bundang-render-recipe-source",
+      "decision": "approve",
+      "rightsClass": "maintainer-reviewed-project-source",
+      "sourceRules": [
+        {
+          "bases": ["src/rpg/world"],
+          "files": ["three-pbr-renderer.mjs"]
         }
       ]
     },

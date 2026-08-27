@@ -42,6 +42,9 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(page.getByText("프론트엔드 로컬 데모", { exact: true })).toBeVisible();
   await expect(page.locator("#stage-loader")).toBeHidden();
   await expect(page.locator("#metric-renderer")).toHaveText(/THREE·PBR|CANVAS·(?:ISO|FALLBACK)|MINIMAP|PROCEDURAL/);
+  const threeCanvas = page.locator("#three-world-canvas");
+  await expect(threeCanvas).toHaveAttribute("data-interior-asset-count", "83");
+  await expect(threeCanvas).toHaveAttribute("data-recipe-part-count", "399");
   const initialTransferBytes = await page.evaluate(() => performance.getEntriesByType("resource")
     .reduce((total, entry) => {
       const resource = entry as PerformanceResourceTiming;
@@ -56,6 +59,8 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
     await expect(page.locator("#map-unit")).toHaveText(unitType);
     await expect(page.locator("#stage-loader")).toBeHidden();
     await expect(page.locator("#metric-chunks")).toHaveText("16/16");
+    await expect(threeCanvas).toHaveAttribute("data-apartment-structure", "ready");
+    await expect.poll(async () => Number(await threeCanvas.getAttribute("data-structure-mesh-count"))).toBeGreaterThan(50);
   }
 
   const actor100 = page.locator('.rpg-actor[data-actor="100"]');
@@ -68,9 +73,23 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
 
   await page.getByRole("button", { name: "200", exact: true }).click();
   await expect(page.locator("#active-actor-label")).toHaveText("여자의료진");
+  const startX = Number(await actor200.getAttribute("data-world-x"));
+  const startY = Number(await actor200.getAttribute("data-world-y"));
+  await page.keyboard.down("KeyD");
+  await page.waitForTimeout(180);
+  await page.keyboard.up("KeyD");
+  await expect(actor200).toHaveAttribute("data-direction", "e");
+  await expect.poll(async () => Number(await actor200.getAttribute("data-world-x"))).toBeGreaterThan(startX);
+  await expect.poll(async () => Number(await actor200.getAttribute("data-world-y"))).toBeLessThan(startY);
   await observeNextMotion(actor200, "cast");
   await page.getByRole("button", { name: "2번 쇼크스턴" }).click();
   await expect(actor200).toHaveAttribute("data-observed-motion", "cast");
+
+  const originalSkillIcons = page.locator('#hotbar .hotbar-slot[data-skill-id]:not([data-skill-id="basic-attack"]):not([data-skill-id=""]) img');
+  await expect(originalSkillIcons).toHaveCount(3);
+  for (const icon of await originalSkillIcons.all()) {
+    expect(await icon.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  }
 
   await observeNextMotion(actor200, "attack");
   await page.keyboard.press("Digit3");
@@ -90,9 +109,11 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   const firstOption = page.locator('.option-card input[type="checkbox"]').first();
   const firstOptionId = await firstOption.getAttribute("data-option-id");
   expect(firstOptionId).toBeTruthy();
+  const propsBeforeOption = Number(await threeCanvas.getAttribute("data-apartment-prop-count"));
   await firstOption.setChecked(true, { force: true });
   await expect(page.locator("#option-selected-count")).toHaveText("1개");
   await expect(page.locator("#option-total")).not.toHaveText(/^0/);
+  await expect.poll(async () => Number(await threeCanvas.getAttribute("data-apartment-prop-count"))).toBeGreaterThan(propsBeforeOption);
   const savedQuote = await page.locator("#option-total").innerText();
   const savedMapId = await mapSelect.inputValue();
 

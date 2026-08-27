@@ -69,6 +69,7 @@ export function createFallbackCatalog(): ShowcaseCatalog {
     ],
     defaultHotbar: ['basic-attack', 'warrior-shock-stun', 'common-double-arrow', 'common-teleport', null, null, null, null],
     bOptions: fallbackOptions(),
+    renderAssets: undefined,
   };
 }
 
@@ -263,6 +264,14 @@ async function normalizeCatalog(raw: unknown): Promise<ShowcaseCatalog> {
     skills,
     defaultHotbar: normalizeHotbar(value.defaultHotbar),
     bOptions,
+    renderAssets: value.renderAssets && typeof value.renderAssets === 'object'
+      ? {
+          interiorCatalogUrl: generatedRef((value.renderAssets as Record<string, unknown>).interiorCatalogUrl),
+          recipeCatalogUrl: generatedRef((value.renderAssets as Record<string, unknown>).recipeCatalogUrl),
+          optionModuleUrl: generatedRef((value.renderAssets as Record<string, unknown>).optionModuleUrl),
+          materialManifestUrl: generatedRef((value.renderAssets as Record<string, unknown>).materialManifestUrl),
+        }
+      : undefined,
   };
 }
 

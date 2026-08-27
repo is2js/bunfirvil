@@ -57,6 +57,14 @@ export interface ShowcaseCatalog {
   skills: StaticSkillEntry[];
   defaultHotbar: HotbarValue[];
   bOptions: BOptionEntry[];
+  renderAssets?: ShowcaseRenderAssets;
+}
+
+export interface ShowcaseRenderAssets {
+  interiorCatalogUrl: string;
+  recipeCatalogUrl: string;
+  optionModuleUrl: string;
+  materialManifestUrl: string;
 }
 
 export interface PaletteEntry {
@@ -92,6 +100,45 @@ export interface WorldObject {
   bounds?: { x1?: number; y1?: number; x2?: number; y2?: number };
   floorCells?: Array<{ x: number; y: number }>;
   footprintCells?: Array<{ x: number; y: number }>;
+  originCell?: { x?: number; y?: number };
+  unitTypeId?: string;
+  transform?: { rotationDeg?: number; mirrorX?: boolean; mirrorY?: boolean };
+  geometry?: ApartmentGeometry;
+}
+
+export interface ApartmentPointObject {
+  [key: string]: unknown;
+}
+
+export interface ApartmentGeometry {
+  cellSizeMeters?: number;
+  clearHeightMeters?: number;
+  floorPolygon?: number[][];
+  roomZones?: ApartmentPointObject[];
+  wallSegments?: ApartmentPointObject[];
+  openings?: ApartmentPointObject[];
+  solidBlocks?: ApartmentPointObject[];
+  ceilingPanels?: ApartmentPointObject[];
+  kitchenFixtures?: ApartmentPointObject[];
+  interiorProps?: ApartmentInteriorProp[];
+  optionAnchors?: Record<string, unknown>;
+  materials?: Record<string, string>;
+  renderPalette?: Record<string, string | number>;
+  [key: string]: unknown;
+}
+
+export interface ApartmentInteriorProp {
+  id?: string;
+  assetId?: string;
+  roomZoneId?: string;
+  positionMeters?: number[];
+  dimensionsMeters?: number[] | { width?: number; depth?: number; height?: number };
+  renderDimensionsMeters?: number[] | { width?: number; depth?: number; height?: number };
+  yawDeg?: number;
+  mirrored?: boolean;
+  materialVariantId?: string;
+  mountHeightMeters?: number;
+  [key: string]: unknown;
 }
 
 export interface WorldChunk {

@@ -2,6 +2,7 @@ import { escapeHtml, formatBytes, resolveProjectUrl } from './base';
 import { loadCatalog, mapFromQuery } from './catalog';
 import { ManifestEffectPlayer } from './effect-player';
 import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
+import { screenDirection, screenVectorToWorldDelta } from './grid';
 import { FrameMetrics } from './metrics';
 import {
   applyOptionToggle,
@@ -64,17 +65,6 @@ const SKILL_GLYPHS: Record<string, string> = {
   'common-teleport': '⌁',
 };
 
-function directionFromDelta(dx: number, dy: number): Direction {
-  if (dx === 0 && dy < 0) return 'n';
-  if (dx > 0 && dy < 0) return 'ne';
-  if (dx > 0 && dy === 0) return 'e';
-  if (dx > 0 && dy > 0) return 'se';
-  if (dx === 0 && dy > 0) return 's';
-  if (dx < 0 && dy > 0) return 'sw';
-  if (dx < 0 && dy === 0) return 'w';
-  return 'nw';
-}
-
 function isFormTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
 }
@@ -124,7 +114,11 @@ export class ShowcaseApp {
     this.effectPlayer = new ManifestEffectPlayer(this.get<HTMLElement>('#effect-layer'), () => this.trackAsset());
     try {
       const { ThreeWorldRenderer } = await import('./three-world');
-      this.threeRenderer = new ThreeWorldRenderer(this.get<HTMLCanvasElement>('#three-world-canvas'));
+      this.threeRenderer = new ThreeWorldRenderer(
+        this.get<HTMLCanvasElement>('#three-world-canvas'),
+        this.catalog.renderAssets,
+        () => this.trackAsset(),
+      );
     } catch (error) {
       console.warn('[bunfirvil] WebGL unavailable; Canvas2D renderer stays active.', error);
       this.threeRenderer = null;
@@ -686,11 +680,12 @@ export class ShowcaseApp {
       if (actor.motion === 'walk') actor.motion = 'idle';
       return;
     }
-    actor.direction = directionFromDelta(horizontal, vertical);
+    actor.direction = screenDirection(horizontal, vertical);
     if (time - this.lastMoveAt < MOVEMENT_INTERVAL_MS || actor.motionUntil > time) return;
     this.lastMoveAt = time;
-    const nextX = actor.x + horizontal;
-    const nextY = actor.y + vertical;
+    const worldDelta = screenVectorToWorldDelta(horizontal, vertical);
+    const nextX = actor.x + worldDelta.dx;
+    const nextY = actor.y + worldDelta.dy;
     if (isWalkable(this.world, nextX, nextY)) {
       actor.x = nextX;
       actor.y = nextY;

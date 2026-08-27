@@ -16,7 +16,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const EXPORTER_VERSION = "bunfirvil-static-export-v1";
+const EXPORTER_VERSION = "bunfirvil-static-export-v2";
 const EXPORTER_FILE = fileURLToPath(import.meta.url);
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_ROOT = path.join(PROJECT_ROOT, "public");
@@ -58,7 +58,7 @@ const SKILLS = Object.freeze([
     name: "쇼크스턴",
     description: "근접 공격과 머리 위 별 회전 상태 효과를 재생합니다.",
     icon: Object.freeze({
-      source: "assets/rpg/effects/status/shock-stun/shock-stun-star-orbit.png",
+      source: "assets/rpg/skills/icons/history/lk-magic-020/20260730011220546615-b4d02ceb87f6.png",
       output: "icons/shock-stun.png",
     }),
     cooldownMs: 2800,
@@ -72,7 +72,7 @@ const SKILLS = Object.freeze([
     name: "더블애로우",
     description: "활 모션과 8방향 에너지궁·투사체 효과를 재생합니다.",
     icon: Object.freeze({
-      source: "assets/rpg/skills/effects/rpg/summoned-bow-energy-projectile/variants/e.png",
+      source: "assets/rpg/skills/icons/history/y1000-magic-97/20260730152752853044-724a3363a172.png",
       output: "icons/double-arrow.png",
     }),
     cooldownMs: 1600,
@@ -87,7 +87,7 @@ const SKILLS = Object.freeze([
     name: "텔레포트",
     description: "로컬 맵의 이동 가능한 셀로 순간이동하고 효과를 재생합니다.",
     icon: Object.freeze({
-      source: "assets/rpg/skills/effects/rpg/teleport-origin/frames/0003.png",
+      source: "assets/rpg/skills/icons/regenerated/lk/053.png",
       output: "icons/teleport.png",
     }),
     cooldownMs: 4200,
@@ -179,6 +179,15 @@ const MATERIAL_FILES = Object.freeze([
   "bundang-55b-gray-grout-tile-v1.webp",
 ]);
 const MATERIAL_IDS = new Set(MATERIAL_FILES.map((name) => name.replace(/\.webp$/, "")));
+const INTERIOR_CATALOG_SOURCE = "assets/rpg/objects/bundang-interior-v1/catalog.json";
+const INTERIOR_RECIPE_SOURCE = "src/rpg/world/three-pbr-renderer.mjs";
+const INTERIOR_MODEL_ROWS = Object.freeze([
+  Object.freeze({ assetId: "sofa-three-seat", source: "assets/rpg/objects/bundang-interior-v1/models/sofa-three-seat/a3b5553daff41d1ea18a712d01072fb06ef1dec9ca132439fa3246d35811974f/medium.glb" }),
+  Object.freeze({ assetId: "dining-chair", source: "assets/rpg/objects/bundang-interior-v1/models/dining-chair/57a481718c2573c824672398c5ee519a696fa30080b0fbeca4afde38e7ed2c08/medium.glb" }),
+  Object.freeze({ assetId: "office-chair", source: "assets/rpg/objects/bundang-interior-v1/models/office-chair/7b67a38957f2f69cafe61e1258e4af933c8f8bb18bfe51864c5492c3cc1e349c/medium.glb" }),
+  Object.freeze({ assetId: "toilet-floor-mounted", source: "assets/rpg/objects/bundang-interior-v1/models/toilet-floor-mounted/c94a4d9cbf991c353ef725367a5407765cf968ab65651b5c423870637ad560cb/medium.glb" }),
+  Object.freeze({ assetId: "vanity-basin-compact", source: "assets/rpg/objects/bundang-interior-v1/models/vanity-basin-compact/1f229cad6af98b1ea44761948b25651b3f74029d476070da44835333a17b8588/medium.glb" }),
+]);
 
 function parseArgs(argv) {
   const args = { source: process.env.BUNFIRVIL_PVP_ROOT || "" };
@@ -507,8 +516,12 @@ function buildSourceAllowlist() {
   MAP_IDS.flatMap(mapSourceFiles).forEach((entry) => paths.add(entry));
   CHARACTER_IDS.flatMap(characterSourceFiles).forEach((entry) => paths.add(entry));
   EFFECTS.flatMap(effectSourceFiles).forEach((entry) => paths.add(entry));
+  SKILLS.flatMap((skill) => skill.icon?.source ? [skill.icon.source] : []).forEach((entry) => paths.add(entry));
   paths.add("assets/rpg/worlds/bundang-first-village-55b-prototype/materials/materials.json");
   MATERIAL_FILES.forEach((name) => paths.add(`assets/rpg/worlds/bundang-first-village-55b-prototype/materials/${name}`));
+  paths.add(INTERIOR_CATALOG_SOURCE);
+  paths.add(INTERIOR_RECIPE_SOURCE);
+  INTERIOR_MODEL_ROWS.forEach((row) => paths.add(row.source));
   paths.add("src/rpg/bundang-apartment-options.mjs");
   return [...paths].sort();
 }
@@ -1027,6 +1040,75 @@ async function main() {
     await copyAllowed(`${materialSourceBase}/${name}`, `${materialOutputBase}/${name}`);
   }
 
+  const interiorCatalogRaw = JSON.parse(await readFile(sourcePath(sourceRoot, INTERIOR_CATALOG_SOURCE), "utf8"));
+  const interiorModelsById = new Map(INTERIOR_MODEL_ROWS.map((row) => [row.assetId, row]));
+  const interiorAssets = (Array.isArray(interiorCatalogRaw.assets) ? interiorCatalogRaw.assets : []).map((asset) => {
+    const assetId = String(asset?.assetId || "");
+    if (!assetId) throw new Error("인테리어 catalog에 assetId가 없는 항목이 있습니다.");
+    const model = interiorModelsById.get(assetId);
+    if (String(asset.rendererKind || "procedural") === "glb" && !model) {
+      throw new Error(`공개 GLB allowlist가 없는 인테리어 asset입니다: ${assetId}`);
+    }
+    return {
+      assetId,
+      revision: String(asset.revision || "1"),
+      displayNameKo: String(asset.displayNameKo || assetId),
+      category: String(asset.category || "interior"),
+      rendererKind: model ? "glb" : "procedural",
+      defaultDimensionsMeters: asset.defaultDimensionsMeters,
+      materialVariantIds: Array.isArray(asset.materialVariantIds) ? asset.materialVariantIds.map(String) : [],
+      rendererRef: model ? { lods: { medium: { url: `models/${assetId}/medium.glb` } } } : { kind: "procedural" },
+    };
+  });
+  const runtimeInteriorCatalog = {
+    schemaVersion: "bunfirvil-interior-runtime-v1",
+    revision: String(interiorCatalogRaw.revision || "static"),
+    assets: interiorAssets,
+  };
+  assertNoForbiddenStrings(runtimeInteriorCatalog, "interior/catalog.json");
+  await recordOutput({
+    sourceRelative: INTERIOR_CATALOG_SOURCE,
+    outputRelative: "interior/catalog.json",
+    transform: "runtime-only-interior-catalog",
+    data: jsonText(runtimeInteriorCatalog),
+  });
+  for (const model of INTERIOR_MODEL_ROWS) {
+    await copyAllowed(model.source, `interior/models/${model.assetId}/medium.glb`);
+  }
+
+  const rendererRecipes = await import(`${pathToFileURL(sourcePath(sourceRoot, INTERIOR_RECIPE_SOURCE)).href}?export=${selectedSourceFingerprint}`);
+  const runtimeRecipeCatalog = {
+    schemaVersion: "bunfirvil-interior-recipes-v1",
+    assets: interiorAssets.map((asset) => {
+      const defaultDimensions = asset.defaultDimensionsMeters && typeof asset.defaultDimensionsMeters === "object"
+        ? [
+            Number(asset.defaultDimensionsMeters.width || 0.8),
+            Number(asset.defaultDimensionsMeters.depth || 0.8),
+            Number(asset.defaultDimensionsMeters.height || 0.8),
+          ]
+        : [0.8, 0.8, 0.8];
+      const mountingKind = String(rendererRecipes.worldApartmentInteriorPropMountingKind(asset.assetId));
+      return {
+        assetId: asset.assetId,
+        mountingKind,
+        defaultMountHeightMeters: Number(rendererRecipes.worldApartmentInteriorPropMountHeight(
+          asset.assetId,
+          { geometry: { clearHeightMeters: 2.3 } },
+          {},
+          defaultDimensions,
+        )),
+        parts: rendererRecipes.worldApartmentInteriorPropParts(asset.assetId),
+      };
+    }),
+  };
+  assertNoForbiddenStrings(runtimeRecipeCatalog, "interior/recipes.json");
+  await recordOutput({
+    sourceRelative: INTERIOR_RECIPE_SOURCE,
+    outputRelative: "interior/recipes.json",
+    transform: "runtime-only-procedural-recipes",
+    data: jsonText(runtimeRecipeCatalog),
+  });
+
   const characterRows = [];
   for (const characterId of CHARACTER_IDS) {
     const sourceBase = `assets/characters/${characterId}`;
@@ -1102,6 +1184,7 @@ async function main() {
     transform: "rights-safe-option-metadata",
     data: jsonText(optionCatalog),
   });
+  await copyAllowed(optionsModuleRelative, "options/runtime.mjs");
 
   const skillRows = [];
   const effectById = new Map(effectRows.map((effect) => [effect.id, effect]));
@@ -1243,6 +1326,12 @@ async function main() {
     })),
     defaultHotbar: ["basic-attack", "warrior-shock-stun", "common-double-arrow", "common-teleport", null, null, null, null],
     bOptions: stableOptions,
+    renderAssets: {
+      interiorCatalogUrl: addPrefix("interior/catalog.json"),
+      recipeCatalogUrl: addPrefix("interior/recipes.json"),
+      optionModuleUrl: addPrefix("options/runtime.mjs"),
+      materialManifestUrl: addPrefix("maps/bundang-first-village-55b-prototype/materials/materials.json"),
+    },
   };
   const versionedCatalog = {
     schemaVersion: "ShowcaseCatalogV1-rich",
@@ -1257,6 +1346,7 @@ async function main() {
       optionCount: optionRows.length,
       unitTypes: Object.values(UNIT_TYPES),
     },
+    renderAssets: stableCatalog.renderAssets,
   };
   await recordOutput({
     sourceRelative: null,

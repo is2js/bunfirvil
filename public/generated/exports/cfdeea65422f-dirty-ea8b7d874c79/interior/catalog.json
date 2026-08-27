@@ -1,0 +1,1582 @@
+{
+  "schemaVersion": "bunfirvil-interior-runtime-v1",
+  "revision": "bundang-interior-v1-r11",
+  "assets": [
+    {
+      "assetId": "bed-single",
+      "revision": "1",
+      "displayNameKo": "싱글 침대",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 2,
+        "height": 0.55
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "greige-fabric"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "bed-queen",
+      "revision": "1",
+      "displayNameKo": "퀸 침대",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.5,
+        "depth": 2,
+        "height": 0.55
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "greige-fabric"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "nightstand-compact",
+      "revision": "1",
+      "displayNameKo": "협탁",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.45,
+        "depth": 0.4,
+        "height": 0.48
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "sofa-three-seat",
+      "revision": "1",
+      "displayNameKo": "3인 소파",
+      "category": "living",
+      "rendererKind": "glb",
+      "defaultDimensionsMeters": {
+        "width": 2.1,
+        "depth": 0.9,
+        "height": 0.82
+      },
+      "materialVariantIds": [
+        "greige-fabric",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "lods": {
+          "medium": {
+            "url": "models/sofa-three-seat/medium.glb"
+          }
+        }
+      }
+    },
+    {
+      "assetId": "coffee-table-low",
+      "revision": "1",
+      "displayNameKo": "거실 테이블",
+      "category": "living",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.55,
+        "height": 0.38
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "tv-media-unit",
+      "revision": "1",
+      "displayNameKo": "TV·거실장",
+      "category": "living",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.8,
+        "depth": 0.4,
+        "height": 1.35
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "dining-table-four-seat",
+      "revision": "1",
+      "displayNameKo": "4인 식탁",
+      "category": "dining",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.4,
+        "depth": 0.8,
+        "height": 0.74
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "dining-chair",
+      "revision": "1",
+      "displayNameKo": "식탁 의자",
+      "category": "dining",
+      "rendererKind": "glb",
+      "defaultDimensionsMeters": {
+        "width": 0.48,
+        "depth": 0.55,
+        "height": 0.82
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "greige-fabric"
+      ],
+      "rendererRef": {
+        "lods": {
+          "medium": {
+            "url": "models/dining-chair/medium.glb"
+          }
+        }
+      }
+    },
+    {
+      "assetId": "work-desk",
+      "revision": "1",
+      "displayNameKo": "작업 책상",
+      "category": "workspace",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.2,
+        "depth": 0.6,
+        "height": 0.74
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "office-chair",
+      "revision": "1",
+      "displayNameKo": "사무 의자",
+      "category": "workspace",
+      "rendererKind": "glb",
+      "defaultDimensionsMeters": {
+        "width": 0.62,
+        "depth": 0.62,
+        "height": 0.95
+      },
+      "materialVariantIds": [
+        "charcoal-accent",
+        "greige-fabric"
+      ],
+      "rendererRef": {
+        "lods": {
+          "medium": {
+            "url": "models/office-chair/medium.glb"
+          }
+        }
+      }
+    },
+    {
+      "assetId": "wardrobe-two-door",
+      "revision": "1",
+      "displayNameKo": "2문 옷장",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.8,
+        "depth": 0.6,
+        "height": 2.2
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "bookshelf-tall",
+      "revision": "1",
+      "displayNameKo": "키큰 책장",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.9,
+        "depth": 0.35,
+        "height": 2
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "refrigerator-two-door",
+      "revision": "1",
+      "displayNameKo": "양문형 냉장고",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.9,
+        "depth": 0.75,
+        "height": 1.8
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "washer-front-load",
+      "revision": "1",
+      "displayNameKo": "드럼 세탁기",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.65,
+        "depth": 0.7,
+        "height": 0.85
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "toilet-floor-mounted",
+      "revision": "2",
+      "displayNameKo": "바닥형 양변기",
+      "category": "bathroom",
+      "rendererKind": "glb",
+      "defaultDimensionsMeters": {
+        "width": 0.4,
+        "depth": 0.7,
+        "height": 0.75
+      },
+      "materialVariantIds": [
+        "white-ceramic"
+      ],
+      "rendererRef": {
+        "lods": {
+          "medium": {
+            "url": "models/toilet-floor-mounted/medium.glb"
+          }
+        }
+      }
+    },
+    {
+      "assetId": "vanity-basin-compact",
+      "revision": "1",
+      "displayNameKo": "세면대장",
+      "category": "bathroom",
+      "rendererKind": "glb",
+      "defaultDimensionsMeters": {
+        "width": 0.8,
+        "depth": 0.5,
+        "height": 0.85
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "white-ceramic"
+      ],
+      "rendererRef": {
+        "lods": {
+          "medium": {
+            "url": "models/vanity-basin-compact/medium.glb"
+          }
+        }
+      }
+    },
+    {
+      "assetId": "clothes-styler-tall",
+      "revision": "1",
+      "displayNameKo": "의류관리기(스타일러)",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.6,
+        "depth": 0.6,
+        "height": 1.96
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "refrigerator-cabinet-wide",
+      "revision": "1",
+      "displayNameKo": "냉장고장",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.2,
+        "depth": 0.7,
+        "height": 2.3
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "washer-dryer-tower",
+      "revision": "1",
+      "displayNameKo": "타워형 세탁기·건조기",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.7,
+        "depth": 0.77,
+        "height": 1.9
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "bathtub-built-in",
+      "revision": "1",
+      "displayNameKo": "매립형 욕조",
+      "category": "bathroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.7,
+        "depth": 0.75,
+        "height": 0.55
+      },
+      "materialVariantIds": [
+        "white-ceramic"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "desktop-computer-desk-set",
+      "revision": "1",
+      "displayNameKo": "컴퓨터 책상 세트",
+      "category": "office",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.2,
+        "depth": 0.65,
+        "height": 1.25
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "cordless-vacuum-dock",
+      "revision": "1",
+      "displayNameKo": "무선청소기 거치대",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.28,
+        "depth": 0.25,
+        "height": 1.15
+      },
+      "materialVariantIds": [
+        "charcoal-accent",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "island-counter-modern",
+      "revision": "1",
+      "displayNameKo": "아일랜드 식탁",
+      "category": "dining",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.26,
+        "depth": 0.8,
+        "height": 0.9
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "white-ceramic"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "air-conditioner-outdoor-unit",
+      "revision": "1",
+      "displayNameKo": "시스템에어컨 실외기",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.95,
+        "depth": 0.38,
+        "height": 0.85
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "ceiling-cassette-air-conditioner",
+      "revision": "1",
+      "displayNameKo": "천장형 시스템에어컨",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.84,
+        "depth": 0.84,
+        "height": 0.24
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "entry-sliding-partition-door",
+      "revision": "1",
+      "displayNameKo": "현관 슬라이딩 중문",
+      "category": "fixture",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.2,
+        "depth": 0.12,
+        "height": 2.2
+      },
+      "materialVariantIds": [
+        "charcoal-accent",
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "wide-plank-floor-finish",
+      "revision": "1",
+      "displayNameKo": "광폭 강마루 마감",
+      "category": "finish",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 1,
+        "height": 0.012
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "bathroom-combination-ventilator",
+      "revision": "1",
+      "displayNameKo": "욕실 복합환풍기",
+      "category": "bathroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.43,
+        "depth": 0.43,
+        "height": 0.2
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "toilet-integrated-bidet",
+      "revision": "1",
+      "displayNameKo": "비데일체형 양변기",
+      "category": "bathroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.42,
+        "depth": 0.72,
+        "height": 0.72
+      },
+      "materialVariantIds": [
+        "white-ceramic"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "utility-ceramic-elastic-coat",
+      "revision": "1",
+      "displayNameKo": "다용도실 세라믹 탄성코트",
+      "category": "finish",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.12,
+        "height": 0.8
+      },
+      "materialVariantIds": [
+        "greige-fabric"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "air-planner-ceiling-vent",
+      "revision": "1",
+      "displayNameKo": "D-에어플래너 천장 디퓨저",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.35,
+        "depth": 0.35,
+        "height": 0.08
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "bedroom-smart-display-switch",
+      "revision": "1",
+      "displayNameKo": "침실 스마트 디스플레이 스위치",
+      "category": "electronics",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.12,
+        "depth": 0.03,
+        "height": 0.18
+      },
+      "materialVariantIds": [
+        "charcoal-accent",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "closet-breeze-dehumidifier",
+      "revision": "1",
+      "displayNameKo": "D-클로젯 브리즈",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.4,
+        "depth": 0.22,
+        "height": 0.6
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "silent-range-hood",
+      "revision": "1",
+      "displayNameKo": "D-사일런트 후드",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.9,
+        "depth": 0.5,
+        "height": 0.7
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "dishwasher-built-in-die6pt",
+      "revision": "1",
+      "displayNameKo": "LG DIE6PT 빌트인 식기세척기",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.598,
+        "depth": 0.567,
+        "height": 0.815
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "electric-cooktop-erh-3903",
+      "revision": "1",
+      "displayNameKo": "ERH-3903 전기쿡탑",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.59,
+        "depth": 0.52,
+        "height": 0.06
+      },
+      "materialVariantIds": [
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "induction-cooktop-nz63b5056ak",
+      "revision": "1",
+      "displayNameKo": "NZ63B5056AK 인덕션",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.6,
+        "depth": 0.52,
+        "height": 0.048
+      },
+      "materialVariantIds": [
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "induction-cooktop-bei3asb4bi",
+      "revision": "1",
+      "displayNameKo": "BEI3ASB4BI 인덕션",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.58,
+        "depth": 0.52,
+        "height": 0.059
+      },
+      "materialVariantIds": [
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "notice-balcony-expansion",
+      "revision": "1",
+      "displayNameKo": "발코니 일괄 확장 안내",
+      "category": "notice",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.12,
+        "height": 0.8
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "notice-accessibility-entry",
+      "revision": "1",
+      "displayNameKo": "편의시설 안내 · 현관",
+      "category": "notice",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.12,
+        "height": 0.8
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "notice-accessibility-kitchen",
+      "revision": "1",
+      "displayNameKo": "편의시설 안내 · 주방",
+      "category": "notice",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.12,
+        "height": 0.8
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "notice-accessibility-living",
+      "revision": "1",
+      "displayNameKo": "편의시설 안내 · 거실",
+      "category": "notice",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.12,
+        "height": 0.8
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "notice-accessibility-bathroom",
+      "revision": "1",
+      "displayNameKo": "편의시설 안내 · 욕실",
+      "category": "notice",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.12,
+        "height": 0.8
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "notice-accessibility-other",
+      "revision": "1",
+      "displayNameKo": "편의시설 안내 · 기타",
+      "category": "notice",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.12,
+        "height": 0.8
+      },
+      "materialVariantIds": [
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "notice-minus-option-package",
+      "revision": "1",
+      "displayNameKo": "마이너스옵션 패키지 안내",
+      "category": "notice",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.12,
+        "height": 0.8
+      },
+      "materialVariantIds": [
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "vanity-dressing-table",
+      "revision": "1",
+      "displayNameKo": "화장대",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.45,
+        "height": 1.4
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "system-hanger-modular",
+      "revision": "1",
+      "displayNameKo": "모듈형 시스템행거",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.6,
+        "depth": 0.5,
+        "height": 2.2
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "entry-pantry-cabinet",
+      "revision": "1",
+      "displayNameKo": "현관팬트리 수납장",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.2,
+        "depth": 0.45,
+        "height": 2.2
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "entry-pantry-shelving",
+      "revision": "1",
+      "displayNameKo": "현관팬트리 오픈선반",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 0.4,
+        "height": 2
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "porcelain-tile-floor-finish",
+      "revision": "1",
+      "displayNameKo": "포세린 타일 바닥 마감",
+      "category": "finish",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1,
+        "depth": 1,
+        "height": 0.012
+      },
+      "materialVariantIds": [
+        "white-ceramic",
+        "greige-fabric"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "entry-pantry-rounded-system-cabinet",
+      "revision": "2",
+      "displayNameKo": "L자 라운드 코너 현관팬트리 시스템장",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.6,
+        "depth": 0.8,
+        "height": 2.25
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "entry-shoe-bench-storage",
+      "revision": "1",
+      "displayNameKo": "현관 벤치 수납장",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.1,
+        "depth": 0.38,
+        "height": 0.5
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "greige-fabric"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "robot-vacuum-station",
+      "revision": "1",
+      "displayNameKo": "로봇청소기 스테이션",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.45,
+        "depth": 0.42,
+        "height": 0.42
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "water-purifier-countertop",
+      "revision": "1",
+      "displayNameKo": "빌트인형 정수기",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.26,
+        "depth": 0.48,
+        "height": 0.48
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "air-circulator-pedestal",
+      "revision": "1",
+      "displayNameKo": "스탠드형 공기순환기",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.38,
+        "depth": 0.38,
+        "height": 0.95
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "kitchen-pantry-tall-cabinet",
+      "revision": "1",
+      "displayNameKo": "키큰 주방 팬트리장",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.8,
+        "depth": 0.6,
+        "height": 2.25
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "entry-shoe-cabinet-tall",
+      "revision": "1",
+      "displayNameKo": "현관 키큰 신발장",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.2,
+        "depth": 0.35,
+        "height": 2.2
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "living-art-wall-fluted-oak",
+      "revision": "1",
+      "displayNameKo": "아트월 · 루버 원목",
+      "category": "finish",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 2.4,
+        "depth": 0.06,
+        "height": 2.2
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "living-art-wall-greige-stone",
+      "revision": "1",
+      "displayNameKo": "아트월 · 웜그레이지 스톤",
+      "category": "finish",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 2.4,
+        "depth": 0.055,
+        "height": 2.2
+      },
+      "materialVariantIds": [
+        "greige-fabric",
+        "white-ceramic"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "living-art-wall-porcelain-slab",
+      "revision": "1",
+      "displayNameKo": "아트월 · 포세린 대판",
+      "category": "finish",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 2.4,
+        "depth": 0.05,
+        "height": 2.2
+      },
+      "materialVariantIds": [
+        "white-ceramic",
+        "greige-fabric"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "living-art-wall-microcement",
+      "revision": "1",
+      "displayNameKo": "아트월 · 웜 미장",
+      "category": "finish",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 2.4,
+        "depth": 0.045,
+        "height": 2.2
+      },
+      "materialVariantIds": [
+        "greige-fabric",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "baby-crib-standard",
+      "revision": "1",
+      "displayNameKo": "아기 원목 침대",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.75,
+        "depth": 1.25,
+        "height": 0.95
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "family-bed-wide",
+      "revision": "1",
+      "displayNameKo": "저상형 패밀리침대",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 2.8,
+        "depth": 2.1,
+        "height": 0.65
+      },
+      "materialVariantIds": [
+        "greige-fabric",
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "baby-bumper-bed",
+      "revision": "1",
+      "displayNameKo": "아기 범퍼침대",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.1,
+        "depth": 1.5,
+        "height": 0.45
+      },
+      "materialVariantIds": [
+        "greige-fabric",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "kids-study-desk-compact",
+      "revision": "1",
+      "displayNameKo": "아기용 낮은 책상",
+      "category": "workspace",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.9,
+        "depth": 0.5,
+        "height": 0.58
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "alpha-room-slim-desk",
+      "revision": "1",
+      "displayNameKo": "알파룸 슬림 책상",
+      "category": "workspace",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.2,
+        "depth": 0.42,
+        "height": 0.74
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "refrigerator-fit-cabinet",
+      "revision": "1",
+      "displayNameKo": "맞춤 냉장고장",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.95,
+        "depth": 0.72,
+        "height": 2.3
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "kimchi-refrigerator-fit-cabinet",
+      "revision": "1",
+      "displayNameKo": "맞춤 김치냉장고장",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.75,
+        "depth": 0.72,
+        "height": 2.3
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "coffee-home-bar-cabinet",
+      "revision": "1",
+      "displayNameKo": "커피 홈바장",
+      "category": "storage",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.8,
+        "depth": 0.55,
+        "height": 2.3
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "refrigerator-kimchi-wall-set",
+      "revision": "1",
+      "displayNameKo": "냉장고장 + 김치냉장고장",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.8,
+        "depth": 0.72,
+        "height": 2.3
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "refrigerator-homebar-wall-set",
+      "revision": "1",
+      "displayNameKo": "냉장고장 + 커피 홈바장",
+      "category": "appliance",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.85,
+        "depth": 0.72,
+        "height": 2.3
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-wall-tv",
+      "revision": "1",
+      "displayNameKo": "벽걸이 TV",
+      "category": "living",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.45,
+        "depth": 0.045,
+        "height": 0.825
+      },
+      "materialVariantIds": [
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-computer-desk-1200",
+      "revision": "1",
+      "displayNameKo": "컴퓨터 책상 1",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.2,
+        "depth": 0.8,
+        "height": 0.745
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-computer-desk-800",
+      "revision": "1",
+      "displayNameKo": "컴퓨터 책상 2",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.8,
+        "depth": 0.8,
+        "height": 0.745
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-dining-table",
+      "revision": "1",
+      "displayNameKo": "라운드 식탁",
+      "category": "kitchen",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.4,
+        "depth": 0.8,
+        "height": 0.745
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-bed",
+      "revision": "1",
+      "displayNameKo": "목재 침대",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.7,
+        "depth": 2.11,
+        "height": 1.15
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "greige-fabric"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-side-storage",
+      "revision": "1",
+      "displayNameKo": "침대 사이드 수납장",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.45,
+        "depth": 0.46,
+        "height": 0.48
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-refrigerator",
+      "revision": "1",
+      "displayNameKo": "냉장고",
+      "category": "kitchen",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.9,
+        "depth": 0.87,
+        "height": 1.79
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-underwear-dresser",
+      "revision": "1",
+      "displayNameKo": "속옷 수납장",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.6,
+        "depth": 0.4,
+        "height": 1.1
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-open-bookshelf-5x3",
+      "revision": "1",
+      "displayNameKo": "오픈형 책장 1",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.2,
+        "depth": 0.285,
+        "height": 1.94
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-open-bookshelf-3x3",
+      "revision": "1",
+      "displayNameKo": "오픈형 책장 2",
+      "category": "bedroom",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 1.2,
+        "depth": 0.285,
+        "height": 1.17
+      },
+      "materialVariantIds": [
+        "warm-oak-ivory",
+        "ivory-appliance"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-sofa-three-seat",
+      "revision": "1",
+      "displayNameKo": "3인 소파",
+      "category": "living",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 2.25,
+        "depth": 0.96,
+        "height": 0.9
+      },
+      "materialVariantIds": [
+        "greige-fabric",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    },
+    {
+      "assetId": "istarpark-owned-tower-air-conditioner",
+      "revision": "1",
+      "displayNameKo": "타워형 에어컨",
+      "category": "living",
+      "rendererKind": "procedural",
+      "defaultDimensionsMeters": {
+        "width": 0.42,
+        "depth": 0.41,
+        "height": 1.85
+      },
+      "materialVariantIds": [
+        "ivory-appliance",
+        "charcoal-accent"
+      ],
+      "rendererRef": {
+        "kind": "procedural"
+      }
+    }
+  ]
+}

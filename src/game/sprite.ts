@@ -60,6 +60,8 @@ export class ActorView {
     this.element.style.zIndex = String(1_000 + Math.round(point.y));
     this.element.dataset.direction = actor.direction;
     this.element.dataset.motion = actor.motion;
+    this.element.dataset.worldX = String(actor.x);
+    this.element.dataset.worldY = String(actor.y);
     this.motionLabel.textContent = actor.motion.toUpperCase();
 
     if (!this.manifest) return;
