@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "policyType": "maintainer-reviewed-publication-allowlist",
-  "policyVersion": "2026-08-27.1",
+  "policyVersion": "2026-08-27.2",
   "statement": "Operational publication approval maintained by the project maintainer; this inventory is not legal proof of ownership or redistribution rights.",
   "legalRightsProof": false,
   "defaultDecision": "deny",
@@ -152,6 +152,55 @@
             "models/toilet-floor-mounted/c94a4d9cbf991c353ef725367a5407765cf968ab65651b5c423870637ad560cb/medium.glb",
             "models/vanity-basin-compact/1f229cad6af98b1ea44761948b25651b3f74029d476070da44835333a17b8588/medium.glb"
           ]
+        },
+        {
+          "bases": ["assets/rpg/objects/bundang-interior-v1/previews"],
+          "template": "{optionId}.png",
+          "variables": {
+            "optionId": [
+              "system-ac-2-general",
+              "system-ac-2-premium",
+              "system-ac-3-general",
+              "system-ac-3-premium",
+              "system-ac-4-general",
+              "system-ac-4-premium",
+              "entry-sliding-partition-door",
+              "wide-plank-floor-finish",
+              "entry-open-premium-shoe-cabinet",
+              "entry-pantry-system-shelf",
+              "living-design-wall-panel",
+              "infinity-door-bedroom-1",
+              "infinity-door-all-bedrooms",
+              "bathroom-combination-ventilator",
+              "toilet-integrated-bidet",
+              "utility-ceramic-elastic-coat",
+              "bedroom-1-built-in-closet-pet",
+              "bedroom-1-clothing-care-closet",
+              "dress-room-powder-storage",
+              "bedroom-2-built-in-closet-pet",
+              "bedroom-2-closet-desk-set",
+              "bedroom-3-built-in-closet-pet",
+              "bedroom-3-closet-desk-set",
+              "smart-lighting-package",
+              "air-planner-ceiling-vent",
+              "closet-breeze-dehumidifier",
+              "silent-range-hood",
+              "dishwasher-built-in-die6pt",
+              "electric-cooktop-erh-3903",
+              "induction-cooktop-nz63b5056ak",
+              "induction-cooktop-bei3asb4bi",
+              "lg-styler-sc5mbr53",
+              "built-in-oven-navien",
+              "built-in-oven-samsung",
+              "built-in-oven-lg",
+              "island-counter-modern",
+              "island-counter-dining-integrated",
+              "kitchen-wall-countertop-radianz-golden-shore",
+              "refrigerator-cabinet-pet-basic",
+              "refrigerator-cabinet-bespoke-alt2",
+              "refrigerator-cabinet-lg-built-in"
+            ]
+          }
         }
       ]
     },

@@ -55,12 +55,12 @@ PVP 원본의 선별 자산 snapshot을 갱신할 때만 다음 명령을 사용
 npm run sync:assets -- --source ../pvp
 ```
 
-추출 결과는 `public/generated/exports/<exportId>/`에 버전 고정되며 `source-export.json`에 원본 HEAD, dirty 여부, 파일별 SHA-256이 기록됩니다. 맵 구조물 JSON, 공개 승인된 GLB, Three.js 소품 레시피, B옵션 배치 모듈도 같은 snapshot에 고정됩니다.
+추출 결과는 `public/generated/exports/<exportId>/`에 버전 고정되며 `source-export.json`에 원본 HEAD, dirty 여부, 파일별 SHA-256이 기록됩니다. 맵 구조물 JSON, 공개 승인된 GLB, Three.js 소품 레시피, B옵션 배치 모듈과 옵션별 미리보기 41개도 같은 snapshot에 고정됩니다.
 
 ## 현재 원본 snapshot
 
-- export ID: `cfdeea65422f-dirty-ea8b7d874c79`
-- PVP HEAD: `cfdeea65422f581ef67c1aa11421924fdc29bc39`
+- export ID: `5847f2bc6867-dirty-7942dc85bf92`
+- PVP HEAD: `5847f2bc68678bdb8fe65d3a5399018f3fae1284`
 - 작업 트리 상태: `dirty` 선별 snapshot
 - canonical pointer: [`public/generated/current.json`](public/generated/current.json)
 

@@ -290,7 +290,8 @@ export class ThreeWorldRenderer {
     this.cssWidth = width;
     this.cssHeight = height;
     this.renderer.setSize(width, height, false);
-    const viewHeight = 29;
+    // 원본 검수맵처럼 세대 구조가 화면을 충분히 차지하도록 약 14% 당겨서 표시한다.
+    const viewHeight = 25.5;
     const viewWidth = viewHeight * width / height;
     this.camera.left = -viewWidth / 2;
     this.camera.right = viewWidth / 2;

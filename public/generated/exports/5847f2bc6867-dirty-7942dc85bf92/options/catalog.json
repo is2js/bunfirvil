@@ -56,7 +56,8 @@
       "exclusiveGroup": "system-ac-package",
       "systemAcTier": "general",
       "systemAcCount": 2,
-      "systemAcPaletteCard": true
+      "systemAcPaletteCard": true,
+      "previewUrl": "previews/system-ac-2-general.png"
     },
     {
       "assetId": "system-ac-2-premium",
@@ -73,7 +74,8 @@
       "exclusiveGroup": "system-ac-package",
       "systemAcTier": "premium",
       "systemAcCount": 2,
-      "systemAcPaletteCard": true
+      "systemAcPaletteCard": true,
+      "previewUrl": "previews/system-ac-2-premium.png"
     },
     {
       "assetId": "system-ac-3-general",
@@ -88,7 +90,8 @@
       "exclusiveGroup": "system-ac-package",
       "systemAcTier": "general",
       "systemAcCount": 3,
-      "systemAcPaletteCard": false
+      "systemAcPaletteCard": false,
+      "previewUrl": "previews/system-ac-3-general.png"
     },
     {
       "assetId": "system-ac-3-premium",
@@ -103,7 +106,8 @@
       "exclusiveGroup": "system-ac-package",
       "systemAcTier": "premium",
       "systemAcCount": 3,
-      "systemAcPaletteCard": false
+      "systemAcPaletteCard": false,
+      "previewUrl": "previews/system-ac-3-premium.png"
     },
     {
       "assetId": "system-ac-4-general",
@@ -118,7 +122,8 @@
       "exclusiveGroup": "system-ac-package",
       "systemAcTier": "general",
       "systemAcCount": 4,
-      "systemAcPaletteCard": false
+      "systemAcPaletteCard": false,
+      "previewUrl": "previews/system-ac-4-general.png"
     },
     {
       "assetId": "system-ac-4-premium",
@@ -133,7 +138,8 @@
       "exclusiveGroup": "system-ac-package",
       "systemAcTier": "premium",
       "systemAcCount": 4,
-      "systemAcPaletteCard": false
+      "systemAcPaletteCard": false,
+      "previewUrl": "previews/system-ac-4-premium.png"
     },
     {
       "assetId": "entry-sliding-partition-door",
@@ -145,7 +151,8 @@
         "55B": 1500000,
         "59A": 1500000
       },
-      "visualMode": "entry-door"
+      "visualMode": "entry-door",
+      "previewUrl": "previews/entry-sliding-partition-door.png"
     },
     {
       "assetId": "wide-plank-floor-finish",
@@ -157,7 +164,8 @@
         "55B": 1710000,
         "59A": 1940000
       },
-      "visualMode": "room-finish"
+      "visualMode": "room-finish",
+      "previewUrl": "previews/wide-plank-floor-finish.png"
     },
     {
       "assetId": "entry-open-premium-shoe-cabinet",
@@ -168,7 +176,8 @@
         "55B": 1340000,
         "59A": 1340000
       },
-      "visualMode": "entry-storage"
+      "visualMode": "entry-storage",
+      "previewUrl": "previews/entry-open-premium-shoe-cabinet.png"
     },
     {
       "assetId": "entry-pantry-system-shelf",
@@ -179,7 +188,8 @@
         "55B": 490000,
         "59A": 510000
       },
-      "visualMode": "entry-storage"
+      "visualMode": "entry-storage",
+      "previewUrl": "previews/entry-pantry-system-shelf.png"
     },
     {
       "assetId": "living-design-wall-panel",
@@ -202,7 +212,8 @@
           }
         }
       ],
-      "visualMode": "living-wall"
+      "visualMode": "living-wall",
+      "previewUrl": "previews/living-design-wall-panel.png"
     },
     {
       "assetId": "infinity-door-bedroom-1",
@@ -215,7 +226,8 @@
         "59A": 1350000
       },
       "visualMode": "infinity-door",
-      "exclusiveGroup": "infinity-door-package"
+      "exclusiveGroup": "infinity-door-package",
+      "previewUrl": "previews/infinity-door-bedroom-1.png"
     },
     {
       "assetId": "infinity-door-all-bedrooms",
@@ -229,7 +241,8 @@
       },
       "visualMode": "infinity-door",
       "exclusiveGroup": "infinity-door-package",
-      "requires": "living-design-wall-panel"
+      "requires": "living-design-wall-panel",
+      "previewUrl": "previews/infinity-door-all-bedrooms.png"
     },
     {
       "assetId": "bathroom-combination-ventilator",
@@ -241,7 +254,8 @@
         "55B": 1300000,
         "59A": 1300000
       },
-      "visualMode": "bathroom-ceiling"
+      "visualMode": "bathroom-ceiling",
+      "previewUrl": "previews/bathroom-combination-ventilator.png"
     },
     {
       "assetId": "toilet-integrated-bidet",
@@ -253,7 +267,8 @@
         "55B": 830000,
         "59A": 830000
       },
-      "visualMode": "bathroom-replace"
+      "visualMode": "bathroom-replace",
+      "previewUrl": "previews/toilet-integrated-bidet.png"
     },
     {
       "assetId": "utility-ceramic-elastic-coat",
@@ -265,7 +280,8 @@
         "55B": 880000,
         "59A": 800000
       },
-      "visualMode": "deferred"
+      "visualMode": "deferred",
+      "previewUrl": "previews/utility-ceramic-elastic-coat.png"
     },
     {
       "assetId": "bedroom-1-built-in-closet-pet",
@@ -278,7 +294,8 @@
         "59A": 2370000
       },
       "visualMode": "bedroom-storage",
-      "exclusiveGroup": "bedroom-1-closet"
+      "exclusiveGroup": "bedroom-1-closet",
+      "previewUrl": "previews/bedroom-1-built-in-closet-pet.png"
     },
     {
       "assetId": "bedroom-1-clothing-care-closet",
@@ -291,7 +308,8 @@
         "59A": 2020000
       },
       "visualMode": "bedroom-storage",
-      "exclusiveGroup": "bedroom-1-closet"
+      "exclusiveGroup": "bedroom-1-closet",
+      "previewUrl": "previews/bedroom-1-clothing-care-closet.png"
     },
     {
       "assetId": "dress-room-powder-storage",
@@ -303,7 +321,8 @@
         "55B": 3200000,
         "59A": 3400000
       },
-      "visualMode": "bedroom-storage"
+      "visualMode": "bedroom-storage",
+      "previewUrl": "previews/dress-room-powder-storage.png"
     },
     {
       "assetId": "bedroom-2-built-in-closet-pet",
@@ -316,7 +335,8 @@
         "59A": 1240000
       },
       "visualMode": "bedroom-storage",
-      "exclusiveGroup": "bedroom-2-closet"
+      "exclusiveGroup": "bedroom-2-closet",
+      "previewUrl": "previews/bedroom-2-built-in-closet-pet.png"
     },
     {
       "assetId": "bedroom-2-closet-desk-set",
@@ -329,7 +349,8 @@
         "59A": 3620000
       },
       "visualMode": "bedroom-storage",
-      "exclusiveGroup": "bedroom-2-closet"
+      "exclusiveGroup": "bedroom-2-closet",
+      "previewUrl": "previews/bedroom-2-closet-desk-set.png"
     },
     {
       "assetId": "bedroom-3-built-in-closet-pet",
@@ -339,7 +360,8 @@
         "59A": 1240000
       },
       "visualMode": "bedroom-storage",
-      "exclusiveGroup": "bedroom-3-closet"
+      "exclusiveGroup": "bedroom-3-closet",
+      "previewUrl": "previews/bedroom-3-built-in-closet-pet.png"
     },
     {
       "assetId": "bedroom-3-closet-desk-set",
@@ -349,7 +371,8 @@
         "59A": 3620000
       },
       "visualMode": "bedroom-storage",
-      "exclusiveGroup": "bedroom-3-closet"
+      "exclusiveGroup": "bedroom-3-closet",
+      "previewUrl": "previews/bedroom-3-closet-desk-set.png"
     },
     {
       "assetId": "smart-lighting-package",
@@ -361,7 +384,8 @@
         "55B": 3880000,
         "59A": 4420000
       },
-      "visualMode": "smart-lighting"
+      "visualMode": "smart-lighting",
+      "previewUrl": "previews/smart-lighting-package.png"
     },
     {
       "assetId": "air-planner-ceiling-vent",
@@ -386,7 +410,8 @@
           }
         }
       ],
-      "visualMode": "manual"
+      "visualMode": "manual",
+      "previewUrl": "previews/air-planner-ceiling-vent.png"
     },
     {
       "assetId": "closet-breeze-dehumidifier",
@@ -411,7 +436,8 @@
           }
         }
       ],
-      "visualMode": "manual"
+      "visualMode": "manual",
+      "previewUrl": "previews/closet-breeze-dehumidifier.png"
     },
     {
       "assetId": "silent-range-hood",
@@ -423,7 +449,8 @@
         "55B": 780000,
         "59A": 780000
       },
-      "visualMode": "manual"
+      "visualMode": "manual",
+      "previewUrl": "previews/silent-range-hood.png"
     },
     {
       "assetId": "dishwasher-built-in-die6pt",
@@ -435,7 +462,8 @@
         "55B": 1650000,
         "59A": 1650000
       },
-      "visualMode": "manual"
+      "visualMode": "manual",
+      "previewUrl": "previews/dishwasher-built-in-die6pt.png"
     },
     {
       "assetId": "electric-cooktop-erh-3903",
@@ -448,7 +476,8 @@
         "59A": 580000
       },
       "visualMode": "manual",
-      "exclusiveGroup": "cooktop"
+      "exclusiveGroup": "cooktop",
+      "previewUrl": "previews/electric-cooktop-erh-3903.png"
     },
     {
       "assetId": "induction-cooktop-nz63b5056ak",
@@ -461,7 +490,8 @@
         "59A": 950000
       },
       "visualMode": "manual",
-      "exclusiveGroup": "cooktop"
+      "exclusiveGroup": "cooktop",
+      "previewUrl": "previews/induction-cooktop-nz63b5056ak.png"
     },
     {
       "assetId": "induction-cooktop-bei3asb4bi",
@@ -474,7 +504,8 @@
         "59A": 1000000
       },
       "visualMode": "manual",
-      "exclusiveGroup": "cooktop"
+      "exclusiveGroup": "cooktop",
+      "previewUrl": "previews/induction-cooktop-bei3asb4bi.png"
     },
     {
       "assetId": "lg-styler-sc5mbr53",
@@ -487,7 +518,8 @@
         "59A": 1800000
       },
       "visualMode": "bedroom-appliance",
-      "requires": "bedroom-1-clothing-care-closet"
+      "requires": "bedroom-1-clothing-care-closet",
+      "previewUrl": "previews/lg-styler-sc5mbr53.png"
     },
     {
       "assetId": "built-in-oven-navien",
@@ -504,7 +536,8 @@
       "requiresAny": [
         "island-counter-modern",
         "island-counter-dining-integrated"
-      ]
+      ],
+      "previewUrl": "previews/built-in-oven-navien.png"
     },
     {
       "assetId": "built-in-oven-samsung",
@@ -521,7 +554,8 @@
       "requiresAny": [
         "island-counter-modern",
         "island-counter-dining-integrated"
-      ]
+      ],
+      "previewUrl": "previews/built-in-oven-samsung.png"
     },
     {
       "assetId": "built-in-oven-lg",
@@ -538,7 +572,8 @@
       "requiresAny": [
         "island-counter-modern",
         "island-counter-dining-integrated"
-      ]
+      ],
+      "previewUrl": "previews/built-in-oven-lg.png"
     },
     {
       "assetId": "island-counter-modern",
@@ -564,7 +599,8 @@
         }
       ],
       "visualMode": "kitchen-island",
-      "exclusiveGroup": "kitchen-island"
+      "exclusiveGroup": "kitchen-island",
+      "previewUrl": "previews/island-counter-modern.png"
     },
     {
       "assetId": "island-counter-dining-integrated",
@@ -587,7 +623,8 @@
       "exclusiveGroup": "kitchen-island",
       "availableUnitTypes": [
         "55B"
-      ]
+      ],
+      "previewUrl": "previews/island-counter-dining-integrated.png"
     },
     {
       "assetId": "kitchen-wall-countertop-radianz-golden-shore",
@@ -599,7 +636,8 @@
         "55B": 3070000,
         "59A": 3930000
       },
-      "visualMode": "kitchen-surface"
+      "visualMode": "kitchen-surface",
+      "previewUrl": "previews/kitchen-wall-countertop-radianz-golden-shore.png"
     },
     {
       "assetId": "refrigerator-cabinet-pet-basic",
@@ -611,7 +649,8 @@
         "55B": 1200000,
         "59A": 1200000
       },
-      "visualMode": "refrigerator-cabinet"
+      "visualMode": "refrigerator-cabinet",
+      "previewUrl": "previews/refrigerator-cabinet-pet-basic.png"
     },
     {
       "assetId": "refrigerator-cabinet-bespoke-alt2",
@@ -625,7 +664,8 @@
       },
       "visualMode": "refrigerator-cabinet",
       "exclusiveGroup": "built-in-refrigerator-package",
-      "requires": "refrigerator-cabinet-pet-basic"
+      "requires": "refrigerator-cabinet-pet-basic",
+      "previewUrl": "previews/refrigerator-cabinet-bespoke-alt2.png"
     },
     {
       "assetId": "refrigerator-cabinet-lg-built-in",
@@ -639,7 +679,8 @@
       },
       "visualMode": "refrigerator-cabinet",
       "exclusiveGroup": "built-in-refrigerator-package",
-      "requires": "refrigerator-cabinet-pet-basic"
+      "requires": "refrigerator-cabinet-pet-basic",
+      "previewUrl": "previews/refrigerator-cabinet-lg-built-in.png"
     }
   ],
   "cautions": [
@@ -902,5 +943,5 @@
       "defaultMaterialVariantId": "golden-shore-engineered-stone"
     }
   ],
-  "previewPolicy": "css-neutral-card"
+  "previewPolicy": "versioned-option-preview-v1"
 }

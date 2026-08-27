@@ -16,7 +16,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const EXPORTER_VERSION = "bunfirvil-static-export-v2";
+const EXPORTER_VERSION = "bunfirvil-static-export-v3";
 const EXPORTER_FILE = fileURLToPath(import.meta.url);
 const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_ROOT = path.join(PROJECT_ROOT, "public");
@@ -181,6 +181,50 @@ const MATERIAL_FILES = Object.freeze([
 const MATERIAL_IDS = new Set(MATERIAL_FILES.map((name) => name.replace(/\.webp$/, "")));
 const INTERIOR_CATALOG_SOURCE = "assets/rpg/objects/bundang-interior-v1/catalog.json";
 const INTERIOR_RECIPE_SOURCE = "src/rpg/world/three-pbr-renderer.mjs";
+const OPTION_PREVIEW_SOURCE_DIR = "assets/rpg/objects/bundang-interior-v1/previews";
+const OPTION_PREVIEW_IDS = Object.freeze([
+  "system-ac-2-general",
+  "system-ac-2-premium",
+  "system-ac-3-general",
+  "system-ac-3-premium",
+  "system-ac-4-general",
+  "system-ac-4-premium",
+  "entry-sliding-partition-door",
+  "wide-plank-floor-finish",
+  "entry-open-premium-shoe-cabinet",
+  "entry-pantry-system-shelf",
+  "living-design-wall-panel",
+  "infinity-door-bedroom-1",
+  "infinity-door-all-bedrooms",
+  "bathroom-combination-ventilator",
+  "toilet-integrated-bidet",
+  "utility-ceramic-elastic-coat",
+  "bedroom-1-built-in-closet-pet",
+  "bedroom-1-clothing-care-closet",
+  "dress-room-powder-storage",
+  "bedroom-2-built-in-closet-pet",
+  "bedroom-2-closet-desk-set",
+  "bedroom-3-built-in-closet-pet",
+  "bedroom-3-closet-desk-set",
+  "smart-lighting-package",
+  "air-planner-ceiling-vent",
+  "closet-breeze-dehumidifier",
+  "silent-range-hood",
+  "dishwasher-built-in-die6pt",
+  "electric-cooktop-erh-3903",
+  "induction-cooktop-nz63b5056ak",
+  "induction-cooktop-bei3asb4bi",
+  "lg-styler-sc5mbr53",
+  "built-in-oven-navien",
+  "built-in-oven-samsung",
+  "built-in-oven-lg",
+  "island-counter-modern",
+  "island-counter-dining-integrated",
+  "kitchen-wall-countertop-radianz-golden-shore",
+  "refrigerator-cabinet-pet-basic",
+  "refrigerator-cabinet-bespoke-alt2",
+  "refrigerator-cabinet-lg-built-in",
+]);
 const INTERIOR_MODEL_ROWS = Object.freeze([
   Object.freeze({ assetId: "sofa-three-seat", source: "assets/rpg/objects/bundang-interior-v1/models/sofa-three-seat/a3b5553daff41d1ea18a712d01072fb06ef1dec9ca132439fa3246d35811974f/medium.glb" }),
   Object.freeze({ assetId: "dining-chair", source: "assets/rpg/objects/bundang-interior-v1/models/dining-chair/57a481718c2573c824672398c5ee519a696fa30080b0fbeca4afde38e7ed2c08/medium.glb" }),
@@ -522,6 +566,7 @@ function buildSourceAllowlist() {
   paths.add(INTERIOR_CATALOG_SOURCE);
   paths.add(INTERIOR_RECIPE_SOURCE);
   INTERIOR_MODEL_ROWS.forEach((row) => paths.add(row.source));
+  OPTION_PREVIEW_IDS.forEach((id) => paths.add(`${OPTION_PREVIEW_SOURCE_DIR}/${id}.png`));
   paths.add("src/rpg/bundang-apartment-options.mjs");
   return [...paths].sort();
 }
@@ -1168,14 +1213,27 @@ async function main() {
     label: String(group.label),
   }));
   const optionRows = optionsModule.BUNDANG_OPTION_ROWS.map(sanitizeOptionRow);
+  const optionIds = optionRows.map((option) => String(option.assetId));
+  const expectedOptionIds = new Set(OPTION_PREVIEW_IDS);
+  const missingPreviews = optionIds.filter((id) => !expectedOptionIds.has(id));
+  const unusedPreviews = OPTION_PREVIEW_IDS.filter((id) => !optionIds.includes(id));
+  if (optionIds.length !== OPTION_PREVIEW_IDS.length || missingPreviews.length || unusedPreviews.length) {
+    throw new Error(`B옵션과 공개 preview allowlist가 일치하지 않습니다. missing=${missingPreviews.join(",")} unused=${unusedPreviews.join(",")}`);
+  }
+  for (const optionId of OPTION_PREVIEW_IDS) {
+    await copyAllowed(`${OPTION_PREVIEW_SOURCE_DIR}/${optionId}.png`, `options/previews/${optionId}.png`);
+  }
   const optionCatalog = {
     schemaVersion: "bunfirvil-b-options-v1",
     unitTypes: Object.values(UNIT_TYPES),
     groups: optionGroups,
-    options: optionRows,
+    options: optionRows.map((option) => ({
+      ...option,
+      previewUrl: `previews/${String(option.assetId)}.png`,
+    })),
     cautions: optionsModule.BUNDANG_OPTION_CAUTIONS.map(String),
     proceduralAssets: optionsModule.BUNDANG_VIRTUAL_OPTION_ASSETS.map(sanitizeProceduralAsset),
-    previewPolicy: "css-neutral-card",
+    previewPolicy: "versioned-option-preview-v1",
   };
   assertNoForbiddenStrings(optionCatalog, "options/catalog.json");
   await recordOutput({
@@ -1280,6 +1338,7 @@ async function main() {
       requires,
       requiresAny,
       excludes,
+      previewUrl: addPrefix(`options/previews/${String(option.assetId)}.png`),
     };
   });
   const stableOptionIds = new Set(stableOptions.map((option) => option.id));

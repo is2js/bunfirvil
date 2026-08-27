@@ -28,7 +28,8 @@ import type {
 import { IsometricWorldRenderer, isWalkable, loadWorld, nearestWalkable } from './world';
 
 const numberFormat = new Intl.NumberFormat('ko-KR');
-const MOVEMENT_INTERVAL_MS = 92;
+// 원본 RPG의 기본 walk/movement duration과 동일한 한 cell cadence.
+const MOVEMENT_INTERVAL_MS = 420;
 
 interface WorldRendererPort {
   setWorld(world: WorldData): void;
@@ -109,6 +110,7 @@ export class ShowcaseApp {
     this.hotbar = readHotbar(catalog.defaultHotbar);
 
     this.renderShell(fallback);
+    this.get<HTMLElement>('#game-stage').dataset.movementIntervalMs = String(MOVEMENT_INTERVAL_MS);
     this.canvasRenderer = new IsometricWorldRenderer(this.get<HTMLCanvasElement>('#world-canvas'));
     this.renderer = this.canvasRenderer;
     this.effectPlayer = new ManifestEffectPlayer(this.get<HTMLElement>('#effect-layer'), () => this.trackAsset());

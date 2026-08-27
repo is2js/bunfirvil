@@ -420,6 +420,9 @@ async function verifyCatalog(distRoot, failures) {
   if (!Array.isArray(catalog.skills) || catalog.skills.length !== 3) failures.push("catalog에는 정확히 3개 스킬이 필요합니다.");
   if (!Array.isArray(catalog.defaultHotbar) || catalog.defaultHotbar.length !== 8) failures.push("catalog.defaultHotbar는 8칸이어야 합니다.");
   if (!Array.isArray(catalog.bOptions) || catalog.bOptions.length !== 41) failures.push("catalog.bOptions에는 41개 옵션이 필요합니다.");
+  const optionPreviewUrls = (catalog.bOptions || []).map((option) => option?.previewUrl).filter(Boolean);
+  if (optionPreviewUrls.length !== 41) failures.push("41개 B옵션 모두 versioned previewUrl이 필요합니다.");
+  if (new Set(optionPreviewUrls).size !== optionPreviewUrls.length) failures.push("B옵션 previewUrl은 옵션별로 고유해야 합니다.");
 
   const renderAssets = catalog.renderAssets;
   const requiredRenderAssets = ["interiorCatalogUrl", "recipeCatalogUrl", "optionModuleUrl", "materialManifestUrl"];
