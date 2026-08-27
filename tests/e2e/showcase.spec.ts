@@ -184,10 +184,16 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   const authoringCanvas = page.locator("#three-world-canvas");
   const authoringBounds = await authoringCanvas.boundingBox();
   expect(authoringBounds).not.toBeNull();
+  const zoomBefore = Number(await authoringCanvas.getAttribute("data-camera-zoom"));
+  await page.mouse.move(authoringBounds!.x + authoringBounds!.width / 2, authoringBounds!.y + authoringBounds!.height / 2);
+  await page.mouse.wheel(0, -420);
+  await expect.poll(async () => Number(await authoringCanvas.getAttribute("data-camera-zoom"))).toBeGreaterThan(zoomBefore);
+  await expect(page.locator("#zoom-value")).not.toHaveText("100%");
   await page.mouse.click(authoringBounds!.x + authoringBounds!.width / 2, authoringBounds!.y + authoringBounds!.height / 2);
   await expect(page.locator("#furniture-count")).toHaveText("1개");
+  await expect(page.locator("#furniture-selection-toolbar")).toBeVisible();
   const placedMapId = await mapSelect.inputValue();
-  await page.getByRole("button", { name: "+90°", exact: true }).first().click();
+  await page.getByRole("button", { name: "화면 가구 오른쪽 90도 회전" }).click();
   expect(await page.evaluate((mapId) => JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.yawDeg, placedMapId)).toBe(90);
   const mainSelectionX = Number(await authoringCanvas.getAttribute("data-selected-editor-x"));
   const mainSelectionY = Number(await authoringCanvas.getAttribute("data-selected-editor-y"));
@@ -197,6 +203,15 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await page.mouse.move(authoringBounds!.x + mainSelectionX + 24, authoringBounds!.y + mainSelectionY, { steps: 4 });
   await page.mouse.up();
   await expect.poll(async () => page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId)).not.toBe(beforeMainDrag);
+  const beforeRelocate = await page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId);
+  await page.getByRole("button", { name: "가구 재배치" }).click();
+  await page.mouse.click(authoringBounds!.x + authoringBounds!.width * .61, authoringBounds!.y + authoringBounds!.height * .56);
+  await expect.poll(async () => page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId)).not.toBe(beforeRelocate);
+  await page.getByRole("button", { name: "화면 가구 제거" }).click();
+  await expect(page.locator("#furniture-count")).toHaveText("0개");
+  await furnitureCards.first().click();
+  await page.mouse.click(authoringBounds!.x + authoringBounds!.width / 2, authoringBounds!.y + authoringBounds!.height / 2);
+  await expect(page.locator("#furniture-count")).toHaveText("1개");
 
   await page.reload();
   await expect(page.locator("#stage-loader")).toBeHidden();

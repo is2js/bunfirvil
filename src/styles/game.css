@@ -844,6 +844,76 @@ input:focus-visible {
   backdrop-filter: blur(9px);
 }
 
+.stage-zoom {
+  position: absolute;
+  right: 16px;
+  top: 154px;
+  z-index: 14;
+  display: grid;
+  grid-template-columns: 30px 56px 30px;
+  overflow: hidden;
+  border: 1px solid rgba(147, 195, 189, .2);
+  border-radius: 5px;
+  background: rgba(3, 12, 15, .82);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+}
+
+.stage-zoom button {
+  min-height: 29px;
+  border: 0;
+  border-right: 1px solid rgba(147, 195, 189, .12);
+  color: #b9cdc8;
+  background: transparent;
+  font-size: 12px;
+}
+
+.stage-zoom button:last-child { border-right: 0; }
+.stage-zoom button:hover { color: #ffe2a0; background: rgba(225, 185, 99, .09); }
+.stage-zoom span { font: 700 8px ui-monospace, monospace; }
+
+.furniture-selection-toolbar {
+  position: absolute;
+  z-index: 18;
+  min-width: 172px;
+  padding: 7px;
+  transform: translate(-50%, -100%);
+  border: 1px solid rgba(255, 224, 147, .45);
+  border-radius: 6px;
+  background: rgba(7, 17, 19, .94);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .48), 0 0 0 1px rgba(0, 0, 0, .45);
+  pointer-events: auto;
+}
+
+.furniture-selection-toolbar::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid rgba(255, 224, 147, .45);
+  border-bottom: 1px solid rgba(255, 224, 147, .45);
+  background: #071113;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.furniture-selection-toolbar b {
+  display: block;
+  margin: 0 0 5px;
+  overflow: hidden;
+  color: #f1dfad;
+  font-size: 8px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.furniture-selection-toolbar div { display: grid; grid-template-columns: 30px 1fr 30px 42px; gap: 3px; }
+.furniture-selection-toolbar button { min-height: 26px; border: 1px solid rgba(147, 195, 189, .14); color: #a9bdb8; background: rgba(255,255,255,.025); font-size: 7px; }
+.furniture-selection-toolbar button:hover { border-color: rgba(255, 224, 147, .35); color: white; }
+.furniture-selection-toolbar button:last-child { color: #e39898; }
+.game-stage.is-relocating-furniture #three-world-canvas { cursor: move; }
+
 .perf-title {
   padding-bottom: 6px;
   display: flex;

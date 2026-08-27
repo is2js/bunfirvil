@@ -274,6 +274,7 @@ export class ThreeWorldRenderer {
   private selectedOptionIds: string[] = [];
   private editorProps: ApartmentInteriorProp[] | null = null;
   private editorSelectedPropId = '';
+  private cameraZoom = 1;
   private loadToken = 0;
   private propLoadToken = 0;
   private contractsReady: Promise<void>;
@@ -346,6 +347,54 @@ export class ThreeWorldRenderer {
     this.editorSelectedPropId = String(propId || '');
     this.canvas.dataset.selectedEditorPropId = this.editorSelectedPropId;
     this.refreshEditorSelection();
+  }
+
+  getCameraZoom(): number {
+    return this.cameraZoom;
+  }
+
+  zoomAt(screenX: number, screenY: number, wheelDelta: number): number {
+    this.resize();
+    const before = this.unproject(screenX, screenY);
+    const next = THREE.MathUtils.clamp(this.cameraZoom * Math.exp(-wheelDelta * 0.0014), 0.65, 2.8);
+    if (Math.abs(next - this.cameraZoom) < 0.001) return this.cameraZoom;
+    this.cameraZoom = next;
+    this.camera.zoom = next;
+    this.camera.updateProjectionMatrix();
+    const after = this.unproject(screenX, screenY);
+    if (before && after) {
+      this.focus.x += before.x - after.x;
+      this.focus.z += before.y - after.y;
+      this.updateCamera();
+    }
+    this.canvas.dataset.cameraZoom = this.cameraZoom.toFixed(3);
+    return this.cameraZoom;
+  }
+
+  resetCameraZoom(): number {
+    this.cameraZoom = 1;
+    this.camera.zoom = 1;
+    this.camera.updateProjectionMatrix();
+    this.canvas.dataset.cameraZoom = '1.000';
+    return this.cameraZoom;
+  }
+
+  pickEditorProp(screenX: number, screenY: number): string {
+    if (!this.world) return '';
+    this.resize();
+    this.camera.updateMatrixWorld();
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(
+      new THREE.Vector2((screenX / this.cssWidth) * 2 - 1, 1 - (screenY / this.cssHeight) * 2),
+      this.camera,
+    );
+    for (const intersection of raycaster.intersectObjects(this.propRoot.children, true)) {
+      let object: THREE.Object3D | null = intersection.object;
+      while (object && object.parent !== this.propRoot) object = object.parent;
+      const id = String(object?.userData.editorPropId || '');
+      if (id) return id;
+    }
+    return '';
   }
 
   focusAt(x: number, y: number): void {
@@ -458,7 +507,9 @@ export class ThreeWorldRenderer {
     this.camera.right = viewWidth / 2;
     this.camera.top = viewHeight / 2;
     this.camera.bottom = -viewHeight / 2;
+    this.camera.zoom = this.cameraZoom;
     this.camera.updateProjectionMatrix();
+    this.canvas.dataset.cameraZoom = this.cameraZoom.toFixed(3);
   }
 
   private updateCamera(): void {
@@ -793,7 +844,7 @@ export class ThreeWorldRenderer {
     const bounds = new THREE.Box3().setFromObject(selected).expandByScalar(0.035);
     this.resize();
     this.camera.updateMatrixWorld();
-    const screen = new THREE.Vector3(selected.position.x, .05, selected.position.z).project(this.camera);
+    const screen = bounds.getCenter(new THREE.Vector3()).project(this.camera);
     this.canvas.dataset.selectedEditorX = String((screen.x * .5 + .5) * this.cssWidth);
     this.canvas.dataset.selectedEditorY = String((-screen.y * .5 + .5) * this.cssHeight);
     const helper = new THREE.Box3Helper(bounds, new THREE.Color('#ffe58a'));
