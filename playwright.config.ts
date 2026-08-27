@@ -7,8 +7,8 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   // GitHub's software WebGL runner needs more time than a local GPU for four
-  // full structure rebuilds and the GLB/recipe smoke path.
-  timeout: 300_000,
+  // full structure rebuilds, 83 lazy palette previews and both 3D drag paths.
+  timeout: 600_000,
   reporter: [["list"]],
   use: {
     ...devices["Desktop Chrome"],
