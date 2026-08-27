@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 const MAPS = [
   ["bundang-first-village-51a-prototype", "51A"],
@@ -7,6 +7,22 @@ const MAPS = [
   ["bundang-first-village-55b-prototype", "55B"],
   ["bundang-first-village-59a-prototype", "59A"],
 ] as const;
+
+async function observeNextMotion(actor: Locator, expected: "attack" | "cast"): Promise<void> {
+  await actor.evaluate((element, motion) => {
+    const actorElement = element as HTMLElement;
+    actorElement.removeAttribute("data-observed-motion");
+    let observer: MutationObserver | null = null;
+    const capture = () => {
+      if (actorElement.dataset.motion !== motion) return;
+      actorElement.dataset.observedMotion = motion;
+      observer?.disconnect();
+    };
+    observer = new MutationObserver(capture);
+    observer.observe(actorElement, { attributes: true, attributeFilter: ["data-motion"] });
+    capture();
+  }, expected);
+}
 
 test("runs the full serverless showcase and local review workflow", async ({ page }) => {
   const forbiddenRequests: string[] = [];
@@ -46,18 +62,22 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   const actor200 = page.locator('.rpg-actor[data-actor="200"]');
   await page.getByRole("button", { name: "100", exact: true }).click();
   await expect(page.locator("#active-actor-label")).toHaveText("남자의료진");
+  await observeNextMotion(actor100, "attack");
   await page.getByRole("button", { name: "1번 기본 공격" }).click();
-  await expect(actor100).toHaveAttribute("data-motion", "attack");
+  await expect(actor100).toHaveAttribute("data-observed-motion", "attack");
 
   await page.getByRole("button", { name: "200", exact: true }).click();
   await expect(page.locator("#active-actor-label")).toHaveText("여자의료진");
+  await observeNextMotion(actor200, "cast");
   await page.getByRole("button", { name: "2번 쇼크스턴" }).click();
-  await expect(actor200).toHaveAttribute("data-motion", "cast");
+  await expect(actor200).toHaveAttribute("data-observed-motion", "cast");
 
+  await observeNextMotion(actor200, "attack");
   await page.keyboard.press("Digit3");
-  await expect(actor200).toHaveAttribute("data-motion", "attack");
+  await expect(actor200).toHaveAttribute("data-observed-motion", "attack");
+  await observeNextMotion(actor200, "cast");
   await page.keyboard.press("Digit4");
-  await expect(actor200).toHaveAttribute("data-motion", "cast");
+  await expect(actor200).toHaveAttribute("data-observed-motion", "cast");
 
   const firstSlot = page.locator('#hotbar [data-slot="0"]');
   const eighthSlot = page.locator('#hotbar [data-slot="7"]');
