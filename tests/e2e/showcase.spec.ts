@@ -40,6 +40,8 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
 
   await page.goto("./");
   await expect(page.getByText("프론트엔드 로컬 데모", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "가이드", exact: true })).toHaveAttribute("href", /guides\/$/);
+  await expect(page.getByRole("link", { name: "옵션 가이드", exact: true })).toHaveAttribute("href", /guides\/\?guide=b-option$/);
   await expect(page.locator("#stage-loader")).toBeHidden();
   await expect(page.locator("#metric-renderer")).toHaveText(/THREE·PBR|CANVAS·(?:ISO|FALLBACK)|MINIMAP|PROCEDURAL/);
   const threeCanvas = page.locator("#three-world-canvas");
@@ -289,6 +291,14 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(page.locator(`#option-list input[data-option-id="${firstOptionId}"]`)).toBeChecked();
   await expect(page.locator("#option-total")).toHaveText(savedQuote);
   await expect(page.locator('#hotbar [data-slot="3"]')).toHaveAttribute("data-skill-id", "basic-attack");
+
+  await page.goto("guides/?guide=b-option");
+  await expect(page.locator("body")).toHaveAttribute("data-guide-id", "b-option");
+  await expect(page.locator("#guideTitle")).toHaveText("B옵션 가이드");
+  await expect(page.locator("#markdownBody")).toContainText("시스템 에어컨");
+  await expect(page.locator("#markdownBody table")).toHaveCount(1);
+  await expect(page.locator("#markdownSource")).toContainText("# B옵션 팔레트 사용법");
+  await expect(page.getByRole("link", { name: "GitHub에서 Markdown 수정" })).toHaveAttribute("href", /src\/guides\/content\/b-option\.md$/);
 
   await page.goto("manage/");
   await expect(page.locator("#loadingState")).toBeHidden();

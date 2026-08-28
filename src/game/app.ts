@@ -259,6 +259,7 @@ export class ShowcaseApp {
           <nav class="topnav" aria-label="주요 메뉴">
             <a class="is-active" href="${resolveProjectUrl('')}"><span>LIVE</span> 렌더 쇼케이스</a>
             <a href="${resolveProjectUrl('manage/')}">검수맵 관리</a>
+            <a href="${resolveProjectUrl('guides/')}">가이드</a>
           </nav>
           <div class="build-chip" title="현재 정적 자산 스냅샷">
             <span class="status-dot ${fallback ? 'is-amber' : ''}"></span>
@@ -368,7 +369,10 @@ export class ShowcaseApp {
                 <p class="eyebrow">LOCAL INTERIOR PREVIEW</p>
                 <h2><span>B</span> 옵션 팔레트</h2>
               </div>
-              <span class="option-count" id="option-count">0</span>
+              <div class="option-head-actions">
+                <a class="option-guide-link" href="${resolveProjectUrl('guides/?guide=b-option')}">옵션 가이드</a>
+                <span class="option-count" id="option-count">0</span>
+              </div>
             </header>
             <div class="palette-tabs" role="tablist" aria-label="인테리어 도구">
               <button type="button" class="is-active" data-palette-tab="options">B 옵션</button>
@@ -604,11 +608,13 @@ export class ShowcaseApp {
     stage.addEventListener('auxclick', (event) => {
       if (event.button === 1) event.preventDefault();
     }, { signal });
-    stage.addEventListener('contextmenu', (event) => {
-      // 게임 스테이지에서는 브라우저 기본 메뉴 대신 RPG 가구 조작 메뉴만 사용한다.
+    window.addEventListener('contextmenu', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target?.closest('#game-stage')) return;
+      // 캡처 단계에서 차단해 자식 UI가 이벤트를 가로채도 Chrome 기본 메뉴가 열리지 않는다.
       event.preventDefault();
       this.handleFurnitureContextMenu(event);
-    }, { signal });
+    }, { signal, capture: true });
   }
 
   private applyCameraZoom(deltaY: number, x: number, y: number): void {
@@ -850,7 +856,6 @@ export class ShowcaseApp {
       : this.scenePropAt(event);
     if (!picked) return false;
     event.preventDefault();
-    event.stopPropagation();
     this.selectSceneProp(picked, true, '가구 우클릭 메뉴를 열었습니다. 이동·회전·벽 자석·삭제를 사용할 수 있습니다.');
     return true;
   }

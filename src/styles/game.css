@@ -1419,6 +1419,31 @@ input:focus-visible {
 
 .option-header h2 span { color: var(--gold); font-family: Georgia, serif; }
 
+.option-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.option-guide-link {
+  min-height: 27px;
+  padding: 7px 9px;
+  border: 1px solid rgba(225, 185, 99, .22);
+  border-radius: 4px;
+  color: #d6bd7e;
+  background: rgba(225, 185, 99, .05);
+  font: 700 7px ui-monospace, monospace;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.option-guide-link:hover,
+.option-guide-link:focus-visible {
+  border-color: rgba(225, 185, 99, .5);
+  color: #fff1bf;
+  background: rgba(225, 185, 99, .11);
+}
+
 .option-count {
   width: 35px;
   height: 35px;

@@ -4,6 +4,7 @@
 
 - 공개 주소: <https://is2js.github.io/bunfirvil/>
 - 검수 관리: <https://is2js.github.io/bunfirvil/manage/>
+- Markdown 가이드: <https://is2js.github.io/bunfirvil/guides/>
 - 저장 방식: 브라우저 `localStorage`와 JSON 가져오기·내보내기
 - 서버 기능: 없음 — 인증, DB, Socket.IO, 전투 판정, 원본 게시 기능을 포함하지 않습니다.
 
@@ -37,6 +38,10 @@
 - 관리 페이지 2D·3D: 양쪽 화면에서 드래그 이동, 0.05m 스냅, ±90° 회전·반전·복제·크기 조절·삭제
 
 이 사이트의 스킬 쿨다운과 효과는 프론트엔드 시연용입니다. 실제 피해, 명중, MP, 서버 판정을 표현하지 않습니다.
+
+## Markdown 가이드 추가
+
+`src/guides/content/`에 front matter가 포함된 `.md` 파일을 추가하면 가이드 페이지의 문서 목록과 `?guide=<id>` URL이 빌드 시 자동 생성됩니다. `id`, `title`, `shortTitle`, `category`, `summary`, `updatedAt`, `order`를 지정할 수 있으며 원문은 가이드 페이지에서도 확인할 수 있습니다.
 
 ## 로컬 개발
 

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="bunfirvil RPG 렌더링과 B옵션 사용법을 Markdown 문서로 제공하는 정적 가이드" />
+    <meta name="color-scheme" content="dark" />
+    <title>가이드 · bunfirvil</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#guideContent">본문으로 이동</a>
+
+    <header class="guide-topbar">
+      <a class="brand" href="../" aria-label="Bunfirvil 렌더 랩 홈">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><b>BUNFIRVIL</b><small>RPG GUIDE LIBRARY</small></span>
+      </a>
+      <nav class="topnav" aria-label="주요 메뉴">
+        <a href="../"><span>LIVE</span> 렌더 쇼케이스</a>
+        <a href="../manage/">검수맵 관리</a>
+        <a class="is-active" href="./" aria-current="page">가이드</a>
+      </nav>
+      <span class="markdown-chip">MARKDOWN · STATIC</span>
+    </header>
+
+    <div class="guide-banner" role="note">
+      <b>문서형 가이드</b>
+      <span>Markdown 파일을 추가하면 가이드 목록에 자동으로 포함됩니다.</span>
+    </div>
+
+    <main class="guide-layout" id="guideContent">
+      <aside class="guide-sidebar" aria-label="가이드 목록">
+        <header>
+          <p>GUIDE LIBRARY</p>
+          <h1>인게임 가이드</h1>
+          <span id="guideCount">0 DOCUMENTS</span>
+        </header>
+        <nav id="guideList" class="guide-list"></nav>
+        <div class="guide-extension-note">
+          <b>가이드 추가</b>
+          <p><code>src/guides/content</code>에 front matter가 포함된 <code>.md</code> 파일을 추가하세요.</p>
+        </div>
+      </aside>
+
+      <article class="guide-reader" aria-live="polite">
+        <header class="guide-hero">
+          <div class="guide-meta">
+            <span id="guideCategory">GUIDE</span>
+            <time id="guideUpdatedAt"></time>
+          </div>
+          <h2 id="guideTitle">가이드를 불러오는 중입니다</h2>
+          <p id="guideSummary"></p>
+          <div class="guide-actions">
+            <a id="guideEditLink" href="#" target="_blank" rel="noreferrer">GitHub에서 Markdown 수정</a>
+            <a href="../">인게임으로 돌아가기</a>
+          </div>
+        </header>
+        <div id="markdownBody" class="markdown-body"></div>
+        <details class="markdown-source">
+          <summary>Markdown 원문 보기</summary>
+          <pre id="markdownSource"></pre>
+        </details>
+      </article>
+    </main>
+
+    <div id="guideError" class="guide-error" role="alert" hidden></div>
+    <script type="module" src="/src/guides.ts"></script>
+  </body>
+</html>

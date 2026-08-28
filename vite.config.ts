@@ -12,6 +12,7 @@ export default defineConfig({
       input: {
         showcase: resolve(__dirname, "index.html"),
         manage: resolve(__dirname, "manage/index.html"),
+        guides: resolve(__dirname, "guides/index.html"),
       },
     },
   },
