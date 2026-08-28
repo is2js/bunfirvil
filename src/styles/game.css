@@ -874,7 +874,7 @@ input:focus-visible {
 .furniture-selection-toolbar {
   position: absolute;
   z-index: 3200;
-  min-width: 172px;
+  min-width: 218px;
   padding: 7px;
   transform: translate(-50%, -100%);
   border: 1px solid rgba(255, 224, 147, .45);
@@ -908,11 +908,15 @@ input:focus-visible {
   white-space: nowrap;
 }
 
-.furniture-selection-toolbar div { display: grid; grid-template-columns: 30px 1fr 30px 42px; gap: 3px; }
+.furniture-selection-toolbar div { display: grid; grid-template-columns: 30px 1fr 30px 38px 42px; gap: 3px; }
 .furniture-selection-toolbar button { min-height: 26px; border: 1px solid rgba(147, 195, 189, .14); color: #a9bdb8; background: rgba(255,255,255,.025); font-size: 7px; }
 .furniture-selection-toolbar button:hover { border-color: rgba(255, 224, 147, .35); color: white; }
 .furniture-selection-toolbar button:last-child { color: #e39898; }
 .furniture-selection-toolbar > small { margin-top: 5px; display: block; color: #657c77; font-size: 6px; text-align: center; white-space: nowrap; }
+.furniture-selection-toolbar.is-name-only { min-width: 118px; padding: 7px 10px; border-color: rgba(251, 191, 36, .62); background: rgba(20, 17, 8, .92); }
+.furniture-selection-toolbar.is-name-only b { margin: 0; }
+.furniture-selection-toolbar.is-name-only div, .furniture-selection-toolbar.is-name-only > small { display: none; }
+.furniture-selection-toolbar.is-wall-snap [data-screen-furniture-action="snap"] { border-color: rgba(91, 214, 193, .5); color: #8eead6; background: rgba(91, 214, 193, .1); }
 .game-stage.is-relocating-furniture #three-world-canvas { cursor: move; }
 
 .perf-title {

@@ -79,6 +79,9 @@ export function validateLayout(
       yawDeg: ((Math.round(yaw / 15) * 15) % 360 + 360) % 360,
       mirrored: prop.mirrored === true,
       materialVariantId: typeof prop.materialVariantId === 'string' ? prop.materialVariantId : undefined,
+      sourcePropId: typeof prop.sourcePropId === 'string' ? prop.sourcePropId : undefined,
+      localOverride: prop.localOverride === true,
+      localDeleted: prop.localDeleted === true,
     });
   }
   const updatedAt = typeof row.updatedAt === 'string' && Number.isFinite(Date.parse(row.updatedAt))

@@ -267,6 +267,7 @@ export class ThreeWorldRenderer {
   private readonly editorSelectionRoot = new THREE.Group();
   private readonly modelLoader = new GLTFLoader();
   private readonly modelCache = new Map<string, Promise<THREE.Group>>();
+  private readonly renderedProps = new Map<string, ApartmentInteriorProp>();
   private readonly textureCache = new Map<string, THREE.Texture>();
   private readonly assets = new Map<string, RuntimeAsset>();
   private readonly variants = new Map<string, Record<string, string>>(Object.entries(DEFAULT_VARIANTS));
@@ -358,6 +359,11 @@ export class ThreeWorldRenderer {
     this.editorSelectedPropId = String(propId || '');
     this.canvas.dataset.selectedEditorPropId = this.editorSelectedPropId;
     this.refreshEditorSelection();
+  }
+
+  getRenderedProp(propId: string): ApartmentInteriorProp | null {
+    const prop = this.renderedProps.get(String(propId || ''));
+    return prop ? { ...prop, positionMeters: [...(prop.positionMeters || [])] } : null;
   }
 
   getCameraZoom(): number {
@@ -853,6 +859,7 @@ export class ThreeWorldRenderer {
   private rebuildProps(): void {
     disposeTree(this.propRoot);
     disposeTree(this.editorSelectionRoot);
+    this.renderedProps.clear();
     const propLoadToken = ++this.propLoadToken;
     const object = this.apartment;
     const geometry = object?.geometry;
@@ -860,7 +867,11 @@ export class ThreeWorldRenderer {
     const baseProps = this.optionRuntime
       ? this.optionRuntime.bundangPrototypeOptionProps(geometry, object.unitTypeId || this.world?.entry.unitType || '', this.selectedOptionIds)
       : geometry.interiorProps || [];
-    const props = this.editorProps ? [...baseProps, ...this.editorProps] : baseProps;
+    const sourceOverrides = new Set((this.editorProps || []).map((prop) => String(prop.sourcePropId || '')).filter(Boolean));
+    const props = this.editorProps
+      ? [...baseProps.filter((prop) => !sourceOverrides.has(String(prop.id || ''))), ...this.editorProps.filter((prop) => prop.localDeleted !== true)]
+      : baseProps;
+    for (const prop of props) if (prop.id) this.renderedProps.set(String(prop.id), { ...prop, positionMeters: [...(prop.positionMeters || [])] });
     this.canvas.dataset.apartmentPropCount = String(props.length);
     const audit = auditApartmentPropPlacements(object, props);
     const missingAssetIds = props
@@ -931,6 +942,7 @@ export class ThreeWorldRenderer {
     disposeTree(this.editorSelectionRoot);
     delete this.canvas.dataset.selectedEditorX;
     delete this.canvas.dataset.selectedEditorY;
+    delete this.canvas.dataset.selectedEditorMask;
     if (!this.editorSelectedPropId) return;
     const selected = this.propRoot.children.find((child) => child.userData.editorPropId === this.editorSelectedPropId);
     if (!selected) return;
@@ -941,6 +953,22 @@ export class ThreeWorldRenderer {
     const screen = bounds.getCenter(new THREE.Vector3()).project(this.camera);
     this.canvas.dataset.selectedEditorX = String((screen.x * .5 + .5) * this.cssWidth);
     this.canvas.dataset.selectedEditorY = String((-screen.y * .5 + .5) * this.cssHeight);
+    this.canvas.dataset.selectedEditorMask = 'rpg-gold';
+    const mask = selected.clone(true);
+    mask.name = 'rpg-selected-furniture-mask';
+    mask.scale.multiplyScalar(1.012);
+    mask.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      mesh.userData.sharedGeometry = true;
+      mesh.material = new THREE.MeshBasicMaterial({
+        color: '#fbbf24', transparent: true, opacity: .34, depthWrite: false,
+        depthTest: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+        polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+      });
+      mesh.renderOrder = 8;
+    });
+    this.editorSelectionRoot.add(mask);
     const helper = new THREE.Box3Helper(bounds, new THREE.Color('#ffe58a'));
     helper.renderOrder = 9;
     this.editorSelectionRoot.add(helper);

@@ -32,4 +32,23 @@ describe('local interior layout', () => {
     expect(validateLayout(value, 'map-55b', new Set())).toMatchObject({ ok: false });
     expect(validateLayout({ ...value, props: [value.props[0], value.props[0]] }, 'map-55b', new Set([asset.assetId]))).toMatchObject({ ok: false });
   });
+
+  it('preserves a local override tombstone for an authored map prop', () => {
+    const value = {
+      schemaVersion: 1,
+      mapId: 'map-55b',
+      updatedAt: new Date().toISOString(),
+      props: [{
+        ...createLocalProp(asset, 1, 2, 8),
+        sourcePropId: 'inspection-55B-living-sofa',
+        localOverride: true,
+        localDeleted: true,
+      }],
+    };
+    const result = validateLayout(value, 'map-55b', new Set([asset.assetId]));
+    expect(result).toMatchObject({
+      ok: true,
+      value: { props: [{ sourcePropId: 'inspection-55B-living-sofa', localOverride: true, localDeleted: true }] },
+    });
+  });
 });

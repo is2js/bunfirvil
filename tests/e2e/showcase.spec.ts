@@ -226,6 +226,32 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(page.locator("#furniture-selection-toolbar")).toBeVisible();
   await expect(page.locator("#furniture-status")).toContainText("가구를 선택했습니다");
   const placedMapId = await mapSelect.inputValue();
+  const selectedFurnitureName = await page.locator("#furniture-selection-name").innerText();
+  expect(selectedFurnitureName.trim().length).toBeGreaterThan(0);
+
+  // B옵션 탭에서도 좌클릭 선택은 이름표+RPG 금색 마스크, 우클릭은 전체 조작 메뉴를 연다.
+  await page.getByRole("button", { name: "B 옵션", exact: true }).click();
+  await expect(page.locator("#game-stage")).toHaveAttribute("data-selected-furniture-mode", "name");
+  await expect(page.locator("#furniture-selection-toolbar")).toHaveClass(/is-name-only/);
+  await expect(authoringCanvas).toHaveAttribute("data-selected-editor-mask", "rpg-gold");
+  const optionClickX = Number(await authoringCanvas.getAttribute("data-selected-editor-x"));
+  const optionClickY = Number(await authoringCanvas.getAttribute("data-selected-editor-y"));
+  await page.mouse.click(authoringBounds!.x + optionClickX, authoringBounds!.y + optionClickY);
+  await expect(page.locator("#game-stage")).toHaveAttribute("data-selected-furniture-mode", "name");
+  await expect(page.locator("#furniture-selection-name")).toHaveText(selectedFurnitureName);
+  await expect(page.locator("#furniture-status")).toContainText("L 키로 가까운 벽");
+  await page.keyboard.press("KeyL");
+  await expect(page.locator("#furniture-selection-toolbar")).toHaveClass(/is-wall-snap/);
+  await expect.poll(async () => Number(await authoringCanvas.getAttribute("data-selected-editor-x"))).toBeGreaterThan(0);
+  const optionSelectionX = Number(await authoringCanvas.getAttribute("data-selected-editor-x"));
+  const optionSelectionY = Number(await authoringCanvas.getAttribute("data-selected-editor-y"));
+  await page.mouse.click(authoringBounds!.x + optionSelectionX, authoringBounds!.y + optionSelectionY, { button: "right" });
+  await expect(page.locator("#game-stage")).toHaveAttribute("data-selected-furniture-mode", "menu");
+  await expect(page.locator("#furniture-selection-toolbar")).not.toHaveClass(/is-name-only/);
+  await expect(page.getByRole("button", { name: "가구 벽 자석" })).toBeVisible();
+  await page.keyboard.press("KeyL");
+  await page.getByRole("button", { name: "가구 배치", exact: true }).click();
+
   await page.keyboard.down("Shift");
   await page.mouse.move(authoringBounds!.x + placedSelectionX, authoringBounds!.y + placedSelectionY);
   await page.mouse.wheel(0, -120);

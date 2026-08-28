@@ -4,6 +4,7 @@ import { ManifestEffectPlayer } from './effect-player';
 import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
 import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from './grid';
 import { FrameMetrics } from './metrics';
+import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import {
   apartmentUnitWorldPoint,
   apartmentWorldPointToLocalMeters,
@@ -152,7 +153,10 @@ export class ShowcaseApp {
   private interiorCatalogUrl = '';
   private localInteriorProps: ApartmentInteriorProp[] = [];
   private selectedLocalPropId = '';
+  private selectedScenePropSnapshot: ApartmentInteriorProp | null = null;
   private pendingInteriorAssetId = '';
+  private furnitureContextMenuOpen = false;
+  private furnitureWallSnapEnabled = false;
   private interiorDragPointer = -1;
   private interiorDragMoved = false;
   private interiorRelocationArmed = false;
@@ -327,6 +331,7 @@ export class ShowcaseApp {
                   <button type="button" data-screen-furniture-action="rotate-left" aria-label="화면 가구 왼쪽 90도 회전">↶</button>
                   <button type="button" data-screen-furniture-action="relocate" aria-label="가구 재배치">이동</button>
                   <button type="button" data-screen-furniture-action="rotate-right" aria-label="화면 가구 오른쪽 90도 회전">↷</button>
+                  <button type="button" data-screen-furniture-action="snap" aria-label="가구 벽 자석">자석</button>
                   <button type="button" data-screen-furniture-action="delete" aria-label="화면 가구 제거">삭제</button>
                 </div>
                 <small>드래그 이동 · Shift+휠 회전 · Del 삭제</small>
@@ -494,10 +499,14 @@ export class ShowcaseApp {
       button.addEventListener('click', () => {
         const action = button.dataset.screenFurnitureAction;
         if (action === 'relocate') {
-          if (!this.selectedLocalProp()) return;
+          if (!this.ensureEditableSelectedProp()) return;
           this.interiorRelocationArmed = true;
           this.get<HTMLElement>('#game-stage').classList.add('is-relocating-furniture');
           this.get<HTMLElement>('#furniture-status').textContent = 'PBR 맵에서 새 위치를 클릭해 재배치하세요.';
+          return;
+        }
+        if (action === 'snap') {
+          this.toggleFurnitureWallSnap();
           return;
         }
         if (action === 'rotate-left' || action === 'rotate-right' || action === 'delete') this.transformLocalProp(action);
@@ -524,7 +533,12 @@ export class ShowcaseApp {
     window.addEventListener('keydown', (event) => {
       if (isFormTarget(event.target)) return;
       const key = event.key.toLowerCase();
-      if (this.paletteTab === 'furniture' && this.selectedLocalProp()) {
+      if (this.selectedSceneProp()) {
+        if (key === 'l') {
+          event.preventDefault();
+          this.toggleFurnitureWallSnap();
+          return;
+        }
         if (key === 'r') {
           event.preventDefault();
           this.transformLocalProp(event.shiftKey ? 'rotate-left' : 'rotate-right');
@@ -536,10 +550,12 @@ export class ShowcaseApp {
           return;
         }
       }
-      if (this.paletteTab === 'furniture' && key === 'escape') {
+      if ((this.selectedLocalPropId || this.pendingInteriorAssetId) && key === 'escape') {
         event.preventDefault();
         this.pendingInteriorAssetId = '';
         this.selectedLocalPropId = '';
+        this.selectedScenePropSnapshot = null;
+        this.furnitureContextMenuOpen = false;
         this.interiorRelocationArmed = false;
         this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
         this.threeRenderer?.setEditorSelection('');
@@ -564,7 +580,10 @@ export class ShowcaseApp {
       this.cursorScreenPoint = this.screenPoint(event.clientX, event.clientY);
     }, { signal });
     stage.addEventListener('pointerdown', (event) => {
-      if (event.button === 0 && this.paletteTab === 'furniture' && this.handleInteriorPointerDown(event)) return;
+      if (event.button === 0) {
+        if ((this.paletteTab === 'furniture' || this.interiorRelocationArmed) && this.handleInteriorPointerDown(event)) return;
+        if (this.paletteTab === 'options' && this.handleFurnitureSelectionPointerDown(event)) return;
+      }
       if (event.button !== 1) return;
       event.preventDefault();
       const point = this.screenPoint(event.clientX, event.clientY);
@@ -575,7 +594,7 @@ export class ShowcaseApp {
     stage.addEventListener('pointercancel', (event) => this.handleInteriorPointerUp(event), { signal });
     stage.addEventListener('wheel', (event) => {
       event.preventDefault();
-      if (this.paletteTab === 'furniture' && event.shiftKey && this.selectedLocalProp()) {
+      if (event.shiftKey && this.selectedSceneProp()) {
         this.transformLocalProp(event.deltaY < 0 ? 'rotate-left' : 'rotate-right');
         return;
       }
@@ -584,6 +603,9 @@ export class ShowcaseApp {
     }, { signal, passive: false });
     stage.addEventListener('auxclick', (event) => {
       if (event.button === 1) event.preventDefault();
+    }, { signal });
+    stage.addEventListener('contextmenu', (event) => {
+      if (this.handleFurnitureContextMenu(event)) event.preventDefault();
     }, { signal });
   }
 
@@ -611,6 +633,7 @@ export class ShowcaseApp {
 
   private setPaletteTab(tab: 'options' | 'furniture'): void {
     this.paletteTab = tab;
+    this.furnitureContextMenuOpen = false;
     this.mount.querySelectorAll<HTMLElement>('[data-palette-tab]').forEach((button) =>
       button.classList.toggle('is-active', button.dataset.paletteTab === tab));
     this.get<HTMLElement>('#option-palette-body').hidden = tab !== 'options';
@@ -635,7 +658,9 @@ export class ShowcaseApp {
     const button = this.mount.querySelector<HTMLButtonElement>('#palette-applied-only');
     const label = this.mount.querySelector<HTMLElement>('#palette-view-label');
     if (!button || !label) return;
-    const count = this.paletteTab === 'options' ? this.selectedOptionIds.length : this.localInteriorProps.length;
+    const count = this.paletteTab === 'options'
+      ? this.selectedOptionIds.length
+      : this.localInteriorProps.filter((prop) => prop.localDeleted !== true).length;
     label.textContent = this.paletteAppliedOnly
       ? `${this.paletteTab === 'options' ? '적용 B옵션' : '배치 가구'} ${count}개`
       : this.paletteTab === 'options' ? '전체 B옵션' : '전체 가구·가전';
@@ -662,6 +687,7 @@ export class ShowcaseApp {
     const query = this.mount.querySelector<HTMLInputElement>('#furniture-search')?.value.trim().toLowerCase() || '';
     if (this.paletteAppliedOnly) {
       const matches = [...this.localInteriorProps].reverse().flatMap((prop) => {
+        if (prop.localDeleted === true) return [];
         const asset = this.interiorAssets.find((candidate) => candidate.assetId === prop.assetId);
         if (!asset || (query && !`${asset.displayNameKo} ${asset.assetId} ${asset.category}`.toLowerCase().includes(query))) return [];
         return [{ prop, asset }];
@@ -691,6 +717,7 @@ export class ShowcaseApp {
       button.addEventListener('click', () => {
         this.pendingInteriorAssetId = button.dataset.furnitureAsset || '';
         this.selectedLocalPropId = '';
+        this.selectedScenePropSnapshot = null;
         this.threeRenderer?.setEditorSelection('');
         this.interiorRelocationArmed = false;
         this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
@@ -704,6 +731,7 @@ export class ShowcaseApp {
         if (!this.localInteriorProps.some((prop) => String(prop.id) === propId)) return;
         this.pendingInteriorAssetId = '';
         this.selectedLocalPropId = propId;
+        this.selectedScenePropSnapshot = { ...this.localInteriorProps.find((prop) => String(prop.id) === propId)! };
         this.interiorRelocationArmed = false;
         this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
         this.threeRenderer?.setEditorSelection(propId);
@@ -713,7 +741,7 @@ export class ShowcaseApp {
       });
     });
     const count = this.mount.querySelector<HTMLElement>('#furniture-count');
-    if (count) count.textContent = `${this.localInteriorProps.length}개`;
+    if (count) count.textContent = `${this.localInteriorProps.filter((prop) => prop.localDeleted !== true).length}개`;
     this.paintPaletteViewToggle();
   }
 
@@ -733,11 +761,91 @@ export class ShowcaseApp {
   }
 
   private selectedLocalProp(): ApartmentInteriorProp | undefined {
-    return this.localInteriorProps.find((prop) => String(prop.id) === this.selectedLocalPropId);
+    return this.localInteriorProps.find((prop) => String(prop.id) === this.selectedLocalPropId && prop.localDeleted !== true);
+  }
+
+  private selectedSceneProp(): ApartmentInteriorProp | undefined {
+    return this.selectedLocalProp()
+      || this.threeRenderer?.getRenderedProp(this.selectedLocalPropId)
+      || (String(this.selectedScenePropSnapshot?.id || '') === this.selectedLocalPropId ? this.selectedScenePropSnapshot : undefined)
+      || undefined;
+  }
+
+  private ensureEditableSelectedProp(): ApartmentInteriorProp | undefined {
+    const local = this.selectedLocalProp();
+    if (local) return local;
+    const rendered = this.threeRenderer?.getRenderedProp(this.selectedLocalPropId);
+    const source = rendered
+      || (String(this.selectedScenePropSnapshot?.id || '') === this.selectedLocalPropId ? this.selectedScenePropSnapshot : undefined);
+    if (!source?.id || !source.assetId) return undefined;
+    const safeSourceId = String(source.id).replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'prop';
+    const override: ApartmentInteriorProp = {
+      ...source,
+      id: `local-override-${safeSourceId}-${Date.now()}`,
+      sourcePropId: String(source.id),
+      localOverride: true,
+      positionMeters: [...(source.positionMeters || [0, 0])],
+    };
+    this.localInteriorProps.push(override);
+    this.selectedLocalPropId = String(override.id);
+    this.selectedScenePropSnapshot = { ...override, positionMeters: [...(override.positionMeters || [])] };
+    this.threeRenderer?.setEditorProps(this.localInteriorProps);
+    this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
+    return override;
+  }
+
+  private scenePropAt(event: MouseEvent | PointerEvent): ApartmentInteriorProp | undefined {
+    if (!this.threeRenderer || this.renderer !== this.threeRenderer) return undefined;
+    if ((event.target as HTMLElement | null)?.closest('.combat-dock,.map-identity,.performance-hud,.stage-option-quote,.game-toast,.stage-zoom,.furniture-selection-toolbar')) return undefined;
+    const canvas = this.get<HTMLCanvasElement>('#three-world-canvas');
+    const bounds = canvas.getBoundingClientRect();
+    const propId = this.threeRenderer.pickEditorProp(event.clientX - bounds.left, event.clientY - bounds.top);
+    return this.localInteriorProps.find((prop) => String(prop.id) === propId && prop.localDeleted !== true)
+      || this.threeRenderer.getRenderedProp(propId)
+      || undefined;
+  }
+
+  private selectSceneProp(prop: ApartmentInteriorProp, openMenu: boolean, message: string): void {
+    this.selectedLocalPropId = String(prop.id || '');
+    this.selectedScenePropSnapshot = { ...prop, positionMeters: [...(prop.positionMeters || [])] };
+    this.pendingInteriorAssetId = '';
+    this.furnitureContextMenuOpen = openMenu;
+    this.interiorRelocationArmed = false;
+    this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
+    this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
+    this.renderFurniturePalette();
+    this.updateFurnitureToolbar();
+    const status = this.mount.querySelector<HTMLElement>('#furniture-status');
+    if (status) status.textContent = message;
+  }
+
+  private handleFurnitureSelectionPointerDown(event: PointerEvent): boolean {
+    const picked = this.scenePropAt(event);
+    if (!picked) {
+      this.selectedLocalPropId = '';
+      this.selectedScenePropSnapshot = null;
+      this.furnitureContextMenuOpen = false;
+      this.threeRenderer?.setEditorSelection('');
+      this.updateFurnitureToolbar();
+      return false;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.selectSceneProp(picked, false, '가구를 선택했습니다. L 키로 가까운 벽에 자석처럼 붙일 수 있습니다.');
+    return true;
+  }
+
+  private handleFurnitureContextMenu(event: MouseEvent): boolean {
+    const picked = this.scenePropAt(event);
+    if (!picked) return false;
+    event.stopPropagation();
+    this.selectSceneProp(picked, true, '가구 우클릭 메뉴를 열었습니다. 이동·회전·벽 자석·삭제를 사용할 수 있습니다.');
+    return true;
   }
 
   private hitLocalProp(point: NumericPoint): ApartmentInteriorProp | undefined {
     return [...this.localInteriorProps].reverse().find((prop) => {
+      if (prop.localDeleted === true) return false;
       const position = prop.positionMeters;
       if (!Array.isArray(position)) return false;
       const asset = this.interiorAssets.find((candidate) => candidate.assetId === prop.assetId);
@@ -758,40 +866,36 @@ export class ShowcaseApp {
     if (!apartment) return false;
     const canvas = this.get<HTMLCanvasElement>('#three-world-canvas');
     const bounds = canvas.getBoundingClientRect();
-    const editableIds = new Set(this.localInteriorProps.map((prop) => String(prop.id || '')));
     const pickedId = !this.pendingInteriorAssetId && !this.interiorRelocationArmed
-      ? this.threeRenderer?.pickEditorProp(event.clientX - bounds.left, event.clientY - bounds.top, editableIds) || ''
+      ? this.threeRenderer?.pickEditorProp(event.clientX - bounds.left, event.clientY - bounds.top) || ''
       : '';
-    const picked = this.localInteriorProps.find((prop) => String(prop.id) === pickedId);
+    const picked = this.localInteriorProps.find((prop) => String(prop.id) === pickedId && prop.localDeleted !== true)
+      || this.threeRenderer?.getRenderedProp(pickedId)
+      || undefined;
     const point = this.stageLocalPoint(event);
     event.preventDefault();
     event.stopPropagation();
     if (picked) {
-      this.selectedLocalPropId = String(picked.id || '');
-      this.pendingInteriorAssetId = '';
-      this.interiorRelocationArmed = false;
-      this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
-      this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
+      this.selectSceneProp(picked, true, '가구를 선택했습니다. 드래그하거나 화면 조작창으로 수정하세요.');
       if (event.altKey) {
         this.transformLocalProp('mirror');
         return true;
       }
       if (event.ctrlKey) {
         const position = Array.isArray(picked.positionMeters) ? picked.positionMeters : point || [0, 0];
-        const copy = { ...picked, id: `local-${picked.assetId}-${Date.now()}`, positionMeters: [...position] };
+        const copy = { ...picked, id: `local-${picked.assetId}-${Date.now()}`, sourcePropId: undefined, localOverride: false, positionMeters: [...position] };
         this.localInteriorProps.push(copy);
         this.selectedLocalPropId = String(copy.id);
+        this.selectedScenePropSnapshot = { ...copy, positionMeters: [...(copy.positionMeters || [])] };
       }
       this.interiorDragPointer = event.pointerId;
       this.interiorDragMoved = false;
       this.get<HTMLElement>('#game-stage').setPointerCapture(event.pointerId);
-      this.renderFurniturePalette();
-      this.updateFurnitureToolbar();
-      this.get<HTMLElement>('#furniture-status').textContent = '가구를 선택했습니다. 드래그하거나 화면 조작창으로 수정하세요.';
       return true;
     }
     if (!point || !pointInside(point, apartmentFloor(apartment))) {
       this.selectedLocalPropId = '';
+      this.selectedScenePropSnapshot = null;
       this.threeRenderer?.setEditorSelection('');
       this.updateFurnitureToolbar();
       this.get<HTMLElement>('#furniture-status').textContent = '가구를 직접 누르거나 세대 바닥 안쪽을 선택해 주세요.';
@@ -799,8 +903,9 @@ export class ShowcaseApp {
     }
     if (this.interiorRelocationArmed) {
       const prop = this.selectedLocalProp();
-      if (prop) {
-        prop.positionMeters = point;
+      const editable = prop || this.ensureEditableSelectedProp();
+      if (editable) {
+        editable.positionMeters = this.snapFurniturePoint(editable, point);
         this.interiorRelocationArmed = false;
         this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
         this.saveInteriorLayout('가구를 선택한 위치로 재배치했습니다.');
@@ -811,23 +916,27 @@ export class ShowcaseApp {
       const asset = this.interiorAssets.find((candidate) => candidate.assetId === this.pendingInteriorAssetId);
       if (!asset) return true;
       const prop = createLocalProp(asset, point[0], point[1]);
+      prop.positionMeters = this.snapFurniturePoint(prop, point);
       this.localInteriorProps.push(prop);
       this.selectedLocalPropId = String(prop.id);
+      this.selectedScenePropSnapshot = { ...prop, positionMeters: [...(prop.positionMeters || [])] };
       this.pendingInteriorAssetId = '';
       this.saveInteriorLayout('가구를 PBR 맵에 배치했습니다. 드래그해 다시 이동할 수 있습니다.');
       return true;
     }
     const hit = this.hitLocalProp(point);
     this.selectedLocalPropId = String(hit?.id || '');
+    this.selectedScenePropSnapshot = hit ? { ...hit, positionMeters: [...(hit.positionMeters || [])] } : null;
     this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
     if (hit && event.altKey) {
       this.transformLocalProp('mirror');
       return true;
     }
     if (hit && event.ctrlKey) {
-      const copy = { ...hit, id: `local-${hit.assetId}-${Date.now()}`, positionMeters: [...(hit.positionMeters || point)] };
+      const copy = { ...hit, id: `local-${hit.assetId}-${Date.now()}`, sourcePropId: undefined, localOverride: false, positionMeters: [...(hit.positionMeters || point)] };
       this.localInteriorProps.push(copy);
       this.selectedLocalPropId = String(copy.id);
+      this.selectedScenePropSnapshot = { ...copy, positionMeters: [...(copy.positionMeters || [])] };
     }
     this.interiorDragPointer = hit ? event.pointerId : -1;
     this.interiorDragMoved = false;
@@ -838,16 +947,16 @@ export class ShowcaseApp {
   }
 
   private handleInteriorPointerMove(event: PointerEvent): void {
-    if (event.pointerId !== this.interiorDragPointer || this.paletteTab !== 'furniture') return;
+    if (event.pointerId !== this.interiorDragPointer) return;
     const point = this.stageLocalPoint(event);
     const apartment = this.activeApartment();
-    const prop = this.selectedLocalProp();
+    const prop = this.ensureEditableSelectedProp();
     if (!point || !apartment || !prop || !pointInside(point, apartmentFloor(apartment))) return;
     const previous = prop.positionMeters;
     if (!Array.isArray(previous) || Math.abs(finiteNumber(previous[0]) - point[0]) > .001 || Math.abs(finiteNumber(previous[1]) - point[1]) > .001) {
       this.interiorDragMoved = true;
     }
-    prop.positionMeters = point;
+    prop.positionMeters = this.snapFurniturePoint(prop, point);
     this.threeRenderer?.setEditorProps(this.localInteriorProps);
     this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
     this.updateFurnitureToolbar();
@@ -865,20 +974,57 @@ export class ShowcaseApp {
   }
 
   private transformLocalProp(action: 'rotate-left' | 'rotate-right' | 'mirror' | 'delete'): void {
-    const prop = this.selectedLocalProp();
+    const prop = this.ensureEditableSelectedProp();
     if (!prop) {
       this.get<HTMLElement>('#furniture-status').textContent = '먼저 PBR 맵에서 배치된 가구를 선택해 주세요.';
       return;
     }
     if (action === 'delete') {
-      this.localInteriorProps = this.localInteriorProps.filter((candidate) => candidate !== prop);
+      if (prop.sourcePropId) prop.localDeleted = true;
+      else this.localInteriorProps = this.localInteriorProps.filter((candidate) => candidate !== prop);
       this.selectedLocalPropId = '';
+      this.selectedScenePropSnapshot = null;
+      this.furnitureContextMenuOpen = false;
     } else if (action === 'mirror') {
       prop.mirrored = !prop.mirrored;
     } else {
       prop.yawDeg = ((finiteNumber(prop.yawDeg) + (action === 'rotate-left' ? -90 : 90)) % 360 + 360) % 360;
     }
     this.saveInteriorLayout(action === 'delete' ? '선택 가구를 삭제했습니다.' : '가구 변형을 로컬 저장했습니다.');
+  }
+
+  private snapFurniturePoint(prop: ApartmentInteriorProp, point: NumericPoint): NumericPoint {
+    if (!this.furnitureWallSnapEnabled) return point;
+    const apartment = this.activeApartment();
+    if (!apartment?.geometry) return point;
+    const asset = this.interiorAssets.find((candidate) => candidate.assetId === prop.assetId);
+    const result = snapFurnitureToNearestWall({ ...prop, positionMeters: point }, apartment.geometry, asset);
+    return result?.positionMeters || point;
+  }
+
+  private toggleFurnitureWallSnap(): void {
+    const selected = this.selectedSceneProp();
+    if (!selected) return;
+    this.furnitureWallSnapEnabled = !this.furnitureWallSnapEnabled;
+    if (!this.furnitureWallSnapEnabled) {
+      this.updateFurnitureToolbar();
+      this.toast('가구 위치 자석을 껐습니다.', 'notice');
+      return;
+    }
+    const apartment = this.activeApartment();
+    const asset = this.interiorAssets.find((candidate) => candidate.assetId === selected.assetId);
+    const snapped = apartment?.geometry ? snapFurnitureToNearestWall(selected, apartment.geometry, asset) : null;
+    if (!snapped) {
+      this.updateFurnitureToolbar();
+      this.toast('1.15m 안에서 붙일 수 있는 벽을 찾지 못했습니다.', 'notice');
+      return;
+    }
+    const prop = this.ensureEditableSelectedProp();
+    if (!prop) return;
+    prop.positionMeters = snapped.positionMeters;
+    this.selectedScenePropSnapshot = { ...prop, positionMeters: [...snapped.positionMeters] };
+    this.saveInteriorLayout(`위치 자석 ON · ${snapped.wallId} 벽면에 가구를 붙였습니다.`);
+    this.toast('위치 자석 ON · 가까운 벽면에 배치했습니다.', 'success');
   }
 
   private saveInteriorLayout(message: string): void {
@@ -900,9 +1046,14 @@ export class ShowcaseApp {
   private updateFurnitureToolbar(): void {
     const toolbar = this.mount.querySelector<HTMLElement>('#furniture-selection-toolbar');
     if (!toolbar) return;
-    const prop = this.selectedLocalProp();
-    if (this.paletteTab !== 'furniture' || !prop || !this.threeRenderer || this.renderer !== this.threeRenderer) {
+    const stage = this.get<HTMLElement>('#game-stage');
+    stage.dataset.furnitureWallSnap = String(this.furnitureWallSnapEnabled);
+    const prop = this.selectedSceneProp();
+    if (!prop || !this.threeRenderer || this.renderer !== this.threeRenderer) {
       toolbar.hidden = true;
+      stage.classList.remove('has-furniture-selection', 'has-furniture-context-menu');
+      delete stage.dataset.selectedFurnitureName;
+      delete stage.dataset.selectedFurnitureMode;
       return;
     }
     const apartment = this.activeApartment();
@@ -913,14 +1064,23 @@ export class ShowcaseApp {
     }
     const world = apartmentUnitWorldPoint(apartment, [finiteNumber(position[0]), finiteNumber(position[1])]);
     const point = this.threeRenderer.project(world.x, world.y);
-    const stage = this.get<HTMLElement>('#game-stage');
     const left = Math.max(88, Math.min(stage.clientWidth - 88, point.x));
     const top = Math.max(76, Math.min(stage.clientHeight - 150, point.y - 20));
     toolbar.style.left = `${left}px`;
     toolbar.style.top = `${top}px`;
     toolbar.hidden = false;
+    const actionsVisible = this.paletteTab === 'furniture' || this.furnitureContextMenuOpen;
+    toolbar.classList.toggle('is-name-only', !actionsVisible);
+    toolbar.classList.toggle('is-wall-snap', this.furnitureWallSnapEnabled);
+    stage.classList.add('has-furniture-selection');
+    stage.classList.toggle('has-furniture-context-menu', actionsVisible);
     const asset = this.interiorAssets.find((candidate) => candidate.assetId === prop.assetId);
-    this.get<HTMLElement>('#furniture-selection-name').textContent = asset?.displayNameKo || String(prop.assetId || '선택 가구');
+    const name = asset?.displayNameKo || String(prop.assetId || '선택 가구');
+    this.get<HTMLElement>('#furniture-selection-name').textContent = name;
+    stage.dataset.selectedFurnitureName = name;
+    stage.dataset.selectedFurnitureMode = actionsVisible ? 'menu' : 'name';
+    const shortcut = toolbar.querySelector<HTMLElement>('small');
+    if (shortcut) shortcut.textContent = `드래그 이동 · L 자석 ${this.furnitureWallSnapEnabled ? 'ON' : 'OFF'} · Shift+휠 회전 · Del 삭제`;
   }
 
   private async selectMap(mapId: string, updateUrl = true): Promise<void> {
@@ -964,7 +1124,10 @@ export class ShowcaseApp {
     this.renderer.setSelectedOptions(this.selectedOptionIds);
     this.localInteriorProps = readLayout(map.id, new Set(this.interiorAssets.map((asset) => asset.assetId))).props;
     this.selectedLocalPropId = '';
+    this.selectedScenePropSnapshot = null;
     this.pendingInteriorAssetId = '';
+    this.furnitureContextMenuOpen = false;
+    this.furnitureWallSnapEnabled = false;
     this.threeRenderer?.setEditorProps(this.localInteriorProps);
     this.threeRenderer?.setEditorSelection('');
     this.renderFurniturePalette();
@@ -1433,7 +1596,7 @@ export class ShowcaseApp {
       }
     }
     const active = this.actors.get(this.activeActor);
-    if (active && this.paletteTab !== 'furniture') this.renderer.follow(active);
+    if (active && this.paletteTab !== 'furniture' && !this.selectedLocalPropId) this.renderer.follow(active);
     this.threeRenderer?.setOcclusionFocus(active || null);
     try {
       this.renderer.render(time);
@@ -1456,6 +1619,7 @@ export class ShowcaseApp {
       const actor = this.actors.get(key);
       if (actor) view.update(actor, this.renderer.project(actor.displayX, actor.displayY), time, actorWorldScale);
     });
+    if (this.selectedLocalPropId) this.updateFurnitureToolbar();
     this.paintCooldowns(time);
 
     if (time - this.lastMetricPaint > 500) {
