@@ -147,6 +147,7 @@ export class ShowcaseApp {
   private cursorScreenPoint: { x: number; y: number } | null = null;
   private optionCategory = '전체';
   private paletteTab: 'options' | 'furniture' = 'options';
+  private paletteAppliedOnly = false;
   private interiorAssets: InteriorAssetEntry[] = [];
   private interiorCatalogUrl = '';
   private localInteriorProps: ApartmentInteriorProp[] = [];
@@ -328,6 +329,7 @@ export class ShowcaseApp {
                   <button type="button" data-screen-furniture-action="rotate-right" aria-label="화면 가구 오른쪽 90도 회전">↷</button>
                   <button type="button" data-screen-furniture-action="delete" aria-label="화면 가구 제거">삭제</button>
                 </div>
+                <small>드래그 이동 · Shift+휠 회전 · Del 삭제</small>
               </div>
 
               <div class="stage-tip"><kbd>WASD</kbd><span>또는</span><kbd>방향키</kbd><b>이동</b></div>
@@ -366,6 +368,10 @@ export class ShowcaseApp {
             <div class="palette-tabs" role="tablist" aria-label="인테리어 도구">
               <button type="button" class="is-active" data-palette-tab="options">B 옵션</button>
               <button type="button" data-palette-tab="furniture">가구 배치</button>
+            </div>
+            <div class="palette-viewbar">
+              <span id="palette-view-label">전체 B옵션</span>
+              <button type="button" id="palette-applied-only" aria-pressed="false">적용만 보기</button>
             </div>
             <div id="option-palette-body">
               <div class="option-context">
@@ -474,6 +480,11 @@ export class ShowcaseApp {
     this.mount.querySelectorAll<HTMLButtonElement>('[data-palette-tab]').forEach((button) => {
       button.addEventListener('click', () => this.setPaletteTab(button.dataset.paletteTab === 'furniture' ? 'furniture' : 'options'), { signal });
     });
+    this.get<HTMLButtonElement>('#palette-applied-only').addEventListener('click', () => {
+      this.paletteAppliedOnly = !this.paletteAppliedOnly;
+      this.renderOptions();
+      this.renderFurniturePalette();
+    }, { signal });
     this.get<HTMLInputElement>('#furniture-search').addEventListener('input', () => this.renderFurniturePalette(), { signal });
     this.get<HTMLButtonElement>('#furniture-rotate-left').addEventListener('click', () => this.transformLocalProp('rotate-left'), { signal });
     this.get<HTMLButtonElement>('#furniture-rotate-right').addEventListener('click', () => this.transformLocalProp('rotate-right'), { signal });
@@ -615,8 +626,22 @@ export class ShowcaseApp {
       this.interiorRelocationArmed = false;
       this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
     }
+    this.paintPaletteViewToggle();
     this.renderFurniturePalette();
     this.updateFurnitureToolbar();
+  }
+
+  private paintPaletteViewToggle(): void {
+    const button = this.mount.querySelector<HTMLButtonElement>('#palette-applied-only');
+    const label = this.mount.querySelector<HTMLElement>('#palette-view-label');
+    if (!button || !label) return;
+    const count = this.paletteTab === 'options' ? this.selectedOptionIds.length : this.localInteriorProps.length;
+    label.textContent = this.paletteAppliedOnly
+      ? `${this.paletteTab === 'options' ? '적용 B옵션' : '배치 가구'} ${count}개`
+      : this.paletteTab === 'options' ? '전체 B옵션' : '전체 가구·가전';
+    button.textContent = this.paletteAppliedOnly ? '전체 보기' : '적용만 보기';
+    button.setAttribute('aria-pressed', String(this.paletteAppliedOnly));
+    button.classList.toggle('is-active', this.paletteAppliedOnly);
   }
 
   private focusInteriorApartment(): void {
@@ -635,16 +660,33 @@ export class ShowcaseApp {
     const list = this.mount.querySelector<HTMLElement>('#furniture-list');
     if (!list) return;
     const query = this.mount.querySelector<HTMLInputElement>('#furniture-search')?.value.trim().toLowerCase() || '';
-    const matches = this.interiorAssets.filter((asset) => !query
-      || `${asset.displayNameKo} ${asset.assetId} ${asset.category}`.toLowerCase().includes(query));
-    list.innerHTML = matches.map((asset) => {
-      const selected = asset.assetId === this.pendingInteriorAssetId;
-      const preview = asset.previewUrl
-        ? `<img src="${escapeHtml(resolveReferencedUrl(asset.previewUrl, this.interiorCatalogUrl))}" alt="" loading="lazy" />`
-        : `<i>${escapeHtml(asset.displayNameKo.slice(0, 1))}</i>`;
-      return `<button type="button" class="furniture-card ${selected ? 'is-active' : ''}" data-furniture-asset="${escapeHtml(asset.assetId)}">
-        <span>${preview}</span><b>${escapeHtml(asset.displayNameKo)}</b><small>${escapeHtml(asset.category)}</small></button>`;
-    }).join('') || '<p class="empty-options">검색 결과가 없습니다.</p>';
+    if (this.paletteAppliedOnly) {
+      const matches = [...this.localInteriorProps].reverse().flatMap((prop) => {
+        const asset = this.interiorAssets.find((candidate) => candidate.assetId === prop.assetId);
+        if (!asset || (query && !`${asset.displayNameKo} ${asset.assetId} ${asset.category}`.toLowerCase().includes(query))) return [];
+        return [{ prop, asset }];
+      });
+      list.innerHTML = matches.map(({ prop, asset }, index) => {
+        const selected = String(prop.id) === this.selectedLocalPropId;
+        const preview = asset.previewUrl
+          ? `<img src="${escapeHtml(resolveReferencedUrl(asset.previewUrl, this.interiorCatalogUrl))}" alt="" loading="lazy" />`
+          : `<i>${escapeHtml(asset.displayNameKo.slice(0, 1))}</i>`;
+        const yaw = ((Math.round(finiteNumber(prop.yawDeg)) % 360) + 360) % 360;
+        return `<button type="button" class="furniture-card furniture-card--placed ${selected ? 'is-selected' : ''}" data-furniture-prop-id="${escapeHtml(String(prop.id || ''))}">
+          <span>${preview}</span><b>${escapeHtml(asset.displayNameKo)}</b><small>배치 ${matches.length - index} · ${yaw}°</small></button>`;
+      }).join('') || '<p class="empty-options">배치된 가구·가전이 없습니다.</p>';
+    } else {
+      const matches = this.interiorAssets.filter((asset) => !query
+        || `${asset.displayNameKo} ${asset.assetId} ${asset.category}`.toLowerCase().includes(query));
+      list.innerHTML = matches.map((asset) => {
+        const selected = asset.assetId === this.pendingInteriorAssetId;
+        const preview = asset.previewUrl
+          ? `<img src="${escapeHtml(resolveReferencedUrl(asset.previewUrl, this.interiorCatalogUrl))}" alt="" loading="lazy" />`
+          : `<i>${escapeHtml(asset.displayNameKo.slice(0, 1))}</i>`;
+        return `<button type="button" class="furniture-card ${selected ? 'is-active' : ''}" data-furniture-asset="${escapeHtml(asset.assetId)}">
+          <span>${preview}</span><b>${escapeHtml(asset.displayNameKo)}</b><small>${escapeHtml(asset.category)}</small></button>`;
+      }).join('') || '<p class="empty-options">검색 결과가 없습니다.</p>';
+    }
     list.querySelectorAll<HTMLButtonElement>('[data-furniture-asset]').forEach((button) => {
       button.addEventListener('click', () => {
         this.pendingInteriorAssetId = button.dataset.furnitureAsset || '';
@@ -656,8 +698,23 @@ export class ShowcaseApp {
         this.get<HTMLElement>('#furniture-status').textContent = 'PBR 바닥의 원하는 위치를 클릭하면 0.05m 스냅으로 배치됩니다.';
       });
     });
+    list.querySelectorAll<HTMLButtonElement>('[data-furniture-prop-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const propId = button.dataset.furniturePropId || '';
+        if (!this.localInteriorProps.some((prop) => String(prop.id) === propId)) return;
+        this.pendingInteriorAssetId = '';
+        this.selectedLocalPropId = propId;
+        this.interiorRelocationArmed = false;
+        this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
+        this.threeRenderer?.setEditorSelection(propId);
+        this.renderFurniturePalette();
+        this.updateFurnitureToolbar();
+        this.get<HTMLElement>('#furniture-status').textContent = '배치 목록에서 가구를 선택했습니다. 화면 메뉴나 단축키로 수정하세요.';
+      });
+    });
     const count = this.mount.querySelector<HTMLElement>('#furniture-count');
     if (count) count.textContent = `${this.localInteriorProps.length}개`;
+    this.paintPaletteViewToggle();
   }
 
   private activeApartment(): WorldObject | null {
@@ -1171,12 +1228,17 @@ export class ShowcaseApp {
       }, { signal: this.abortController.signal });
     });
 
-    const visibleOptions = options.filter((option) => this.optionCategory === '전체' || option.category === this.optionCategory);
+    const categoryOptions = options.filter((option) => this.optionCategory === '전체' || option.category === this.optionCategory);
+    const visibleOptions = this.paletteAppliedOnly
+      ? categoryOptions.filter((option) => this.selectedOptionIds.includes(option.id))
+      : categoryOptions;
     const renderedOptions = visibleOptions.filter((option) => {
       const ac = systemAcChoice(option.id);
-      return !ac || ac.count === systemAcChoices(options, ac.tier)[0]?.count;
+      return !ac || (this.paletteAppliedOnly
+        ? this.selectedOptionIds.includes(option.id)
+        : ac.count === systemAcChoices(options, ac.tier)[0]?.count);
     });
-    this.get<HTMLElement>('#option-list').innerHTML = visibleOptions.length
+    this.get<HTMLElement>('#option-list').innerHTML = renderedOptions.length
       ? renderedOptions.map((option) => {
           const ac = systemAcChoice(option.id);
           return ac ? this.systemAcCard(ac.tier, options) : this.optionCard(option, options);
@@ -1211,6 +1273,7 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#stage-option-chips').innerHTML = selectedOptions.length
       ? selectedOptions.map((option) => `<span><b>${escapeHtml(option.label)}</b><em>+${numberFormat.format(option.price)}원</em></span>`).join('')
       : '<span><b>기본 마감</b><em>+0원</em></span>';
+    this.paintPaletteViewToggle();
   }
 
   private commitSelectedOptions(): void {
@@ -1388,9 +1451,10 @@ export class ShowcaseApp {
         throw error;
       }
     }
+    const actorWorldScale = this.renderer === this.threeRenderer ? this.threeRenderer?.getCameraZoom() || 1 : 1;
     this.actorViews.forEach((view, key) => {
       const actor = this.actors.get(key);
-      if (actor) view.update(actor, this.renderer.project(actor.displayX, actor.displayY), time);
+      if (actor) view.update(actor, this.renderer.project(actor.displayX, actor.displayY), time, actorWorldScale);
     });
     this.paintCooldowns(time);
 

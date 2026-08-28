@@ -165,6 +165,10 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(page.locator("#option-total")).not.toHaveText(/^0/);
   await expect(page.locator("#stage-option-chips")).not.toContainText("기본 마감");
   await expect(page.locator("#stage-option-total")).toHaveText(await page.locator("#option-total").innerText());
+  const optionPaletteBody = page.locator("#option-palette-body");
+  await expect.poll(async () => optionPaletteBody.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0);
+  await optionPaletteBody.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  await expect.poll(async () => optionPaletteBody.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
   await page.locator('#option-categories button', { hasText: '시스템에어컨' }).click();
   const generalAcCard = page.locator('.system-ac-card[data-system-ac-tier="general"]');
   await expect(generalAcCard).toBeVisible();
@@ -175,6 +179,11 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(page.locator('.system-ac-card[data-system-ac-tier="general"] output')).toHaveText('4대');
   await expect.poll(async () => Number(await threeCanvas.getAttribute("data-apartment-prop-count"))).toBeGreaterThan(propsBeforeOption);
   await expect(threeCanvas).toHaveAttribute("data-interior-placement-status", "verified");
+  await page.getByRole("button", { name: "적용만 보기" }).click();
+  await expect(page.getByRole("button", { name: "전체 보기" })).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(async () => page.locator("#option-list .option-card").count()).toBeGreaterThan(0);
+  expect(await page.locator("#option-list .option-card").evaluateAll((cards) => cards.every((card) => card.classList.contains("is-selected")))).toBe(true);
+  await page.getByRole("button", { name: "전체 보기" }).click();
   const savedQuote = await page.locator("#option-total").innerText();
   const savedMapId = await mapSelect.inputValue();
 
@@ -189,9 +198,14 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   const authoringBounds = await authoringCanvas.boundingBox();
   expect(authoringBounds).not.toBeNull();
   const zoomBefore = Number(await authoringCanvas.getAttribute("data-camera-zoom"));
+  const actorScaleBefore = Number(await actor200.getAttribute("data-world-scale"));
   await page.mouse.move(authoringBounds!.x + authoringBounds!.width / 2, authoringBounds!.y + authoringBounds!.height / 2);
   await page.mouse.wheel(0, -420);
   await expect.poll(async () => Number(await authoringCanvas.getAttribute("data-camera-zoom"))).toBeGreaterThan(zoomBefore);
+  await expect.poll(async () => Number(await actor200.getAttribute("data-world-scale"))).toBeGreaterThan(actorScaleBefore);
+  await expect.poll(async () => Math.abs(
+    Number(await actor200.getAttribute("data-world-scale")) - Number(await authoringCanvas.getAttribute("data-camera-zoom")),
+  )).toBeLessThan(.01);
   await expect(page.locator("#zoom-value")).not.toHaveText("100%");
   await page.mouse.click(authoringBounds!.x + authoringBounds!.width / 2, authoringBounds!.y + authoringBounds!.height / 2);
   await expect(page.locator("#furniture-count")).toHaveText("1개");
@@ -199,14 +213,26 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect.poll(async () => Number(await authoringCanvas.getAttribute("data-selected-editor-x"))).toBeGreaterThan(0);
   const placedSelectionX = Number(await authoringCanvas.getAttribute("data-selected-editor-x"));
   const placedSelectionY = Number(await authoringCanvas.getAttribute("data-selected-editor-y"));
+  await page.getByRole("button", { name: "적용만 보기" }).click();
+  await expect(page.locator('#furniture-list [data-furniture-prop-id]')).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await page.locator('#furniture-list [data-furniture-prop-id]').click();
+  await expect(page.locator("#furniture-selection-toolbar")).toBeVisible();
+  await expect(page.locator("#furniture-status")).toContainText("배치 목록에서 가구를 선택했습니다");
+  await page.getByRole("button", { name: "전체 보기" }).click();
   await page.keyboard.press("Escape");
   await expect(page.locator("#furniture-selection-toolbar")).toBeHidden();
   await page.mouse.click(authoringBounds!.x + placedSelectionX, authoringBounds!.y + placedSelectionY);
   await expect(page.locator("#furniture-selection-toolbar")).toBeVisible();
   await expect(page.locator("#furniture-status")).toContainText("가구를 선택했습니다");
   const placedMapId = await mapSelect.inputValue();
+  await page.keyboard.down("Shift");
+  await page.mouse.move(authoringBounds!.x + placedSelectionX, authoringBounds!.y + placedSelectionY);
+  await page.mouse.wheel(0, -120);
+  await page.keyboard.up("Shift");
+  expect(await page.evaluate((mapId) => JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.yawDeg, placedMapId)).toBe(270);
   await page.getByRole("button", { name: "화면 가구 오른쪽 90도 회전" }).click();
-  expect(await page.evaluate((mapId) => JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.yawDeg, placedMapId)).toBe(90);
+  expect(await page.evaluate((mapId) => JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.yawDeg, placedMapId)).toBe(0);
   const mainSelectionX = Number(await authoringCanvas.getAttribute("data-selected-editor-x"));
   const mainSelectionY = Number(await authoringCanvas.getAttribute("data-selected-editor-y"));
   const beforeMainDrag = await page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId);
@@ -219,7 +245,7 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await page.getByRole("button", { name: "가구 재배치" }).click();
   await page.mouse.click(authoringBounds!.x + authoringBounds!.width * .61, authoringBounds!.y + authoringBounds!.height * .56);
   await expect.poll(async () => page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId)).not.toBe(beforeRelocate);
-  await page.getByRole("button", { name: "화면 가구 제거" }).click();
+  await page.keyboard.press("Delete");
   await expect(page.locator("#furniture-count")).toHaveText("0개");
   await furnitureCards.first().click();
   await page.mouse.click(authoringBounds!.x + authoringBounds!.width / 2, authoringBounds!.y + authoringBounds!.height / 2);

@@ -56,8 +56,10 @@ export class ActorView {
     this.element.setAttribute('aria-pressed', String(selected));
   }
 
-  update(actor: ActorState, point: ProjectedPoint, time: number): void {
-    this.element.style.transform = `translate3d(${point.x}px, ${point.y}px, 0)`;
+  update(actor: ActorState, point: ProjectedPoint, time: number, worldScale = 1): void {
+    const scale = Math.max(.65, Math.min(2.8, Number.isFinite(worldScale) ? worldScale : 1));
+    this.element.style.transform = `translate3d(${point.x}px, ${point.y}px, 0) scale(${scale})`;
+    this.element.dataset.worldScale = scale.toFixed(3);
     this.element.style.zIndex = String(1_000 + Math.round(point.y));
     const renderDirection = travelLockedDirection(actor.direction, actor.travel);
     this.element.dataset.direction = renderDirection;
