@@ -605,7 +605,9 @@ export class ShowcaseApp {
       if (event.button === 1) event.preventDefault();
     }, { signal });
     stage.addEventListener('contextmenu', (event) => {
-      if (this.handleFurnitureContextMenu(event)) event.preventDefault();
+      // 게임 스테이지에서는 브라우저 기본 메뉴 대신 RPG 가구 조작 메뉴만 사용한다.
+      event.preventDefault();
+      this.handleFurnitureContextMenu(event);
     }, { signal });
   }
 
@@ -820,6 +822,11 @@ export class ShowcaseApp {
   }
 
   private handleFurnitureSelectionPointerDown(event: PointerEvent): boolean {
+    if ((event.target as HTMLElement | null)?.closest('.furniture-selection-toolbar')) {
+      event.preventDefault();
+      event.stopPropagation();
+      return Boolean(this.selectedSceneProp());
+    }
     const picked = this.scenePropAt(event);
     if (!picked) {
       this.selectedLocalPropId = '';
@@ -836,8 +843,13 @@ export class ShowcaseApp {
   }
 
   private handleFurnitureContextMenu(event: MouseEvent): boolean {
-    const picked = this.scenePropAt(event);
+    const target = event.target as HTMLElement | null;
+    // 선택 이름표가 가구 위를 덮더라도 현재 마스크 대상을 잃지 않는다.
+    const picked = target?.closest('.furniture-selection-toolbar')
+      ? this.selectedSceneProp()
+      : this.scenePropAt(event);
     if (!picked) return false;
+    event.preventDefault();
     event.stopPropagation();
     this.selectSceneProp(picked, true, '가구 우클릭 메뉴를 열었습니다. 이동·회전·벽 자석·삭제를 사용할 수 있습니다.');
     return true;

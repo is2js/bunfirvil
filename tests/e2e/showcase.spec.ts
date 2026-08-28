@@ -243,9 +243,15 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await page.keyboard.press("KeyL");
   await expect(page.locator("#furniture-selection-toolbar")).toHaveClass(/is-wall-snap/);
   await expect.poll(async () => Number(await authoringCanvas.getAttribute("data-selected-editor-x"))).toBeGreaterThan(0);
-  const optionSelectionX = Number(await authoringCanvas.getAttribute("data-selected-editor-x"));
-  const optionSelectionY = Number(await authoringCanvas.getAttribute("data-selected-editor-y"));
-  await page.mouse.click(authoringBounds!.x + optionSelectionX, authoringBounds!.y + optionSelectionY, { button: "right" });
+  await page.evaluate(() => {
+    const stage = document.querySelector<HTMLElement>("#game-stage");
+    stage?.addEventListener("contextmenu", (event) => {
+      stage.dataset.lastContextMenuPrevented = String(event.defaultPrevented);
+    }, { once: true });
+  });
+  // 선택 이름표가 가구를 덮고 있어도 브라우저 메뉴 대신 현재 선택 제품의 RPG 조작 메뉴가 열린다.
+  await page.locator("#furniture-selection-toolbar").click({ button: "right" });
+  await expect(page.locator("#game-stage")).toHaveAttribute("data-last-context-menu-prevented", "true");
   await expect(page.locator("#game-stage")).toHaveAttribute("data-selected-furniture-mode", "menu");
   await expect(page.locator("#furniture-selection-toolbar")).not.toHaveClass(/is-name-only/);
   await expect(page.getByRole("button", { name: "가구 벽 자석" })).toBeVisible();
