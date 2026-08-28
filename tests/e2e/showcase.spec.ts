@@ -61,6 +61,10 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
     await expect(page.locator("#metric-chunks")).toHaveText("16/16");
     await expect(threeCanvas).toHaveAttribute("data-apartment-structure", "ready");
     await expect.poll(async () => Number(await threeCanvas.getAttribute("data-structure-mesh-count"))).toBeGreaterThan(50);
+    await expect.poll(async () => Number(await threeCanvas.getAttribute("data-structure-occluder-count"))).toBeGreaterThan(10);
+    if (unitType === "55B") {
+      await expect.poll(async () => Number(await threeCanvas.getAttribute("data-occluded-wall-count"))).toBeGreaterThan(0);
+    }
     await expect(threeCanvas).toHaveAttribute("data-interior-placement-status", "verified");
     await expect(threeCanvas).toHaveAttribute("data-interior-placement-issue-count", "0");
   }
@@ -192,6 +196,14 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await page.mouse.click(authoringBounds!.x + authoringBounds!.width / 2, authoringBounds!.y + authoringBounds!.height / 2);
   await expect(page.locator("#furniture-count")).toHaveText("1개");
   await expect(page.locator("#furniture-selection-toolbar")).toBeVisible();
+  await expect.poll(async () => Number(await authoringCanvas.getAttribute("data-selected-editor-x"))).toBeGreaterThan(0);
+  const placedSelectionX = Number(await authoringCanvas.getAttribute("data-selected-editor-x"));
+  const placedSelectionY = Number(await authoringCanvas.getAttribute("data-selected-editor-y"));
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#furniture-selection-toolbar")).toBeHidden();
+  await page.mouse.click(authoringBounds!.x + placedSelectionX, authoringBounds!.y + placedSelectionY);
+  await expect(page.locator("#furniture-selection-toolbar")).toBeVisible();
+  await expect(page.locator("#furniture-status")).toContainText("가구를 선택했습니다");
   const placedMapId = await mapSelect.inputValue();
   await page.getByRole("button", { name: "화면 가구 오른쪽 90도 회전" }).click();
   expect(await page.evaluate((mapId) => JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.yawDeg, placedMapId)).toBe(90);

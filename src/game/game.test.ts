@@ -12,6 +12,7 @@ import {
   apartmentUnitWorldPoint,
   apartmentWorldPointToLocalMeters,
   auditApartmentPropPlacements,
+  wallCrossesSightline,
 } from './apartment-transform';
 import type { WorldData, WorldObject } from './types';
 
@@ -75,6 +76,12 @@ const options: BOptionEntry[] = [
 ];
 
 describe('game-local state helpers', () => {
+  it('detects only walls that cross the camera-to-actor sightline', () => {
+    expect(wallCrossesSightline([4, 0], [4, 8], [10, 10], [0, 0])).toBe(true);
+    expect(wallCrossesSightline([0, 7], [2, 7], [10, 10], [0, 0])).toBe(false);
+    expect(wallCrossesSightline([0, 0], [0, 4], [10, 10], [0, 0])).toBe(false);
+  });
+
   it('locks facing to the active cell travel until arrival', () => {
     expect(travelLockedDirection('n', {
       fromX: 2, fromY: 2, toX: 3, toY: 1, startedAt: 0, endsAt: 420, direction: 'e',

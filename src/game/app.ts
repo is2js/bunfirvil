@@ -153,6 +153,7 @@ export class ShowcaseApp {
   private selectedLocalPropId = '';
   private pendingInteriorAssetId = '';
   private interiorDragPointer = -1;
+  private interiorDragMoved = false;
   private interiorRelocationArmed = false;
   private animationFrame = 0;
   private lastMetricPaint = 0;
@@ -696,14 +697,49 @@ export class ShowcaseApp {
 
   private handleInteriorPointerDown(event: PointerEvent): boolean {
     if ((event.target as HTMLElement | null)?.closest('.combat-dock,.map-identity,.performance-hud,.stage-option-quote,.game-toast,.stage-zoom,.furniture-selection-toolbar')) return false;
-    const point = this.stageLocalPoint(event);
     const apartment = this.activeApartment();
-    if (!point || !apartment || !pointInside(point, apartmentFloor(apartment))) {
-      this.get<HTMLElement>('#furniture-status').textContent = '세대 바닥 안쪽을 선택해 주세요.';
-      return true;
-    }
+    if (!apartment) return false;
+    const canvas = this.get<HTMLCanvasElement>('#three-world-canvas');
+    const bounds = canvas.getBoundingClientRect();
+    const editableIds = new Set(this.localInteriorProps.map((prop) => String(prop.id || '')));
+    const pickedId = !this.pendingInteriorAssetId && !this.interiorRelocationArmed
+      ? this.threeRenderer?.pickEditorProp(event.clientX - bounds.left, event.clientY - bounds.top, editableIds) || ''
+      : '';
+    const picked = this.localInteriorProps.find((prop) => String(prop.id) === pickedId);
+    const point = this.stageLocalPoint(event);
     event.preventDefault();
     event.stopPropagation();
+    if (picked) {
+      this.selectedLocalPropId = String(picked.id || '');
+      this.pendingInteriorAssetId = '';
+      this.interiorRelocationArmed = false;
+      this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
+      this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
+      if (event.altKey) {
+        this.transformLocalProp('mirror');
+        return true;
+      }
+      if (event.ctrlKey) {
+        const position = Array.isArray(picked.positionMeters) ? picked.positionMeters : point || [0, 0];
+        const copy = { ...picked, id: `local-${picked.assetId}-${Date.now()}`, positionMeters: [...position] };
+        this.localInteriorProps.push(copy);
+        this.selectedLocalPropId = String(copy.id);
+      }
+      this.interiorDragPointer = event.pointerId;
+      this.interiorDragMoved = false;
+      this.get<HTMLElement>('#game-stage').setPointerCapture(event.pointerId);
+      this.renderFurniturePalette();
+      this.updateFurnitureToolbar();
+      this.get<HTMLElement>('#furniture-status').textContent = '가구를 선택했습니다. 드래그하거나 화면 조작창으로 수정하세요.';
+      return true;
+    }
+    if (!point || !pointInside(point, apartmentFloor(apartment))) {
+      this.selectedLocalPropId = '';
+      this.threeRenderer?.setEditorSelection('');
+      this.updateFurnitureToolbar();
+      this.get<HTMLElement>('#furniture-status').textContent = '가구를 직접 누르거나 세대 바닥 안쪽을 선택해 주세요.';
+      return true;
+    }
     if (this.interiorRelocationArmed) {
       const prop = this.selectedLocalProp();
       if (prop) {
@@ -724,10 +760,7 @@ export class ShowcaseApp {
       this.saveInteriorLayout('가구를 PBR 맵에 배치했습니다. 드래그해 다시 이동할 수 있습니다.');
       return true;
     }
-    const canvas = this.get<HTMLCanvasElement>('#three-world-canvas');
-    const bounds = canvas.getBoundingClientRect();
-    const pickedId = this.threeRenderer?.pickEditorProp(event.clientX - bounds.left, event.clientY - bounds.top) || '';
-    const hit = this.localInteriorProps.find((prop) => String(prop.id) === pickedId) || this.hitLocalProp(point);
+    const hit = this.hitLocalProp(point);
     this.selectedLocalPropId = String(hit?.id || '');
     this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
     if (hit && event.altKey) {
@@ -740,6 +773,7 @@ export class ShowcaseApp {
       this.selectedLocalPropId = String(copy.id);
     }
     this.interiorDragPointer = hit ? event.pointerId : -1;
+    this.interiorDragMoved = false;
     if (hit) this.get<HTMLElement>('#game-stage').setPointerCapture(event.pointerId);
     this.renderFurniturePalette();
     this.updateFurnitureToolbar();
@@ -752,6 +786,10 @@ export class ShowcaseApp {
     const apartment = this.activeApartment();
     const prop = this.selectedLocalProp();
     if (!point || !apartment || !prop || !pointInside(point, apartmentFloor(apartment))) return;
+    const previous = prop.positionMeters;
+    if (!Array.isArray(previous) || Math.abs(finiteNumber(previous[0]) - point[0]) > .001 || Math.abs(finiteNumber(previous[1]) - point[1]) > .001) {
+      this.interiorDragMoved = true;
+    }
     prop.positionMeters = point;
     this.threeRenderer?.setEditorProps(this.localInteriorProps);
     this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
@@ -761,7 +799,12 @@ export class ShowcaseApp {
   private handleInteriorPointerUp(event: PointerEvent): void {
     if (event.pointerId !== this.interiorDragPointer) return;
     this.interiorDragPointer = -1;
-    this.saveInteriorLayout('가구 위치를 0.05m 단위로 로컬 저장했습니다.');
+    if (this.interiorDragMoved) {
+      this.saveInteriorLayout('가구 위치를 0.05m 단위로 로컬 저장했습니다.');
+    } else {
+      this.get<HTMLElement>('#furniture-status').textContent = '가구를 선택했습니다. 드래그하거나 화면 조작창으로 수정하세요.';
+    }
+    this.interiorDragMoved = false;
   }
 
   private transformLocalProp(action: 'rotate-left' | 'rotate-right' | 'mirror' | 'delete'): void {
@@ -1328,6 +1371,7 @@ export class ShowcaseApp {
     }
     const active = this.actors.get(this.activeActor);
     if (active && this.paletteTab !== 'furniture') this.renderer.follow(active);
+    this.threeRenderer?.setOcclusionFocus(active || null);
     try {
       this.renderer.render(time);
     } catch (error) {

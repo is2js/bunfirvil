@@ -7,6 +7,35 @@ function finite(value: unknown, fallback = 0): number {
   return Number.isFinite(number) ? number : fallback;
 }
 
+/** 카메라-캐릭터 시선이 벽 선분을 실제로 통과하는지 판정한다. 끝점의 미세 접촉은 제외한다. */
+export function wallCrossesSightline(
+  wallStart: NumericPoint,
+  wallEnd: NumericPoint,
+  camera: NumericPoint,
+  focus: NumericPoint,
+): boolean {
+  const cross = (a: NumericPoint, b: NumericPoint, c: NumericPoint): number =>
+    (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  const sightX = camera[0] - focus[0];
+  const sightY = camera[1] - focus[1];
+  const wallX = wallEnd[0] - wallStart[0];
+  const wallY = wallEnd[1] - wallStart[1];
+  const denominator = sightX * wallY - sightY * wallX;
+  if (Math.abs(denominator) < 1e-7) return false;
+  const offsetX = wallStart[0] - focus[0];
+  const offsetY = wallStart[1] - focus[1];
+  const sightRatio = (offsetX * wallY - offsetY * wallX) / denominator;
+  const wallRatio = (offsetX * sightY - offsetY * sightX) / denominator;
+  if (!Number.isFinite(sightRatio) || !Number.isFinite(wallRatio)) return false;
+  // 배우나 카메라가 벽 선분 끝에 정확히 붙을 때 생기는 프레임별 깜빡임을 피한다.
+  const endpointTolerance = 0.012;
+  if (sightRatio <= endpointTolerance || sightRatio >= 1 - endpointTolerance) return false;
+  if (wallRatio < -endpointTolerance || wallRatio > 1 + endpointTolerance) return false;
+  // 수치적으로 거의 공선인 교차를 한 번 더 걸러 원본의 안정적인 cutaway를 따른다.
+  return Math.abs(cross(focus, camera, wallStart)) > 1e-7
+    || Math.abs(cross(focus, camera, wallEnd)) > 1e-7;
+}
+
 /** PVP apartment-unit.mjs와 동일한 로컬(m) -> 월드(cell) 좌표 변환. */
 export function apartmentUnitWorldPoint(object: WorldObject, point: NumericPoint): { x: number; y: number } {
   const sourceX = finite(point[0]);

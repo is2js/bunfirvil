@@ -6,6 +6,7 @@ import {
   apartmentSolidBlockVisualFootprint,
   apartmentUnitWorldPoint,
   auditApartmentPropPlacements,
+  wallCrossesSightline,
   type NumericPoint,
 } from './apartment-transform';
 import type {
@@ -58,6 +59,13 @@ interface OptionRuntimeModule {
     unitTypeId: string,
     selectedIds: string[],
   ): ApartmentInteriorProp[];
+}
+
+interface StructureOccluder {
+  mesh: THREE.Mesh;
+  segments: Array<[NumericPoint, NumericPoint]>;
+  baseOpacity: number;
+  currentOpacity: number;
 }
 
 const DEFAULT_VARIANTS: Record<string, Record<string, string>> = {
@@ -275,6 +283,9 @@ export class ThreeWorldRenderer {
   private editorProps: ApartmentInteriorProp[] | null = null;
   private editorSelectedPropId = '';
   private cameraZoom = 1;
+  private structureOccluders: StructureOccluder[] = [];
+  private occlusionFocus: ActorState | null = null;
+  private lastOcclusionTime = 0;
   private loadToken = 0;
   private propLoadToken = 0;
   private contractsReady: Promise<void>;
@@ -379,7 +390,7 @@ export class ThreeWorldRenderer {
     return this.cameraZoom;
   }
 
-  pickEditorProp(screenX: number, screenY: number): string {
+  pickEditorProp(screenX: number, screenY: number, allowedIds?: ReadonlySet<string>): string {
     if (!this.world) return '';
     this.resize();
     this.camera.updateMatrixWorld();
@@ -392,9 +403,36 @@ export class ThreeWorldRenderer {
       let object: THREE.Object3D | null = intersection.object;
       while (object && object.parent !== this.propRoot) object = object.parent;
       const id = String(object?.userData.editorPropId || '');
-      if (id) return id;
+      if (id && (!allowedIds || allowedIds.has(id))) return id;
     }
-    return '';
+    // 얇은 벽부착 가전이나 높은 가구의 실제 삼각형을 살짝 비껴 눌러도,
+    // 화면에 투영된 모델 경계 안이면 가장 가까운 가구를 선택한다.
+    const projected = this.propRoot.children.flatMap((object) => {
+      const id = String(object.userData.editorPropId || '');
+      if (!id || (allowedIds && !allowedIds.has(id))) return [];
+      object.updateWorldMatrix(true, true);
+      const bounds = new THREE.Box3().setFromObject(object);
+      if (bounds.isEmpty()) return [];
+      const corners = [
+        [bounds.min.x, bounds.min.y, bounds.min.z], [bounds.min.x, bounds.min.y, bounds.max.z],
+        [bounds.min.x, bounds.max.y, bounds.min.z], [bounds.min.x, bounds.max.y, bounds.max.z],
+        [bounds.max.x, bounds.min.y, bounds.min.z], [bounds.max.x, bounds.min.y, bounds.max.z],
+        [bounds.max.x, bounds.max.y, bounds.min.z], [bounds.max.x, bounds.max.y, bounds.max.z],
+      ].map(([x, y, z]) => new THREE.Vector3(x, y, z).project(this.camera));
+      const xs = corners.map((point) => (point.x * .5 + .5) * this.cssWidth);
+      const ys = corners.map((point) => (-point.y * .5 + .5) * this.cssHeight);
+      const padding = 9;
+      const minX = Math.min(...xs) - padding; const maxX = Math.max(...xs) + padding;
+      const minY = Math.min(...ys) - padding; const maxY = Math.max(...ys) + padding;
+      if (screenX < minX || screenX > maxX || screenY < minY || screenY > maxY) return [];
+      const centerX = (minX + maxX) / 2; const centerY = (minY + maxY) / 2;
+      return [{ id, distance: Math.hypot(screenX - centerX, screenY - centerY) }];
+    }).sort((left, right) => left.distance - right.distance);
+    return projected[0]?.id || '';
+  }
+
+  setOcclusionFocus(actor: ActorState | null): void {
+    this.occlusionFocus = actor;
   }
 
   focusAt(x: number, y: number): void {
@@ -431,8 +469,9 @@ export class ThreeWorldRenderer {
     };
   }
 
-  render(): void {
+  render(time = performance.now()): void {
     this.resize();
+    this.updateStructureOcclusion(time);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -575,6 +614,7 @@ export class ThreeWorldRenderer {
 
   private rebuildStructure(): void {
     disposeTree(this.structureRoot);
+    this.structureOccluders = [];
     if (!this.world) return;
     const foundation = new THREE.Mesh(
       new THREE.PlaneGeometry(this.world.width + 24, this.world.height + 24),
@@ -671,6 +711,16 @@ export class ThreeWorldRenderer {
       mesh.castShadow = true;
       mesh.receiveShadow = false;
       this.structureRoot.add(mesh);
+      const worldPolygon = polygon.map((point) => this.localPoint(object, point));
+      this.structureOccluders.push({
+        mesh,
+        segments: worldPolygon.map((point, index) => {
+          const next = worldPolygon[(index + 1) % worldPolygon.length];
+          return [[point.x, point.z], [next.x, next.z]];
+        }),
+        baseOpacity: 1,
+        currentOpacity: 1,
+      });
     }
 
     const localCenter = floorPolygon.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 });
@@ -703,7 +753,15 @@ export class ThreeWorldRenderer {
       // 실내 벽이 전역 shadow map을 다시 받으면 카메라 이동 시 shadow-acne가 번쩍인다.
       mesh.receiveShadow = false;
       this.structureRoot.add(mesh);
+      this.structureOccluders.push({
+        mesh,
+        segments: [[ [start.x, start.z], [end.x, end.z] ]],
+        baseOpacity: frontCutaway ? 0.38 : 1,
+        currentOpacity: frontCutaway ? 0.38 : 1,
+      });
     }
+
+    this.canvas.dataset.structureOccluderCount = String(this.structureOccluders.length);
 
     for (const openingValue of geometry.openings || []) {
       const opening = openingValue as Record<string, unknown>;
@@ -726,6 +784,42 @@ export class ThreeWorldRenderer {
       }
       this.addDoor(object, opening, start, end, cellSize);
     }
+  }
+
+  private updateStructureOcclusion(time: number): void {
+    const elapsed = this.lastOcclusionTime > 0 ? Math.min(50, Math.max(0, time - this.lastOcclusionTime)) : 16;
+    this.lastOcclusionTime = time;
+    const focusActor = this.occlusionFocus;
+    const focusWorld = focusActor && this.world
+      ? this.worldPoint(focusActor.displayX, focusActor.displayY, 0)
+      : null;
+    const camera: NumericPoint = [this.camera.position.x, this.camera.position.z];
+    const focus: NumericPoint | null = focusWorld ? [focusWorld.x, focusWorld.z] : null;
+    let fadedCount = 0;
+    for (const entry of this.structureOccluders) {
+      const occluded = Boolean(focus && entry.segments.some(([start, end]) => wallCrossesSightline(start, end, camera, focus)));
+      const target = occluded ? Math.min(entry.baseOpacity, 0.28) : entry.baseOpacity;
+      if (occluded) fadedCount += 1;
+      const duration = target < entry.currentOpacity ? 160 : 240;
+      const blend = Math.min(1, elapsed / Math.max(1, duration));
+      entry.currentOpacity += (target - entry.currentOpacity) * blend;
+      if (Math.abs(entry.currentOpacity - target) < 0.004) entry.currentOpacity = target;
+      const materials = Array.isArray(entry.mesh.material) ? entry.mesh.material : [entry.mesh.material];
+      for (const material of materials) {
+        const nextTransparent = entry.currentOpacity < 0.995;
+        if (material.transparent !== nextTransparent) {
+          material.transparent = nextTransparent;
+          material.needsUpdate = true;
+        }
+        material.opacity = entry.currentOpacity;
+        material.depthWrite = entry.currentOpacity >= 0.7;
+      }
+      entry.mesh.castShadow = entry.currentOpacity >= 0.7;
+    }
+    this.canvas.dataset.occludedWallCount = String(fadedCount);
+    this.canvas.dataset.wallFadeOpacity = fadedCount
+      ? Math.min(...this.structureOccluders.filter((entry) => entry.currentOpacity < entry.baseOpacity).map((entry) => entry.currentOpacity)).toFixed(3)
+      : '1.000';
   }
 
   private addDoor(object: WorldObject, opening: Record<string, unknown>, start: THREE.Vector3, end: THREE.Vector3, cellSize: number): void {
