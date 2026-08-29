@@ -8,6 +8,13 @@ const MAPS = [
   ["bundang-first-village-59a-prototype", "59A"],
 ] as const;
 
+const VARIANT_B_TRANSFORMS: Record<string, string> = {
+  '51A': '좌우반전',
+  '55A': '좌우반전 + 반시계 90° 회전',
+  '55B': '상하반전 + 반시계 180° 회전',
+  '59A': '좌우반전',
+};
+
 async function observeNextMotion(actor: Locator, expected: "attack" | "cast"): Promise<void> {
   await actor.evaluate((element, motion) => {
     const actorElement = element as HTMLElement;
@@ -55,6 +62,10 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   expect(initialTransferBytes).toBeLessThan(10 * 1024 * 1024);
 
   const mapSelect = page.getByLabel("검수맵 선택");
+  await expect(page.locator('#game-stage')).toHaveAttribute('data-plan-variant', 'A');
+  await expect.poll(async () => Number(await threeCanvas.getAttribute('data-occluded-wall-count'))).toBeGreaterThan(0);
+  await page.getByRole('button', { name: 'B형', exact: true }).click();
+  await expect(page.locator('#stage-loader')).toBeHidden();
   for (const [mapId, unitType] of MAPS) {
     await mapSelect.selectOption(mapId);
     await expect(mapSelect).toHaveValue(mapId);
@@ -62,11 +73,14 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
     await expect(page.locator("#stage-loader")).toBeHidden();
     await expect(page.locator("#metric-chunks")).toHaveText("16/16");
     await expect(threeCanvas).toHaveAttribute("data-apartment-structure", "ready");
+    await expect(page.locator('#game-stage')).toHaveAttribute('data-plan-variant', 'B');
+    await expect(page.locator('#game-stage')).toHaveAttribute('data-plan-variant-transform', VARIANT_B_TRANSFORMS[unitType]);
+    await expect(page.locator('#plan-variant-badge')).toHaveText('B형');
+    await expect(threeCanvas).toHaveAttribute('data-structure-shadow-policy', 'exterior-walls-only');
+    await expect(threeCanvas).toHaveAttribute('data-interior-shadow-caster-count', '0');
+    await expect.poll(async () => Number(await threeCanvas.getAttribute('data-exterior-shadow-caster-count'))).toBeGreaterThan(0);
     await expect.poll(async () => Number(await threeCanvas.getAttribute("data-structure-mesh-count"))).toBeGreaterThan(50);
     await expect.poll(async () => Number(await threeCanvas.getAttribute("data-structure-occluder-count"))).toBeGreaterThan(10);
-    if (unitType === "55B") {
-      await expect.poll(async () => Number(await threeCanvas.getAttribute("data-occluded-wall-count"))).toBeGreaterThan(0);
-    }
     await expect(threeCanvas).toHaveAttribute("data-interior-placement-status", "verified");
     await expect(threeCanvas).toHaveAttribute("data-interior-placement-issue-count", "0");
   }
@@ -311,6 +325,11 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   const editorPreview = page.locator("#editorAssetList .editor-asset img").first();
   await expect(editorPreview).toBeVisible();
   expect(await editorPreview.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await page.getByLabel('평면 A B형 선택').selectOption('B');
+  await expect(page.locator('#interiorEditor')).toHaveAttribute('data-loading', 'false');
+  await expect(page.locator('#interiorEditor')).toHaveAttribute('data-plan-variant', 'B');
+  await expect(page.locator('#editorPlanCanvas')).toHaveAttribute('data-plan-variant', 'B');
+  await expect(page.locator('#editorThreeCanvas')).toHaveAttribute('data-plan-variant', 'B');
   await page.locator("#editorAssetList .editor-asset").first().click();
   await expect(page.locator("#interiorEditor")).toHaveAttribute("data-local-prop-count", "1");
   await expect(page.locator("#editorPlanCanvas")).toHaveAttribute("data-local-prop-count", "1");

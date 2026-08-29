@@ -100,8 +100,11 @@ export interface WorldObject {
   bounds?: { x1?: number; y1?: number; x2?: number; y2?: number };
   floorCells?: Array<{ x: number; y: number }>;
   footprintCells?: Array<{ x: number; y: number }>;
+  blockedCells?: Array<{ x: number; y: number }>;
   originCell?: { x?: number; y?: number };
   unitTypeId?: string;
+  planVariant?: 'A' | 'B' | string;
+  planVariantTransform?: Record<string, unknown>;
   transform?: { rotationDeg?: number; mirrorX?: boolean; mirrorY?: boolean };
   geometry?: ApartmentGeometry;
 }

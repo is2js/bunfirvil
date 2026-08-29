@@ -9,6 +9,7 @@ import {
   wallCrossesSightline,
   type NumericPoint,
 } from './apartment-transform';
+import { castsExteriorStructureShadow } from './structure-shadow';
 import type {
   ActorState,
   ApartmentGeometry,
@@ -66,6 +67,7 @@ interface StructureOccluder {
   segments: Array<[NumericPoint, NumericPoint]>;
   baseOpacity: number;
   currentOpacity: number;
+  castsShadow: boolean;
 }
 
 const DEFAULT_VARIANTS: Record<string, Record<string, string>> = {
@@ -686,7 +688,8 @@ export class ThreeWorldRenderer {
         this.material('#c8c5bf', { roughness: 0.78 }),
       );
       body.position.set(center.x, (totalHeight - topHeight) / 2 + 0.045, center.z);
-      body.castShadow = true;
+      // 외부 지면에는 외벽 그림자만 투영한다. 주방 구조/가벽 그림자는 끈다.
+      body.castShadow = false;
       body.receiveShadow = false;
       this.structureRoot.add(body);
       const top = new THREE.Mesh(
@@ -694,7 +697,7 @@ export class ThreeWorldRenderer {
         this.material('#aaa8a4', { roughness: 0.58 }),
       );
       top.position.set(center.x, totalHeight - topHeight / 2 + 0.045, center.z);
-      top.castShadow = true;
+      top.castShadow = false;
       top.receiveShadow = false;
       this.structureRoot.add(top);
     }
@@ -714,7 +717,7 @@ export class ThreeWorldRenderer {
       blockGeometry.rotateX(Math.PI / 2);
       blockGeometry.translate(0, height, 0);
       const mesh = new THREE.Mesh(blockGeometry, this.material('#c9c3bb', { roughness: 0.92 }));
-      mesh.castShadow = true;
+      mesh.castShadow = false;
       mesh.receiveShadow = false;
       this.structureRoot.add(mesh);
       const worldPolygon = polygon.map((point) => this.localPoint(object, point));
@@ -726,12 +729,14 @@ export class ThreeWorldRenderer {
         }),
         baseOpacity: 1,
         currentOpacity: 1,
+        castsShadow: false,
       });
     }
 
     const localCenter = floorPolygon.reduce((sum, [x, y]) => ({ x: sum.x + x, y: sum.y + y }), { x: 0, y: 0 });
     localCenter.x /= Math.max(1, floorPolygon.length);
     localCenter.y /= Math.max(1, floorPolygon.length);
+    let exteriorShadowCasterCount = 0;
     for (const segmentValue of geometry.wallSegments || []) {
       const segment = segmentValue as Record<string, unknown>;
       const ends = points([segment.a, segment.b]);
@@ -755,7 +760,9 @@ export class ThreeWorldRenderer {
       );
       mesh.position.set((start.x + end.x) / 2, span.base / cellSize + height / 2, (start.z + end.z) / 2);
       mesh.rotation.y = -Math.atan2(end.z - start.z, end.x - start.x);
-      mesh.castShadow = !frontCutaway;
+      const castsShadow = castsExteriorStructureShadow(segment, frontCutaway);
+      mesh.castShadow = castsShadow;
+      if (castsShadow) exteriorShadowCasterCount += 1;
       // 실내 벽이 전역 shadow map을 다시 받으면 카메라 이동 시 shadow-acne가 번쩍인다.
       mesh.receiveShadow = false;
       this.structureRoot.add(mesh);
@@ -764,10 +771,14 @@ export class ThreeWorldRenderer {
         segments: [[ [start.x, start.z], [end.x, end.z] ]],
         baseOpacity: frontCutaway ? 0.38 : 1,
         currentOpacity: frontCutaway ? 0.38 : 1,
+        castsShadow,
       });
     }
 
     this.canvas.dataset.structureOccluderCount = String(this.structureOccluders.length);
+    this.canvas.dataset.structureShadowPolicy = 'exterior-walls-only';
+    this.canvas.dataset.exteriorShadowCasterCount = String(exteriorShadowCasterCount);
+    this.canvas.dataset.interiorShadowCasterCount = '0';
 
     for (const openingValue of geometry.openings || []) {
       const opening = openingValue as Record<string, unknown>;
@@ -820,7 +831,8 @@ export class ThreeWorldRenderer {
         material.opacity = entry.currentOpacity;
         material.depthWrite = entry.currentOpacity >= 0.7;
       }
-      entry.mesh.castShadow = entry.currentOpacity >= 0.7;
+      // occlusion 갱신이 가벽의 그림자를 다시 켜지 않도록 원래 정책을 유지한다.
+      entry.mesh.castShadow = entry.castsShadow && entry.currentOpacity >= 0.7;
     }
     this.canvas.dataset.occludedWallCount = String(fadedCount);
     this.canvas.dataset.wallFadeOpacity = fadedCount
@@ -849,7 +861,8 @@ export class ThreeWorldRenderer {
       }
       panel.position.set(hinge.x + opened.x / 2, height / 2, hinge.z + opened.y / 2);
       panel.rotation.y = -Math.atan2(opened.y, opened.x);
-      panel.castShadow = true;
+      // 문짝과 실내 가벽은 외부 지면용 shadow map에 포함하지 않는다.
+      panel.castShadow = false;
       panel.receiveShadow = false;
       this.structureRoot.add(panel);
     }
@@ -982,7 +995,8 @@ export class ThreeWorldRenderer {
       if (!mesh.isMesh) return;
       mesh.geometry = prop.mirrored ? this.reflectedGeometry(mesh.geometry) : mesh.geometry.clone();
       mesh.material = this.material(palette.primary, { roughness: 0.82 });
-      mesh.castShadow = true;
+      // 외부 지면 그림자는 외벽 전용이므로 가구/가전은 전역 shadow caster에서 제외한다.
+      mesh.castShadow = false;
       mesh.receiveShadow = false;
     });
     const target = dimensions(prop, asset);
@@ -1043,7 +1057,7 @@ export class ThreeWorldRenderer {
         size[2] * finite(part.offset?.[2], 0.5) / cellSize,
         size[1] * finite(part.offset?.[1]) / cellSize,
       );
-      mesh.castShadow = !roomFinish && role !== 'glass';
+      mesh.castShadow = false;
       mesh.receiveShadow = false;
       group.add(mesh);
     }

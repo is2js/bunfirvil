@@ -6,6 +6,13 @@ import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from
 import { FrameMetrics } from './metrics';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import {
+  applyPlanVariant,
+  planVariantDefinition,
+  planVariantFromQuery,
+  type ApartmentPlanVariant,
+  type ApartmentPlanVariantDefinition,
+} from './plan-variants';
+import {
   apartmentUnitWorldPoint,
   apartmentWorldPointToLocalMeters,
   type NumericPoint,
@@ -164,6 +171,7 @@ export class ShowcaseApp {
   private lastMetricPaint = 0;
   private assetCount = 0;
   private mapLoadToken = 0;
+  private planVariant: ApartmentPlanVariant = 'A';
   private destroyed = false;
 
   constructor(private readonly mount: HTMLElement) {}
@@ -172,6 +180,7 @@ export class ShowcaseApp {
     const { catalog, fallback } = await loadCatalog();
     this.catalog = catalog;
     this.currentMap = mapFromQuery(catalog, window.location.search);
+    this.planVariant = planVariantFromQuery(window.location.search);
     const requestedActor = new URLSearchParams(window.location.search).get('actor');
     if (requestedActor === '200') this.activeActor = '200';
     this.hotbar = readHotbar(catalog.defaultHotbar);
@@ -282,6 +291,13 @@ export class ShowcaseApp {
                 <span>INSPECTION MAP</span>
                 <select id="map-select" aria-label="검수맵 선택">${mapOptions}</select>
               </label>
+              <div class="plan-variant-switch" role="group" aria-label="평면 A B형 선택">
+                <span>PLAN TYPE</span>
+                <div>
+                  <button type="button" data-plan-variant="A" class="${this.planVariant === 'A' ? 'is-active' : ''}">A형</button>
+                  <button type="button" data-plan-variant="B" class="${this.planVariant === 'B' ? 'is-active' : ''}">B형</button>
+                </div>
+              </div>
               <div class="actor-switch" role="group" aria-label="조작 캐릭터">
                 <span>CONTROL ACTOR</span>
                 <div>
@@ -307,6 +323,7 @@ export class ShowcaseApp {
               <div class="map-identity">
                 <span id="map-unit">${escapeHtml(this.currentMap.unitType)}</span>
                 <div><b id="map-title">${escapeHtml(this.currentMap.label)}</b><small id="map-revision">${escapeHtml(this.currentMap.revision)}</small></div>
+                <em id="plan-variant-badge">${this.planVariant}형</em>
               </div>
 
               <div class="performance-hud" aria-label="렌더링 성능">
@@ -482,6 +499,9 @@ export class ShowcaseApp {
 
     this.mount.querySelectorAll<HTMLButtonElement>('[data-map-id]').forEach((button) => {
       button.addEventListener('click', () => void this.selectMap(button.dataset.mapId || ''), { signal });
+    });
+    this.mount.querySelectorAll<HTMLButtonElement>('[data-plan-variant]').forEach((button) => {
+      button.addEventListener('click', () => void this.selectPlanVariant(button.dataset.planVariant === 'B' ? 'B' : 'A'), { signal });
     });
     this.mount.querySelectorAll<HTMLButtonElement>('[data-actor-key]').forEach((button) => {
       button.addEventListener('click', () => this.setActiveActor(button.dataset.actorKey as CharacterKey), { signal });
@@ -1111,6 +1131,7 @@ export class ShowcaseApp {
 
     const world = await loadWorld(map, () => this.trackAsset());
     if (token !== this.mapLoadToken || this.destroyed) return;
+    const planDefinition = applyPlanVariant(world, this.planVariant);
     this.world = world;
     this.canvasRenderer.setWorld(world);
     let rendererLabel = world.sourceMode === 'chunks' ? 'CANVAS·ISO' : world.sourceMode === 'minimap' ? 'MINIMAP' : 'PROCEDURAL';
@@ -1154,6 +1175,7 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#map-unit').textContent = map.unitType;
     this.get<HTMLElement>('#map-title').textContent = map.label;
     this.get<HTMLElement>('#map-revision').textContent = map.revision;
+    this.paintPlanVariant(planDefinition);
     this.get<HTMLElement>('#option-unit').textContent = map.unitType;
     this.get<HTMLElement>('#metric-chunks').textContent = `${world.loadedChunkCount}/${world.requestedChunkCount}`;
     this.get<HTMLElement>('#metric-renderer').textContent = rendererLabel;
@@ -1161,9 +1183,33 @@ export class ShowcaseApp {
 
     if (updateUrl) this.updateQuery();
     const sourceMessage = world.sourceMode === 'chunks'
-      ? `${map.unitType} 정적 월드 · ${world.loadedChunkCount}개 chunk 준비 완료`
+      ? `${map.unitType} ${planDefinition.label} 정적 월드 · ${world.loadedChunkCount}개 chunk 준비 완료`
       : `${map.unitType} ${world.sourceMode === 'minimap' ? '미니맵' : '절차형'} fallback으로 렌더링합니다.`;
     this.toast(sourceMessage, world.sourceMode === 'chunks' ? 'success' : 'notice');
+  }
+
+  private async selectPlanVariant(variant: ApartmentPlanVariant): Promise<void> {
+    if (variant === this.planVariant) return;
+    this.planVariant = variant;
+    this.paintPlanVariant(planVariantDefinition(this.currentMap.unitType, variant));
+    await this.selectMap(this.currentMap.id);
+  }
+
+  private paintPlanVariant(definition: ApartmentPlanVariantDefinition): void {
+    this.mount.querySelectorAll<HTMLElement>('[data-plan-variant]').forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.planVariant === definition.variant);
+      if (button instanceof HTMLButtonElement) button.setAttribute('aria-pressed', String(button.dataset.planVariant === definition.variant));
+    });
+    const badge = this.mount.querySelector<HTMLElement>('#plan-variant-badge');
+    if (badge) {
+      badge.textContent = definition.label;
+      badge.title = definition.operations.length ? definition.operations.join(' · ') : '원본 평면도';
+    }
+    const stage = this.mount.querySelector<HTMLElement>('#game-stage');
+    if (stage) {
+      stage.dataset.planVariant = definition.variant;
+      stage.dataset.planVariantTransform = definition.operations.join(' + ') || '원본';
+    }
   }
 
   private resetActors(): void {
@@ -1219,6 +1265,7 @@ export class ShowcaseApp {
     const url = new URL(window.location.href);
     url.searchParams.set('map', this.currentMap.id);
     url.searchParams.set('actor', this.activeActor);
+    url.searchParams.set('variant', this.planVariant);
     history.replaceState(null, '', url);
   }
 

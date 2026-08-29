@@ -4,6 +4,12 @@ import {
   type NumericPoint,
 } from '../game/apartment-transform';
 import { resolveReferencedUrl } from '../game/base';
+import {
+  applyPlanVariant,
+  inverseTransformPlanPoint,
+  transformPlanPoint,
+  type ApartmentPlanVariant,
+} from '../game/plan-variants';
 import type { ThreeWorldRenderer } from '../game/three-world';
 import type { ApartmentInteriorProp, StaticMapEntry, WorldData, WorldObject } from '../game/types';
 import { loadWorld } from '../game/world';
@@ -92,6 +98,7 @@ export class InteriorEditor {
 
   private readonly section = element<HTMLElement>('interiorEditor');
   private readonly mapSelect = element<HTMLSelectElement>('editorMapSelect');
+  private readonly planVariantSelect = element<HTMLSelectElement>('editorPlanVariant');
   private readonly planCanvas = element<HTMLCanvasElement>('editorPlanCanvas');
   private readonly threeCanvas = element<HTMLCanvasElement>('editorThreeCanvas');
   private readonly assetList = element<HTMLElement>('editorAssetList');
@@ -134,6 +141,7 @@ export class InteriorEditor {
 
   private bind(): void {
     this.mapSelect.addEventListener('change', () => void this.selectMap(this.mapSelect.value));
+    this.planVariantSelect.addEventListener('change', () => void this.selectMap(this.mapSelect.value));
     this.assetSearch.addEventListener('input', () => {
       this.search = this.assetSearch.value.trim().toLowerCase();
       this.renderPalette();
@@ -175,6 +183,8 @@ export class InteriorEditor {
     this.section.dataset.loading = 'true';
     const world = await loadWorld(map as unknown as StaticMapEntry);
     if (token !== this.mapLoadToken) return;
+    const planVariant = (this.planVariantSelect.value === 'B' ? 'B' : 'A') as ApartmentPlanVariant;
+    const planDefinition = applyPlanVariant(world, planVariant);
     this.world = world;
     this.apartment = world.objects.find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry) || null;
     this.mapSelect.value = map.id;
@@ -190,7 +200,10 @@ export class InteriorEditor {
     this.drawPlan();
     this.section.dataset.loading = 'false';
     this.section.dataset.mapId = map.id;
-    this.status.textContent = `${map.unitType} · 평면도와 Three.js PBR가 같은 로컬 meter 좌표를 사용합니다.`;
+    this.section.dataset.planVariant = planDefinition.variant;
+    this.planCanvas.dataset.planVariant = planDefinition.variant;
+    this.threeCanvas.dataset.planVariant = planDefinition.variant;
+    this.status.textContent = `${map.unitType} ${planDefinition.label} · 평면도와 Three.js PBR가 같은 RPG 변환 좌표를 사용합니다.`;
   }
 
   private focusApartment(): void {
@@ -268,10 +281,15 @@ export class InteriorEditor {
     const bounds = this.planCanvas.getBoundingClientRect();
     const floor = polygon(apartment.geometry?.floorPolygon);
     if (floor.length < 3) return;
-    const minX = Math.min(...floor.map((point) => point[0]));
-    const maxX = Math.max(...floor.map((point) => point[0]));
-    const minY = Math.min(...floor.map((point) => point[1]));
-    const maxY = Math.max(...floor.map((point) => point[1]));
+    const localMinX = Math.min(...floor.map((point) => point[0]));
+    const localMaxX = Math.max(...floor.map((point) => point[0]));
+    const localMinY = Math.min(...floor.map((point) => point[1]));
+    const localMaxY = Math.max(...floor.map((point) => point[1]));
+    const displayFloor = floor.map((point) => transformPlanPoint(point, apartment.transform));
+    const minX = Math.min(...displayFloor.map((point) => point[0]));
+    const maxX = Math.max(...displayFloor.map((point) => point[0]));
+    const minY = Math.min(...displayFloor.map((point) => point[1]));
+    const maxY = Math.max(...displayFloor.map((point) => point[1]));
     const padding = 30;
     const scale = Math.max(1, Math.min((bounds.width - padding * 2) / Math.max(.1, maxX - minX), (bounds.height - padding * 2) / Math.max(.1, maxY - minY)));
     this.view = { minX, minY, maxX, maxY, scale, offsetX: (bounds.width - (maxX - minX) * scale) / 2, offsetY: (bounds.height - (maxY - minY) * scale) / 2 };
@@ -279,12 +297,12 @@ export class InteriorEditor {
     context.fillRect(0, 0, bounds.width, bounds.height);
     context.strokeStyle = 'rgba(148, 163, 154, .12)';
     context.lineWidth = 1;
-    for (let x = Math.floor(minX * 2) / 2; x <= maxX; x += .5) {
-      const a = this.localToCanvas([x, minY]); const b = this.localToCanvas([x, maxY]);
+    for (let x = Math.floor(localMinX * 2) / 2; x <= localMaxX; x += .5) {
+      const a = this.localToCanvas([x, localMinY]); const b = this.localToCanvas([x, localMaxY]);
       context.beginPath(); context.moveTo(a[0], a[1]); context.lineTo(b[0], b[1]); context.stroke();
     }
-    for (let y = Math.floor(minY * 2) / 2; y <= maxY; y += .5) {
-      const a = this.localToCanvas([minX, y]); const b = this.localToCanvas([maxX, y]);
+    for (let y = Math.floor(localMinY * 2) / 2; y <= localMaxY; y += .5) {
+      const a = this.localToCanvas([localMinX, y]); const b = this.localToCanvas([localMaxX, y]);
       context.beginPath(); context.moveTo(a[0], a[1]); context.lineTo(b[0], b[1]); context.stroke();
     }
     this.fillPolygon(context, floor, '#c7b7a4', '#f0e4d4', 2);
@@ -329,28 +347,35 @@ export class InteriorEditor {
     if (!Array.isArray(position) || position.length < 2) return;
     const asset = this.assets.find((candidate) => candidate.assetId === prop.assetId);
     const size = dimensions(prop, asset);
-    const center = this.localToCanvas([finite(position[0]), finite(position[1])]);
-    context.save();
-    context.translate(center[0], center[1]);
-    context.rotate(-finite(prop.yawDeg) * Math.PI / 180);
+    const angle = finite(prop.yawDeg) * Math.PI / 180;
+    const cos = Math.cos(angle); const sin = Math.sin(angle);
+    const center: NumericPoint = [finite(position[0]), finite(position[1])];
+    const corners: NumericPoint[] = [
+      [-size[0] / 2, -size[1] / 2], [size[0] / 2, -size[1] / 2],
+      [size[0] / 2, size[1] / 2], [-size[0] / 2, size[1] / 2],
+    ].map(([x, y]) => this.localToCanvas([center[0] + x * cos - y * sin, center[1] + x * sin + y * cos]));
+    context.beginPath();
+    corners.forEach((point, index) => index === 0 ? context.moveTo(point[0], point[1]) : context.lineTo(point[0], point[1]));
+    context.closePath();
     context.fillStyle = local ? 'rgba(77, 220, 165, .42)' : 'rgba(71, 75, 70, .30)';
     context.strokeStyle = String(prop.id) === this.selectedPropId ? '#fff1a8' : local ? '#63e6b4' : 'rgba(39, 43, 40, .56)';
     context.lineWidth = String(prop.id) === this.selectedPropId ? 3 : 1;
-    context.fillRect(-size[0] * this.view.scale / 2, -size[1] * this.view.scale / 2, size[0] * this.view.scale, size[1] * this.view.scale);
-    context.strokeRect(-size[0] * this.view.scale / 2, -size[1] * this.view.scale / 2, size[0] * this.view.scale, size[1] * this.view.scale);
-    context.restore();
+    context.fill();
+    context.stroke();
   }
 
   private localToCanvas(point: NumericPoint): NumericPoint {
-    return [this.view.offsetX + (point[0] - this.view.minX) * this.view.scale, this.view.offsetY + (this.view.maxY - point[1]) * this.view.scale];
+    const display = transformPlanPoint(point, this.apartment?.transform);
+    return [this.view.offsetX + (display[0] - this.view.minX) * this.view.scale, this.view.offsetY + (this.view.maxY - display[1]) * this.view.scale];
   }
 
   private canvasToLocal(event: PointerEvent): NumericPoint {
     const bounds = this.planCanvas.getBoundingClientRect();
-    return [
+    const display: NumericPoint = [
       this.view.minX + (event.clientX - bounds.left - this.view.offsetX) / this.view.scale,
       this.view.maxY - (event.clientY - bounds.top - this.view.offsetY) / this.view.scale,
     ];
+    return inverseTransformPlanPoint(display, this.apartment?.transform);
   }
 
   private planPointerDown(event: PointerEvent): void {
