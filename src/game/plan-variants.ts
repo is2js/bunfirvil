@@ -122,6 +122,32 @@ const SERVICE_WALL_SHOWER_YAW: Record<string, Record<ApartmentPlanVariant, numbe
   '59A': { A: 90, B: 270 },
 });
 
+/**
+ * 샤워부스 recipe에서 유리벽은 local +X에, 샤워기는 local -Y에 있다.
+ * 샤워기 yaw는 설비벽 기준으로 유지하고 유리벽만 세면대 쪽으로 반사해
+ * 세면대와 샤워 공간 사이의 칸막이가 되게 한다.
+ */
+function orientShowerGlassTowardBasin(bathrooms: Record<string, unknown> | null): void {
+  for (const fixturesValue of Object.values(bathrooms || {})) {
+    const fixtures = record(fixturesValue);
+    const basin = record(fixtures?.basin);
+    const shower = record(fixtures?.wetFixture);
+    if (!basin || !shower || String(shower.assetId || '') !== 'shower-booth-glass-corner') continue;
+    if (!Array.isArray(basin.positionMeters) || !Array.isArray(shower.positionMeters)) continue;
+    const basinX = Number(basin.positionMeters[0]);
+    const basinY = Number(basin.positionMeters[1]);
+    const showerX = Number(shower.positionMeters[0]);
+    const showerY = Number(shower.positionMeters[1]);
+    if (![basinX, basinY, showerX, showerY].every(Number.isFinite)) continue;
+    const yaw = normalizedYaw(shower.yawDeg) * Math.PI / 180;
+    const basinOnDefaultGlassSide = (basinX - showerX) * Math.cos(yaw)
+      + (basinY - showerY) * Math.sin(yaw);
+    if (Math.abs(basinOnDefaultGlassSide) > 1e-6) {
+      shower.mirrored = basinOnDefaultGlassSide < 0;
+    }
+  }
+}
+
 /** pvp optionAnchors의 비대칭 설비 규칙을 정적 A 원형에 결정적으로 적용한다. */
 export function applyPlanVariantInteriorOverrides(
   apartment: WorldObject,
@@ -171,6 +197,7 @@ export function applyPlanVariantInteriorOverrides(
     && String(shower.assetId || '') === 'shower-booth-glass-corner') {
     shower.yawDeg = serviceWallYaw;
   }
+  orientShowerGlassTowardBasin(bathrooms);
 
   const islandOverride = record(record(override?.kitchen)?.island);
   const island = record(record(anchors.kitchen)?.island);

@@ -180,6 +180,57 @@ describe('RPG apartment plan variants', () => {
   });
 
   it.each([
+    ['51A', 'A', [7.02, 3.58], [7.67, 3.12], 270, true],
+    ['51A', 'B', [7.02, 3.58], [7.67, 3.12], 90, false],
+    ['55A', 'A', [3.14, 3.62], [2.56, 3.15], 90, false],
+    ['55A', 'B', [3.14, 3.62], [2.56, 3.15], 270, true],
+    ['55B', 'A', [4.3, 3.72], [5.05, 3.05], 180, false],
+    ['55B', 'B', [4.3, 3.72], [5.05, 3.05], 0, true],
+    ['59A', 'A', [3.14, 3.8], [3.18, 3.31], 90, false],
+    ['59A', 'B', [3.14, 3.8], [3.18, 3.31], 270, true],
+  ] as const)(
+    'keeps the %s %s glass divider on the basin side of the shower',
+    (unitTypeId, variant, basinPosition, showerPosition, expectedYaw, expectedMirrored) => {
+      const apartment: WorldObject = {
+        unitTypeId,
+        geometry: {
+          optionAnchors: {
+            bathrooms: {
+              'bathroom-1': {
+                basin: { positionMeters: [...basinPosition] },
+                wetFixture: {
+                  assetId: 'shower-booth-glass-corner',
+                  positionMeters: [...showerPosition],
+                  yawDeg: 0,
+                  mirrored: !expectedMirrored,
+                },
+              },
+            },
+          },
+          interiorProps: [{
+            id: 'shower',
+            assetId: 'shower-booth-glass-corner',
+            anchorId: 'bathroom-1.wetFixture',
+            positionMeters: [0, 0],
+            yawDeg: 0,
+          }],
+        },
+      };
+
+      applyPlanVariantInteriorOverrides(apartment, variant);
+
+      const anchors = apartment.geometry?.optionAnchors as Record<string, any>;
+      const wetFixture = anchors.bathrooms['bathroom-1'].wetFixture;
+      expect(wetFixture.yawDeg).toBe(expectedYaw);
+      expect(wetFixture.mirrored).toBe(expectedMirrored);
+      expect(apartment.geometry?.interiorProps?.[0]).toMatchObject({
+        yawDeg: expectedYaw,
+        mirrored: expectedMirrored,
+      });
+    },
+  );
+
+  it.each([
     ['51A', 'B', 90],
     ['55A', 'A', 90],
     ['55A', 'B', 270],
