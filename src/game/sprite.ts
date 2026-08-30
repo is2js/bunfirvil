@@ -25,9 +25,7 @@ export class ActorView {
     element.setAttribute('aria-label', `${entry.label} 조작`);
     element.innerHTML = `
       <span class="actor-shadow" aria-hidden="true"></span>
-      <span class="actor-select-ring" aria-hidden="true"></span>
       <span class="actor-sprite" aria-hidden="true"><span class="actor-fallback">${entry.key}</span></span>
-      <span class="actor-health" aria-label="체력"><i></i></span>
       <span class="actor-name">${entry.label}</span>
     `;
     this.element = element;

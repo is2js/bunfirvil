@@ -95,16 +95,17 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(minimap).toHaveAttribute('data-plan-variant', 'B');
   await expect(minimap).toHaveAttribute('data-actor-count', '2');
   await expect(page.locator('.performance-hud')).toHaveCount(0);
+  await expect(actor100.locator('.actor-health')).toHaveCount(0);
+  await expect(actor100.locator('.actor-select-ring')).toHaveCount(0);
   await expect(actor100.locator('.actor-name')).toHaveCSS('opacity', '0');
-  await actor100.focus();
+  await actor100.hover();
   await expect(actor100.locator('.actor-name')).toHaveCSS('opacity', '1');
-  await page.locator('#map-select').focus();
+  await expect(actor100.locator('.actor-name')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await page.locator('#map-select').hover();
   await expect(actor100.locator('.actor-name')).toHaveCSS('opacity', '0');
   const actorSpriteBounds = await actor100.locator('.actor-sprite').boundingBox();
-  const actorHpBounds = await actor100.locator('.actor-health').boundingBox();
   expect(actorSpriteBounds).not.toBeNull();
-  expect(actorHpBounds).not.toBeNull();
-  expect(actorHpBounds!.y + actorHpBounds!.height).toBeLessThan(actorSpriteBounds!.y + 2);
+  expect(actorSpriteBounds!.width).toBeCloseTo(actorSpriteBounds!.height, 1);
   const hotbarSlots = page.locator("#hotbar .hotbar-slot");
   await expect(hotbarSlots).toHaveCount(6);
   await expect(hotbarSlots.nth(0)).toHaveAttribute("data-skill-id", "common-teleport");
@@ -138,7 +139,7 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
 
   await page.getByRole("button", { name: "200", exact: true }).click();
   await expect(page.locator("#active-actor-label")).toHaveText("피치");
-  expect(await actor200.locator(".actor-sprite").evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBe(56);
+  expect(await actor200.locator(".actor-sprite").evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBe(68);
   await expect(actor200.locator('.actor-motion')).toHaveCount(0);
   await expect(page.locator('#zoom-value')).toHaveText('100%');
   await expect(threeCanvas).toHaveAttribute('data-camera-zoom', '1.290');
