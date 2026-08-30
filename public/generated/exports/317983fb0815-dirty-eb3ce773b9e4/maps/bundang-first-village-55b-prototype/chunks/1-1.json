@@ -20613,7 +20613,7 @@
           "coordinateSystem": "canonical-local-meters",
           "resolvedPlanVariant": "A",
           "planVariantOverrides": {
-            "schemaVersion": "bundang-apartment-plan-variant-overrides-v1",
+            "schemaVersion": "bundang-apartment-plan-variant-overrides-v2",
             "B": {
               "bathrooms": {
                 "fixtureIds": [
@@ -20623,7 +20623,16 @@
                 ],
                 "yawOffsetDeg": 180,
                 "facingRule": "toward-door-wall-after-plan-transform",
-                "preserveWetFixtureMirror": true
+                "showerFacingRule": "service-wall-opposite-door-facing-door-glass-separates-basin",
+                "preserveWetFixtureMirror": true,
+                "minimumFixtureClearanceMeters": 0.02,
+                "roomOverrides": {
+                  "bathroom-1": {
+                    "wetFixture": {
+                      "yawOffsetDeg": 0
+                    }
+                  }
+                }
               },
               "kitchen": {
                 "island": {

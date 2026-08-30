@@ -133,12 +133,23 @@ export function applyPlanVariantInteriorOverrides(
       ? bathroomOverride.fixtureIds.map(String)
       : [];
     const yawOffsetDeg = Number(bathroomOverride.yawOffsetDeg) || 0;
-    for (const fixturesValue of Object.values(bathrooms)) {
+    const roomOverrides = record(bathroomOverride.roomOverrides);
+    for (const [roomId, fixturesValue] of Object.entries(bathrooms)) {
       const fixtures = record(fixturesValue);
       if (!fixtures) continue;
+      const roomOverride = record(roomOverrides?.[roomId]);
       for (const fixtureId of fixtureIds) {
         const fixture = record(fixtures[fixtureId]);
-        if (fixture) fixture.yawDeg = normalizedYaw(Number(fixture.yawDeg) + yawOffsetDeg);
+        if (!fixture) continue;
+        const fixtureOverride = record(roomOverride?.[fixtureId]);
+        const fixtureYawOffset = fixtureOverride
+          && Object.prototype.hasOwnProperty.call(fixtureOverride, 'yawOffsetDeg')
+          ? Number(fixtureOverride.yawOffsetDeg) || 0
+          : yawOffsetDeg;
+        fixture.yawDeg = normalizedYaw(Number(fixture.yawDeg) + fixtureYawOffset);
+        if (Array.isArray(fixtureOverride?.positionMeters)) {
+          fixture.positionMeters = [...fixtureOverride.positionMeters].map(Number);
+        }
       }
     }
   }

@@ -65,11 +65,14 @@ describe('RPG apartment plan variants', () => {
         optionAnchors: {
           resolvedPlanVariant: 'A',
           planVariantOverrides: {
-            schemaVersion: 'bundang-apartment-plan-variant-overrides-v1',
+            schemaVersion: 'bundang-apartment-plan-variant-overrides-v2',
             B: {
               bathrooms: {
                 fixtureIds: ['toilet', 'basin', 'wetFixture'],
                 yawOffsetDeg: 180,
+                roomOverrides: {
+                  'bathroom-1': { wetFixture: { yawOffsetDeg: 0 } },
+                },
               },
               kitchen: {
                 island: {
@@ -105,7 +108,7 @@ describe('RPG apartment plan variants', () => {
     expect(anchors.resolvedPlanVariant).toBe('B');
     expect(anchors.bathrooms['bathroom-1'].toilet.yawDeg).toBe(0);
     expect(anchors.bathrooms['bathroom-1'].basin.yawDeg).toBe(0);
-    expect(anchors.bathrooms['bathroom-1'].wetFixture.yawDeg).toBe(0);
+    expect(anchors.bathrooms['bathroom-1'].wetFixture.yawDeg).toBe(180);
     expect(anchors.bathrooms['bathroom-1'].wetFixture.mirrored).toBe(true);
     expect(anchors.kitchen.island).toMatchObject({
       yawDeg: 90,
@@ -116,7 +119,53 @@ describe('RPG apartment plan variants', () => {
     expect(apartment.geometry?.interiorProps).toEqual([
       { id: 'toilet', anchorId: 'bathroom-1.toilet', positionMeters: [3.78, 3.72], yawDeg: 0, mirrored: false },
       { id: 'basin', anchorId: 'bathroom-1.basin', positionMeters: [4.3, 3.72], yawDeg: 0, mirrored: false },
-      { id: 'shower', anchorId: 'bathroom-1.wetFixture', positionMeters: [5.05, 3.05], yawDeg: 0, mirrored: true },
+      { id: 'shower', anchorId: 'bathroom-1.wetFixture', positionMeters: [5.05, 3.05], yawDeg: 180, mirrored: true },
     ]);
+  });
+
+  it('keeps the 59AB bathtub fixed while separating the basin and toilet footprints', () => {
+    const apartment: WorldObject = {
+      unitTypeId: '59A',
+      planVariant: 'A',
+      geometry: {
+        optionAnchors: {
+          resolvedPlanVariant: 'A',
+          planVariantOverrides: {
+            schemaVersion: 'bundang-apartment-plan-variant-overrides-v2',
+            B: {
+              bathrooms: {
+                fixtureIds: ['toilet', 'basin', 'wetFixture'],
+                yawOffsetDeg: 180,
+                roomOverrides: {
+                  'bathroom-1': { wetFixture: { yawOffsetDeg: 0 } },
+                  'bathroom-2': {
+                    basin: { positionMeters: [12.11, 4.58] },
+                    toilet: { positionMeters: [12.11, 5.2] },
+                  },
+                },
+              },
+            },
+          },
+          bathrooms: {
+            'bathroom-1': {
+              wetFixture: { positionMeters: [3.18, 3.31], yawDeg: 90, mirrored: false },
+            },
+            'bathroom-2': {
+              toilet: { positionMeters: [12.11, 5.1], yawDeg: 90 },
+              basin: { positionMeters: [12.11, 4.3], yawDeg: 90 },
+              wetFixture: { positionMeters: [11.65, 3.88], yawDeg: 0 },
+            },
+          },
+        },
+        interiorProps: [],
+      },
+    };
+
+    applyPlanVariantInteriorOverrides(apartment, 'B');
+    const bathrooms = (apartment.geometry?.optionAnchors as Record<string, any>).bathrooms;
+    expect(bathrooms['bathroom-1'].wetFixture.yawDeg).toBe(90);
+    expect(bathrooms['bathroom-2'].wetFixture.positionMeters).toEqual([11.65, 3.88]);
+    expect(bathrooms['bathroom-2'].basin.positionMeters).toEqual([12.11, 4.58]);
+    expect(bathrooms['bathroom-2'].toilet.positionMeters).toEqual([12.11, 5.2]);
   });
 });
