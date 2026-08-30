@@ -111,6 +111,29 @@ function polygonFrom(value: unknown): NumericPoint[] {
     : []);
 }
 
+/** 59A 욕실2 설비벽은 원본 충돌 치수가 현관/외벽까지 포함하므로 표시 면만 욕실 안으로 자른다. */
+function clip59ABathroom2ServiceWall(
+  object: WorldObject,
+  block: Record<string, unknown>,
+  footprint: NumericPoint[],
+): NumericPoint[] {
+  if (String(object.unitTypeId || '').toUpperCase() !== '59A'
+    || String(block.id || '') !== 'bathroom-2-north-service-block') return footprint;
+  const bathroom = (object.geometry?.roomZones || []).find((value) => {
+    const room = value as Record<string, unknown>;
+    return String(room.id || room.roomId || '') === 'bathroom-2';
+  }) as Record<string, unknown> | undefined;
+  const roomBounds = Array.isArray(bathroom?.boundsMeters)
+    ? bathroom.boundsMeters.map((item) => finite(item))
+    : [];
+  if (roomBounds.length !== 4) return footprint;
+  const [roomMinX, roomMinY, roomMaxX, roomMaxY] = roomBounds;
+  return footprint.map(([x, y]) => [
+    Math.min(roomMaxX, Math.max(roomMinX, x)),
+    Math.min(roomMaxY, Math.max(roomMinY, y)),
+  ]);
+}
+
 /** 원본의 15mm wall-contact clearance를 적용해 solid block과 벽의 공면 겹침을 없앤다. */
 export function apartmentSolidBlockVisualFootprint(
   object: WorldObject,
@@ -118,11 +141,12 @@ export function apartmentSolidBlockVisualFootprint(
 ): NumericPoint[] {
   const explicit = polygonFrom(block.footprintPolygonMeters || block.polygon);
   const bounds = Array.isArray(block.boundsMeters) ? block.boundsMeters.map((item) => finite(item)) : [];
-  const source = explicit.length >= 3
+  const rawSource = explicit.length >= 3
     ? explicit
     : bounds.length === 4
       ? [[bounds[0], bounds[1]], [bounds[2], bounds[1]], [bounds[2], bounds[3]], [bounds[0], bounds[3]]] as NumericPoint[]
       : [];
+  const source = clip59ABathroom2ServiceWall(object, block, rawSource);
   if (source.length < 3) return source;
   const clearance = Math.max(0, finite(
     block.wallContactClearanceMeters,
