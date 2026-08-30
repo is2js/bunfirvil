@@ -8,7 +8,9 @@ export default defineConfig({
   workers: 1,
   // GitHub's software WebGL runner needs more time than a local GPU for four
   // full structure rebuilds, 83 lazy palette previews and both 3D drag paths.
-  timeout: 600_000,
+  // The complete showcase currently reaches the final editor actions after
+  // roughly eleven minutes on hosted runners, so keep a bounded 15-minute gate.
+  timeout: 900_000,
   reporter: [["list"]],
   use: {
     ...devices["Desktop Chrome"],
