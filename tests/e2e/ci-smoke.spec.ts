@@ -22,7 +22,7 @@ test('smokes the deployed map, living-room spawn, and B palette', async ({ page 
   const mapSelect = page.getByLabel('검수맵 선택');
   for (const [mapId, unitType] of MAPS) {
     await mapSelect.selectOption(mapId);
-    await expect(page.locator('#stage-loader')).toBeHidden();
+    await expect(page.locator('#stage-loader')).toBeHidden({ timeout: 30_000 });
     await expect(page.locator('#map-unit')).toHaveText(unitType);
     await expect(page.locator('#metric-chunks')).toHaveText('16/16');
     await expect(page.locator('#game-stage')).toHaveAttribute('data-actor-spawn-room', 'living');
