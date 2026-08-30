@@ -33,8 +33,8 @@ jobs:
         run: npm run verify:dist
       - name: Install smoke-test browser
         run: npx playwright install --with-deps chromium
-      - name: Run one Chromium smoke suite
-        run: npm run test:smoke
+      - name: Run focused Chromium smoke suite
+        run: npm run test:smoke:ci
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173/bunfirvil/
       - uses: actions/configure-pages@v5
