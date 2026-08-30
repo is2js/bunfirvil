@@ -53,7 +53,7 @@ import type {
   WorldData,
   WorldObject,
 } from './types';
-import { IsometricWorldRenderer, canTraverse, isWalkable, loadWorld, nearestWalkable } from './world';
+import { IsometricWorldRenderer, canTraverse, isWalkable, livingRoomSpawnCells, loadWorld, nearestWalkable } from './world';
 
 const numberFormat = new Intl.NumberFormat('ko-KR');
 // 원본 RPG의 기본 walk/movement duration과 동일한 한 cell cadence.
@@ -1292,8 +1292,11 @@ export class ShowcaseApp {
 
   private resetActors(): void {
     if (!this.world) return;
-    const first = nearestWalkable(this.world, this.currentMap.spawn.x, this.currentMap.spawn.y);
-    const second = nearestWalkable(this.world, first.x + 2, first.y + 1);
+    const livingRoomSpawns = livingRoomSpawnCells(this.world);
+    const first = livingRoomSpawns?.first || nearestWalkable(this.world, this.currentMap.spawn.x, this.currentMap.spawn.y);
+    const second = livingRoomSpawns?.second || nearestWalkable(this.world, first.x + 2, first.y + 1);
+    const stage = this.mount.querySelector<HTMLElement>('#game-stage');
+    if (stage) stage.dataset.actorSpawnRoom = livingRoomSpawns ? 'living' : 'map-fallback';
     const actor100 = this.actors.get('100');
     const actor200 = this.actors.get('200');
     const now = performance.now();
@@ -1520,7 +1523,15 @@ export class ShowcaseApp {
     }));
     const allowedIds = new Set(options.map((option) => option.id));
     this.selectedOptionIds = this.selectedOptionIds.filter((id) => allowedIds.has(id));
-    const categories = ['전체', ...new Set(options.map((option) => option.category))];
+    const sourceCategories = [...new Set(options.map((option) => option.category))];
+    const categoryPriority = (category: string): number => {
+      if (category === '시스템에어컨') return 0;
+      if (category.includes('주방')) return 1;
+      if (category.includes('현관') || category.includes('거실')) return 2;
+      if (category.includes('빌트인')) return 3;
+      return 10 + sourceCategories.indexOf(category);
+    };
+    const categories = ['전체', ...sourceCategories.sort((left, right) => categoryPriority(left) - categoryPriority(right))];
     if (!categories.includes(this.optionCategory)) this.optionCategory = '전체';
 
     const categoryElement = this.get<HTMLElement>('#option-categories');
@@ -1533,6 +1544,8 @@ export class ShowcaseApp {
         this.renderOptions();
       }, { signal: this.abortController.signal });
     });
+    requestAnimationFrame(() => categoryElement.querySelector<HTMLElement>('button.is-active')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
 
     const categoryOptions = options.filter((option) => this.optionCategory === '전체' || option.category === this.optionCategory);
     const visibleOptions = this.paletteAppliedOnly

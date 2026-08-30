@@ -5,7 +5,7 @@ import { resolveEffectSource, selectEffectVariant, type EffectManifest } from '.
 import { readHotbar, reorderHotbar } from './hotbar';
 import { adjustSystemAcSelection, applyOptionToggle, calculateOptionPrice } from './options';
 import type { BOptionEntry } from './types';
-import { canTraverse, crossesApartmentWall, expandTileRuns } from './world';
+import { canTraverse, crossesApartmentWall, expandTileRuns, livingRoomSpawnCells } from './world';
 import { travelLockedDirection } from './grid';
 import {
   apartmentPropPlacement,
@@ -145,6 +145,34 @@ describe('game-local state helpers', () => {
     } as unknown as WorldData;
     expect(canTraverse(cornerWorld, 0, 0, 1, 1)).toBe(false);
     expect(canTraverse({ ...cornerWorld, blocked: new Set() }, 0, 0, 1, 1)).toBe(true);
+  });
+
+  it('places both actors around the transformed living-room center', () => {
+    const world = {
+      width: 64,
+      height: 64,
+      blocked: new Set<string>(),
+      objects: [{
+        type: 'enterable-apartment-unit-v1',
+        originCell: { x: 20, y: 20 },
+        transform: { rotationDeg: 90, mirrorX: true },
+        geometry: {
+          cellSizeMeters: 0.5,
+          floorPolygon: [[0, 0], [8, 0], [8, 8], [0, 8]],
+          roomZones: [{ id: 'living', label: '거실', boundsMeters: [2, 2, 6, 6] }],
+        },
+      }],
+    } as unknown as WorldData;
+    const spawns = livingRoomSpawnCells(world);
+    expect(spawns).not.toBeNull();
+    expect(spawns?.first).toEqual({ x: 12, y: 12 });
+    expect(spawns?.second).not.toEqual(spawns?.first);
+    for (const spawn of [spawns?.first, spawns?.second]) {
+      expect(spawn?.x).toBeGreaterThanOrEqual(11);
+      expect(spawn?.x).toBeLessThanOrEqual(15);
+      expect(spawn?.y).toBeGreaterThanOrEqual(11);
+      expect(spawn?.y).toBeLessThanOrEqual(15);
+    }
   });
 
   it('keeps renderer, props, and collision on the same mirrored apartment transform', () => {

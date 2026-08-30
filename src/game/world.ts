@@ -561,3 +561,42 @@ export function nearestWalkable(world: WorldData, x: number, y: number): { x: nu
   }
   return { x: 0, y: 0 };
 }
+
+export function livingRoomSpawnCells(world: WorldData): {
+  first: { x: number; y: number };
+  second: { x: number; y: number };
+} | null {
+  const apartment = world.objects.find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry);
+  const room = apartment?.geometry?.roomZones?.find((value) => {
+    const candidate = value as Record<string, unknown>;
+    return String(candidate.id || candidate.roomId || '').toLowerCase() === 'living'
+      || String(candidate.label || '').includes('거실');
+  }) as Record<string, unknown> | undefined;
+  const bounds = Array.isArray(room?.boundsMeters) ? room.boundsMeters.map((value) => finite(value, Number.NaN)) : [];
+  if (!apartment || bounds.length !== 4 || bounds.some((value) => !Number.isFinite(value))) return null;
+
+  const [minX, minY, maxX, maxY] = bounds;
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  const cellSize = Math.max(0.05, finite(apartment.geometry?.cellSizeMeters, 0.5));
+  const candidateOffsets: Array<[number, number]> = [
+    [0, 0], [cellSize * 1.5, 0], [-cellSize * 1.5, 0], [0, cellSize * 1.5], [0, -cellSize * 1.5],
+    [cellSize * 1.5, cellSize * 1.5], [-cellSize * 1.5, cellSize * 1.5],
+    [cellSize * 1.5, -cellSize * 1.5], [-cellSize * 1.5, -cellSize * 1.5],
+  ];
+  const cells: Array<{ x: number; y: number }> = [];
+  const seen = new Set<string>();
+  for (const [offsetX, offsetY] of candidateOffsets) {
+    const localX = centerX + offsetX;
+    const localY = centerY + offsetY;
+    if (localX <= minX || localX >= maxX || localY <= minY || localY >= maxY) continue;
+    const point = apartmentUnitWorldPoint(apartment, [localX, localY]);
+    const cell = { x: Math.round(point.x), y: Math.round(point.y) };
+    const key = cellKey(cell.x, cell.y);
+    if (seen.has(key) || !isWalkable(world, cell.x, cell.y)) continue;
+    seen.add(key);
+    cells.push(cell);
+    if (cells.length === 2) return { first: cells[0], second: cells[1] };
+  }
+  return null;
+}
