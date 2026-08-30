@@ -168,4 +168,55 @@ describe('RPG apartment plan variants', () => {
     expect(bathrooms['bathroom-2'].basin.positionMeters).toEqual([12.11, 4.58]);
     expect(bathrooms['bathroom-2'].toilet.positionMeters).toEqual([12.11, 5.2]);
   });
+
+  it.each([
+    ['51A', 'B', 270],
+    ['55A', 'A', 90],
+    ['55A', 'B', 90],
+    ['55B', 'B', 180],
+    ['59A', 'B', 90],
+  ] as const)('mounts the %s %s shower column against its service wall at %i degrees', (unitTypeId, variant, expectedYaw) => {
+    const baseYaw = { '51A': 270, '55A': 270, '55B': 180, '59A': 90 }[unitTypeId];
+    const apartment: WorldObject = {
+      unitTypeId,
+      geometry: {
+        optionAnchors: {
+          resolvedPlanVariant: 'A',
+          planVariantOverrides: {
+            B: {
+              bathrooms: {
+                fixtureIds: ['toilet', 'basin', 'wetFixture'],
+                yawOffsetDeg: 180,
+                roomOverrides: unitTypeId === '55A'
+                  ? {}
+                  : { 'bathroom-1': { wetFixture: { yawOffsetDeg: 0 } } },
+              },
+            },
+          },
+          bathrooms: {
+            'bathroom-1': {
+              wetFixture: {
+                assetId: 'shower-booth-glass-corner',
+                positionMeters: [0, 0],
+                yawDeg: baseYaw,
+              },
+            },
+          },
+        },
+        interiorProps: [{
+          id: 'shower',
+          assetId: 'shower-booth-glass-corner',
+          anchorId: 'bathroom-1.wetFixture',
+          positionMeters: [0, 0],
+          yawDeg: baseYaw,
+        }],
+      },
+    };
+
+    applyPlanVariantInteriorOverrides(apartment, variant);
+
+    const anchors = apartment.geometry?.optionAnchors as Record<string, any>;
+    expect(anchors.bathrooms['bathroom-1'].wetFixture.yawDeg).toBe(expectedYaw);
+    expect(apartment.geometry?.interiorProps?.[0].yawDeg).toBe(expectedYaw);
+  });
 });

@@ -113,6 +113,15 @@ function normalizedYaw(value: unknown): number {
   return ((Number(value) || 0) % 360 + 360) % 360;
 }
 
+// 샤워부스 recipe의 샤워 기둥은 local -Y에 있다. 각 원형 평면의 설비벽 면을
+// 향하는 최종 local yaw를 고정하면 A/B 세대 변환 후에도 기둥과 벽이 함께 이동한다.
+const SERVICE_WALL_SHOWER_YAW: Record<string, number> = Object.freeze({
+  '51A': 270,
+  '55A': 90,
+  '55B': 180,
+  '59A': 90,
+});
+
 /** pvp optionAnchors의 비대칭 설비 규칙을 정적 A 원형에 결정적으로 적용한다. */
 export function applyPlanVariantInteriorOverrides(
   apartment: WorldObject,
@@ -124,9 +133,8 @@ export function applyPlanVariantInteriorOverrides(
   anchors.resolvedPlanVariant = variant;
   const overrides = record(anchors.planVariantOverrides);
   const override = record(overrides?.[variant]);
-  if (!override) return;
 
-  const bathroomOverride = record(override.bathrooms);
+  const bathroomOverride = record(override?.bathrooms);
   const bathrooms = record(anchors.bathrooms);
   if (bathroomOverride && bathrooms) {
     const fixtureIds = Array.isArray(bathroomOverride.fixtureIds)
@@ -154,7 +162,15 @@ export function applyPlanVariantInteriorOverrides(
     }
   }
 
-  const islandOverride = record(record(override.kitchen)?.island);
+  const serviceWallYaw = SERVICE_WALL_SHOWER_YAW[String(apartment.unitTypeId || '').toUpperCase()];
+  const shower = record(record(bathrooms?.['bathroom-1'])?.wetFixture);
+  if (Number.isFinite(serviceWallYaw)
+    && shower
+    && String(shower.assetId || '') === 'shower-booth-glass-corner') {
+    shower.yawDeg = serviceWallYaw;
+  }
+
+  const islandOverride = record(record(override?.kitchen)?.island);
   const island = record(record(anchors.kitchen)?.island);
   if (islandOverride && island) {
     island.yawDeg = normalizedYaw(
