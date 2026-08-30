@@ -113,13 +113,13 @@ function normalizedYaw(value: unknown): number {
   return ((Number(value) || 0) % 360 + 360) % 360;
 }
 
-// 샤워부스 recipe의 샤워 기둥은 local -Y에 있다. 각 원형 평면의 설비벽 면을
-// 향하는 최종 local yaw를 고정하면 A/B 세대 변환 후에도 기둥과 벽이 함께 이동한다.
-const SERVICE_WALL_SHOWER_YAW: Record<string, number> = Object.freeze({
-  '51A': 270,
-  '55A': 90,
-  '55B': 180,
-  '59A': 90,
+// 샤워부스 recipe의 샤워 기둥은 local -Y에 있다. B형은 평면 변환 이후
+// 출입문 벽을 바라보도록 A형 기준에서 추가로 180° 뒤집은 최종 yaw를 쓴다.
+const SERVICE_WALL_SHOWER_YAW: Record<string, Record<ApartmentPlanVariant, number>> = Object.freeze({
+  '51A': { A: 270, B: 90 },
+  '55A': { A: 90, B: 270 },
+  '55B': { A: 180, B: 0 },
+  '59A': { A: 90, B: 270 },
 });
 
 /** pvp optionAnchors의 비대칭 설비 규칙을 정적 A 원형에 결정적으로 적용한다. */
@@ -162,7 +162,9 @@ export function applyPlanVariantInteriorOverrides(
     }
   }
 
-  const serviceWallYaw = SERVICE_WALL_SHOWER_YAW[String(apartment.unitTypeId || '').toUpperCase()];
+  const serviceWallYaw = SERVICE_WALL_SHOWER_YAW[
+    String(apartment.unitTypeId || '').toUpperCase()
+  ]?.[variant];
   const shower = record(record(bathrooms?.['bathroom-1'])?.wetFixture);
   if (Number.isFinite(serviceWallYaw)
     && shower

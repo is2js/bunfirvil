@@ -88,7 +88,12 @@ describe('RPG apartment plan variants', () => {
             'bathroom-1': {
               toilet: { positionMeters: [3.78, 3.72], yawDeg: 180 },
               basin: { positionMeters: [4.3, 3.72], yawDeg: 180 },
-              wetFixture: { positionMeters: [5.05, 3.05], yawDeg: 180, mirrored: true },
+              wetFixture: {
+                assetId: 'shower-booth-glass-corner',
+                positionMeters: [5.05, 3.05],
+                yawDeg: 180,
+                mirrored: true,
+              },
             },
           },
           kitchen: {
@@ -108,7 +113,7 @@ describe('RPG apartment plan variants', () => {
     expect(anchors.resolvedPlanVariant).toBe('B');
     expect(anchors.bathrooms['bathroom-1'].toilet.yawDeg).toBe(0);
     expect(anchors.bathrooms['bathroom-1'].basin.yawDeg).toBe(0);
-    expect(anchors.bathrooms['bathroom-1'].wetFixture.yawDeg).toBe(180);
+    expect(anchors.bathrooms['bathroom-1'].wetFixture.yawDeg).toBe(0);
     expect(anchors.bathrooms['bathroom-1'].wetFixture.mirrored).toBe(true);
     expect(anchors.kitchen.island).toMatchObject({
       yawDeg: 90,
@@ -119,7 +124,7 @@ describe('RPG apartment plan variants', () => {
     expect(apartment.geometry?.interiorProps).toEqual([
       { id: 'toilet', anchorId: 'bathroom-1.toilet', positionMeters: [3.78, 3.72], yawDeg: 0, mirrored: false },
       { id: 'basin', anchorId: 'bathroom-1.basin', positionMeters: [4.3, 3.72], yawDeg: 0, mirrored: false },
-      { id: 'shower', anchorId: 'bathroom-1.wetFixture', positionMeters: [5.05, 3.05], yawDeg: 180, mirrored: true },
+      { id: 'shower', anchorId: 'bathroom-1.wetFixture', positionMeters: [5.05, 3.05], yawDeg: 0, mirrored: true },
     ]);
   });
 
@@ -148,7 +153,12 @@ describe('RPG apartment plan variants', () => {
           },
           bathrooms: {
             'bathroom-1': {
-              wetFixture: { positionMeters: [3.18, 3.31], yawDeg: 90, mirrored: false },
+              wetFixture: {
+                assetId: 'shower-booth-glass-corner',
+                positionMeters: [3.18, 3.31],
+                yawDeg: 90,
+                mirrored: false,
+              },
             },
             'bathroom-2': {
               toilet: { positionMeters: [12.11, 5.1], yawDeg: 90 },
@@ -163,18 +173,18 @@ describe('RPG apartment plan variants', () => {
 
     applyPlanVariantInteriorOverrides(apartment, 'B');
     const bathrooms = (apartment.geometry?.optionAnchors as Record<string, any>).bathrooms;
-    expect(bathrooms['bathroom-1'].wetFixture.yawDeg).toBe(90);
+    expect(bathrooms['bathroom-1'].wetFixture.yawDeg).toBe(270);
     expect(bathrooms['bathroom-2'].wetFixture.positionMeters).toEqual([11.65, 3.88]);
     expect(bathrooms['bathroom-2'].basin.positionMeters).toEqual([12.11, 4.58]);
     expect(bathrooms['bathroom-2'].toilet.positionMeters).toEqual([12.11, 5.2]);
   });
 
   it.each([
-    ['51A', 'B', 270],
+    ['51A', 'B', 90],
     ['55A', 'A', 90],
-    ['55A', 'B', 90],
-    ['55B', 'B', 180],
-    ['59A', 'B', 90],
+    ['55A', 'B', 270],
+    ['55B', 'B', 0],
+    ['59A', 'B', 270],
   ] as const)('mounts the %s %s shower column against its service wall at %i degrees', (unitTypeId, variant, expectedYaw) => {
     const baseYaw = { '51A': 270, '55A': 270, '55B': 180, '59A': 90 }[unitTypeId];
     const apartment: WorldObject = {
