@@ -245,9 +245,9 @@ export function appBaseUrl(): URL {
     return new URL(configuredBase, window.location.origin);
   }
 
-  const manageIndex = window.location.pathname.indexOf("/manage/");
-  if (manageIndex >= 0) {
-    return new URL(`${window.location.pathname.slice(0, manageIndex + 1)}`, window.location.origin);
+  const sectionMatch = window.location.pathname.match(/\/(?:manage|building-admin|interior-admin|guides)\//);
+  if (sectionMatch?.index !== undefined) {
+    return new URL(`${window.location.pathname.slice(0, sectionMatch.index + 1)}`, window.location.origin);
   }
 
   return new URL("./", window.location.href);

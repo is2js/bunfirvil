@@ -1,0 +1,93 @@
+.admin-header-inner,
+.admin-page-shell { width: min(1500px, calc(100% - 36px)); }
+
+.admin-header-inner nav { display: flex; align-self: stretch; }
+.admin-header-inner .nav-link { display: flex; align-items: center; padding: 0 13px; border-bottom: 2px solid transparent; color: #91a49c; text-decoration: none; font-size: 12px; font-weight: 700; }
+.admin-header-inner .nav-link:hover,
+.admin-header-inner .nav-link.active { color: #e4eee9; border-bottom-color: var(--mint); background: rgba(113, 232, 176, .035); }
+
+.admin-page-shell { min-height: calc(100vh - 185px); margin: 0 auto; padding: 28px 0 48px; }
+.admin-hero { min-height: 118px; padding: 22px 25px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border: 1px solid var(--line); border-radius: 14px 14px 0 0; background: linear-gradient(112deg, rgba(22, 77, 67, .34), rgba(9, 17, 15, .96) 50%, rgba(13, 22, 20, .9)); }
+.admin-hero .eyebrow { margin: 0 0 6px; color: #6ddcbe; font: 800 9px ui-monospace, monospace; letter-spacing: .14em; }
+.admin-hero h1 { margin: 0; font-size: clamp(22px, 2.5vw, 34px); letter-spacing: -.04em; }
+.admin-hero p:last-child { max-width: 760px; margin: 8px 0 0; color: #8ea099; font-size: 13px; line-height: 1.6; }
+.admin-hero-badge { min-width: 190px; padding: 13px 15px; border: 1px solid rgba(113, 232, 176, .17); border-radius: 9px; background: rgba(2, 10, 8, .45); }
+.admin-hero-badge span, .admin-hero-badge b { display: block; }
+.admin-hero-badge span { margin-bottom: 5px; color: #5e8176; font: 700 8px ui-monospace, monospace; }
+.admin-hero-badge b { color: #b4e5d4; font: 800 10px ui-monospace, monospace; }
+.interior-admin-hero { border-radius: 14px; margin-bottom: 15px; background: linear-gradient(112deg, rgba(91, 31, 48, .34), rgba(9, 17, 15, .96) 50%); }
+.interior-admin-hero .eyebrow { color: #e8aebc; }
+.interior-banner strong { color: #f0b6c4; }
+
+.admin-toolbar { min-height: 58px; padding: 9px 12px; display: flex; align-items: center; gap: 8px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); background: rgba(10, 20, 17, .94); }
+.admin-toolbar > label:not(.button) { min-height: 38px; padding: 0 9px; display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 7px; color: #81938b; font-size: 10px; }
+.admin-toolbar select { min-width: 135px; border: 0; color: #edf5f1; background: transparent; font-weight: 750; }
+.admin-toolbar .button { min-height: 38px; display: inline-flex; align-items: center; }
+.admin-status { min-height: 34px; padding: 9px 14px; border: 1px solid var(--line); border-top: 0; color: #8ba099; background: rgba(0, 0, 0, .28); font: 650 10px ui-monospace, monospace; }
+
+.building-workbench { min-height: 720px; display: grid; grid-template-columns: 245px minmax(500px, 1fr) 285px; overflow: hidden; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; background: rgba(8, 14, 12, .96); box-shadow: var(--shadow); }
+.structure-tree-pane, .building-inspector-pane { min-width: 0; background: rgba(0, 0, 0, .2); }
+.structure-tree-pane { border-right: 1px solid var(--line); }
+.building-inspector-pane { border-left: 1px solid var(--line); }
+.structure-tree-pane > header, .building-inspector-pane > header { min-height: 57px; padding: 13px; display: flex; flex-direction: column; justify-content: center; gap: 3px; border-bottom: 1px solid var(--line); }
+.structure-tree-pane header b, .building-inspector-pane header b { color: #dbe5e0; font-size: 11px; }
+.structure-tree-pane header small, .building-inspector-pane header small { color: #61736b; font-size: 9px; }
+.structure-tree { height: 662px; padding: 8px; overflow-y: auto; scrollbar-color: #385049 transparent; }
+.structure-tree section { margin-bottom: 10px; }
+.structure-tree h3 { margin: 0; padding: 7px; display: flex; align-items: center; justify-content: space-between; color: #789189; font-size: 9px; letter-spacing: .05em; }
+.structure-tree h3 em { color: #546a63; font-style: normal; }
+.structure-tree button { width: 100%; min-height: 40px; padding: 5px 7px; display: grid; grid-template-columns: 24px minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; border: 0; border-left: 2px solid transparent; color: #a9b8b2; background: transparent; text-align: left; }
+.structure-tree button:hover { background: rgba(113, 232, 176, .04); }
+.structure-tree button.is-active { border-left-color: var(--mint); color: #e5f0eb; background: rgba(113, 232, 176, .075); }
+.structure-tree button i { grid-row: 1 / 3; width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid rgba(113, 232, 176, .14); border-radius: 4px; color: #71caab; font: 800 8px ui-monospace, monospace; font-style: normal; }
+.structure-tree button span, .structure-tree button small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.structure-tree button span { font-size: 10px; font-weight: 700; }
+.structure-tree button small { color: #52655e; font: 600 7px ui-monospace, monospace; }
+
+.building-viewports { min-width: 0; display: grid; grid-template-rows: 1fr 1fr; }
+.building-viewports > section { min-height: 0; position: relative; overflow: hidden; }
+.building-viewports > section:first-child { border-bottom: 1px solid var(--line); }
+.building-viewports canvas { width: 100%; height: 100%; display: block; }
+.building-viewports canvas[hidden] { display: none; }
+.viewport-label { padding: 5px 7px; position: absolute; left: 9px; top: 9px; z-index: 2; border: 1px solid var(--line); border-radius: 4px; color: #82958e; background: rgba(0, 0, 0, .72); font: 700 8px ui-monospace, monospace; pointer-events: none; }
+.viewport-label.is-pbr { color: #9be4c5; border-color: rgba(113, 232, 176, .18); }
+
+#buildingInspector { padding: 12px; }
+.structure-selection-card { padding: 10px; border: 1px solid var(--line); border-radius: 7px; background: rgba(255, 255, 255, .025); }
+.structure-selection-card span, .structure-selection-card b, .structure-selection-card small { display: block; }
+.structure-selection-card span { color: var(--mint); font: 800 8px ui-monospace, monospace; }
+.structure-selection-card b { margin-top: 4px; color: #eff5f2; font-size: 12px; }
+.structure-selection-card small { margin-top: 3px; color: #5d7068; font: 600 8px ui-monospace, monospace; }
+#buildingInspector dl { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+#buildingInspector dl div { padding: 8px; border: 1px solid var(--line); border-radius: 5px; }
+#buildingInspector dt { color: #61736b; font-size: 8px; }
+#buildingInspector dd { margin: 3px 0 0; color: #c6d2cd; font: 700 9px ui-monospace, monospace; }
+#buildingInspector pre { max-height: 300px; padding: 10px; overflow: auto; border: 1px solid rgba(125, 163, 151, .12); border-radius: 6px; color: #93a69f; background: #09100e; font: 500 8px/1.55 ui-monospace, monospace; white-space: pre-wrap; }
+.building-note-field { margin: 0 12px 12px; display: grid; gap: 6px; color: #9cafA7; font-size: 10px; font-weight: 750; }
+.building-note-field textarea { min-height: 150px; padding: 9px; border: 1px solid var(--line); border-radius: 7px; color: #e4ece8; background: #0d1512; font-size: 11px; line-height: 1.55; resize: vertical; }
+.standalone-editor { margin: 0; }
+
+@media (max-width: 1100px) {
+  .admin-header-inner nav { display: none; }
+  .building-workbench { grid-template-columns: 205px minmax(420px, 1fr); }
+  .building-inspector-pane { grid-column: 1 / -1; border-top: 1px solid var(--line); border-left: 0; }
+  .building-inspector-pane { display: grid; grid-template-columns: 220px 1fr; }
+  .building-inspector-pane > header { grid-column: 1 / -1; }
+  .editor-workbench { grid-template-columns: 210px minmax(0, 1fr); }
+  .editor-inspector { grid-column: 1 / -1; border-top: 1px solid var(--line); border-left: 0; }
+}
+
+@media (max-width: 760px) {
+  .admin-page-shell { width: min(100% - 20px, 1500px); padding-top: 15px; }
+  .admin-hero { align-items: flex-start; flex-direction: column; }
+  .admin-hero-badge { min-width: 0; width: 100%; }
+  .admin-toolbar { align-items: stretch; flex-direction: column; }
+  .building-workbench { min-height: 0; display: block; }
+  .structure-tree { height: 250px; }
+  .building-viewports { height: 720px; }
+  .building-inspector-pane { display: block; }
+  .editor-workbench { display: block; }
+  .editor-asset-list { height: 280px; }
+  .editor-viewport { height: 720px; }
+  .editor-commandbar, .editor-header { align-items: stretch; flex-direction: column; }
+}

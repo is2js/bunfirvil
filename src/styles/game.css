@@ -139,7 +139,7 @@ input:focus-visible {
 .topnav {
   align-self: stretch;
   display: flex;
-  gap: 30px;
+  gap: 20px;
 }
 
 .topnav a {
@@ -149,7 +149,7 @@ input:focus-visible {
   position: relative;
   color: #899b99;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   transition: color 160ms ease;
 }
@@ -599,33 +599,50 @@ input:focus-visible {
   animation: ring-pulse 1.8s ease-in-out infinite;
 }
 
-.actor-meta {
+.actor-name {
   width: 76px;
+  padding: 2px 4px;
   position: absolute;
   left: -9px;
-  top: 74px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  text-shadow: 0 1px 3px #000, 0 0 5px #000;
-}
-
-.actor-name {
+  top: 42px;
+  z-index: 8;
   max-width: 76px;
   overflow: hidden;
+  border-radius: 3px;
+  color: #f3ead5;
+  background: rgba(4, 9, 11, .72);
   font-size: 9px;
   font-weight: 750;
+  line-height: 1.15;
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 3px #000, 0 0 5px #000;
+  transform: translateY(2px);
+  transition: opacity 100ms ease, transform 100ms ease;
   white-space: nowrap;
 }
 
+.rpg-actor:hover .actor-name,
+.rpg-actor:focus .actor-name,
+.rpg-actor:focus-visible .actor-name {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .actor-health {
-  width: 38px;
-  height: 3px;
+  width: 48px;
+  height: 5px;
+  padding: 1px;
+  position: absolute;
+  left: 5px;
+  top: -10px;
+  z-index: 9;
   overflow: hidden;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.7);
+  border-radius: 999px;
+  background: rgba(210, 214, 218, .86);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .85);
 }
 
 .actor-health i {
@@ -845,9 +862,9 @@ input:focus-visible {
   white-space: nowrap;
 }
 
-.performance-hud {
-  width: 152px;
-  padding: 9px 10px 8px;
+.floorplan-minimap {
+  width: 176px;
+  padding: 8px;
   position: absolute;
   right: 15px;
   top: 15px;
@@ -859,10 +876,20 @@ input:focus-visible {
   backdrop-filter: blur(9px);
 }
 
+.minimap-title { display: flex; align-items: center; gap: 5px; margin-bottom: 6px; color: #78948e; font: 800 7px ui-monospace, monospace; letter-spacing: .1em; }
+.minimap-title > span { width: 5px; height: 5px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 7px var(--mint); }
+.minimap-title b { color: #7d9a94; font: inherit; }
+.minimap-title em { margin-left: auto; color: #d8c58e; font: 750 7px ui-monospace, monospace; font-style: normal; letter-spacing: 0; }
+.floorplan-minimap canvas { width: 100%; height: 120px; display: block; border: 1px solid rgba(135, 173, 166, .13); border-radius: 4px; background: #081216; }
+.minimap-legend { padding-top: 5px; display: flex; align-items: center; gap: 4px; color: #78908b; font: 650 7px ui-monospace, monospace; }
+.minimap-legend i { width: 6px; height: 6px; border-radius: 50%; background: #ffe08a; box-shadow: 0 0 5px rgba(255, 224, 138, .55); }
+.minimap-legend small { margin-left: auto; color: #6ed9c3; font: inherit; }
+.runtime-metrics-source { display: none !important; }
+
 .stage-zoom {
   position: absolute;
   right: 16px;
-  top: 154px;
+  top: 190px;
   z-index: 14;
   display: grid;
   grid-template-columns: 30px 56px 30px;
@@ -1819,7 +1846,7 @@ input:focus-visible {
   .map-tab { padding-inline: 9px; }
   .map-tab small { display: none; }
   .game-stage { min-height: 620px; height: 74vh; }
-  .performance-hud { right: 8px; top: 8px; transform: scale(.86); transform-origin: right top; }
+  .floorplan-minimap { right: 8px; top: 8px; transform: scale(.86); transform-origin: right top; }
   .map-identity { left: 8px; top: 8px; max-width: calc(100% - 155px); }
   .map-identity > div { max-width: 145px; }
   .active-actor-card { display: none; }

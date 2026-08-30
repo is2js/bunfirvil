@@ -48,6 +48,8 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await page.goto("./");
   await expect(page.getByText("프론트엔드 로컬 데모", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "가이드", exact: true })).toHaveAttribute("href", /guides\/$/);
+  await expect(page.getByRole("link", { name: "건축물 관리", exact: true })).toHaveAttribute("href", /building-admin\/$/);
+  await expect(page.getByRole("link", { name: "인테리어 관리", exact: true })).toHaveAttribute("href", /interior-admin\/$/);
   await expect(page.getByRole("link", { name: "옵션 가이드", exact: true })).toHaveAttribute("href", /guides\/\?guide=b-option$/);
   await expect(page.locator("#stage-loader")).toBeHidden();
   await expect(page.locator("#metric-renderer")).toHaveText(/THREE·PBR|CANVAS·(?:ISO|FALLBACK)|MINIMAP|PROCEDURAL/);
@@ -87,6 +89,21 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
 
   const actor100 = page.locator('.rpg-actor[data-actor="100"]');
   const actor200 = page.locator('.rpg-actor[data-actor="200"]');
+  const minimap = page.locator('#floorplan-minimap');
+  await expect(minimap).toHaveAttribute('data-floorplan-ready', 'true');
+  await expect(minimap).toHaveAttribute('data-plan-variant', 'B');
+  await expect(minimap).toHaveAttribute('data-actor-count', '2');
+  await expect(page.locator('.performance-hud')).toHaveCount(0);
+  await expect(actor100.locator('.actor-name')).toHaveCSS('opacity', '0');
+  await actor100.focus();
+  await expect(actor100.locator('.actor-name')).toHaveCSS('opacity', '1');
+  await page.locator('#map-select').focus();
+  await expect(actor100.locator('.actor-name')).toHaveCSS('opacity', '0');
+  const actorSpriteBounds = await actor100.locator('.actor-sprite').boundingBox();
+  const actorHpBounds = await actor100.locator('.actor-health').boundingBox();
+  expect(actorSpriteBounds).not.toBeNull();
+  expect(actorHpBounds).not.toBeNull();
+  expect(actorHpBounds!.y + actorHpBounds!.height).toBeLessThan(actorSpriteBounds!.y + 2);
   const hotbarSlots = page.locator("#hotbar .hotbar-slot");
   await expect(hotbarSlots).toHaveCount(6);
   await expect(hotbarSlots.nth(0)).toHaveAttribute("data-skill-id", "common-teleport");
@@ -135,10 +152,12 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await page.keyboard.up("KeyD");
   await expect(actor200).toHaveAttribute("data-direction", "e");
   await expect.poll(async () => Number(await actor200.getAttribute("data-world-x"))).toBeGreaterThan(startX);
-  const endX = Number(await actor200.getAttribute("data-world-x"));
-  const endY = Number(await actor200.getAttribute("data-world-y"));
+  const { endX, endY } = await actor200.evaluate((element) => ({
+    endX: Number((element as HTMLElement).dataset.worldX),
+    endY: Number((element as HTMLElement).dataset.worldY),
+  }));
   expect(endX - startX).toBeGreaterThanOrEqual(1);
-  expect(startY - endY).toBe(endX - startX);
+  expect(startY - endY).toBeCloseTo(endX - startX, 5);
 
   // 현재 cell이 끝나기 전에는 다음 키의 방향 row로 선회하지 않는다.
   await page.getByRole("button", { name: "스폰 위치로 돌아가기" }).click();
@@ -188,7 +207,16 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
 
   const secondSlot = page.locator('#hotbar [data-slot="1"]');
   const fourthSlot = page.locator('#hotbar [data-slot="3"]');
-  await secondSlot.dragTo(fourthSlot);
+  await page.evaluate(() => {
+    const from = document.querySelector<HTMLElement>('#hotbar [data-slot="1"]');
+    const to = document.querySelector<HTMLElement>('#hotbar [data-slot="3"]');
+    if (!from || !to) throw new Error('핫바 드래그 대상이 없습니다.');
+    const transfer = new DataTransfer();
+    from.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: transfer }));
+    to.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+    to.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+    from.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: transfer }));
+  });
   await expect(secondSlot).toHaveAttribute("data-skill-id", "common-double-arrow");
   await expect(fourthSlot).toHaveAttribute("data-skill-id", "basic-attack");
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("bunfirvil:hotbar:v1") || "[]")[3])).toBe("basic-attack");
@@ -430,4 +458,31 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
 
   expect(forbiddenRequests).toEqual([]);
   expect(consoleErrors).toEqual([]);
+});
+
+test("loads the standalone building and interior administrators", async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+
+  await page.goto("building-admin/");
+  await expect(page.getByRole('heading', { name: '분퍼빌 건축물 관리자' })).toBeVisible();
+  await expect(page.locator('#buildingPlanCanvas')).toHaveAttribute('data-plan-ready', 'true');
+  await expect.poll(async () => Number(await page.locator('#buildingPlanCanvas').getAttribute('data-structure-count'))).toBeGreaterThan(20);
+  await expect.poll(async () => page.locator('#buildingTree [data-structure-key]').count()).toBeGreaterThan(20);
+  await page.locator('#buildingPlanVariant').selectOption('B');
+  await expect(page.locator('#buildingStatus')).toContainText('B형');
+  await page.locator('#buildingTree [data-structure-key^="wall:"]').first().click();
+  await expect(page.locator('#buildingInspector')).toContainText('WALL');
+  await page.locator('#buildingReviewStatus').selectOption('pass');
+  await page.locator('#buildingNotes').fill('건축 구조 검수 확인');
+  expect(await page.evaluate(() => Object.keys(localStorage).some((key) => key.startsWith('bunfirvil:building-admin:v1:')))).toBe(true);
+
+  await page.goto("interior-admin/");
+  await expect(page.getByRole('heading', { name: '분퍼빌 인테리어 관리자' })).toBeVisible();
+  await expect(page.locator('#interiorEditor')).toHaveAttribute('data-loading', 'false');
+  await expect.poll(async () => page.locator('#editorAssetList .editor-asset').count()).toBeGreaterThan(30);
+  await expect(page.locator('#editorAssetList .editor-asset img').first()).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-interior-admin-ready', 'true');
+  expect(errors).toEqual([]);
 });

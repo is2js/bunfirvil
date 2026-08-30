@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="분당 퍼스트빌리지 가구와 가전을 평면도 및 Three.js PBR에서 배치하는 서버리스 인테리어 관리자" />
+    <meta name="color-scheme" content="dark" />
+    <title>인테리어 관리자 · bunfirvil</title>
+    <link rel="stylesheet" href="/src/styles/manage.css" />
+    <link rel="stylesheet" href="/src/styles/admin-workspaces.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">본문으로 이동</a>
+    <header class="site-header"><div class="header-inner admin-header-inner">
+      <a class="brand" href="../"><span class="brand-mark" aria-hidden="true">B</span><span><strong>bunfirvil</strong><small>Interior administrator</small></span></a>
+      <nav aria-label="주요 메뉴"><a class="nav-link" href="../">렌더링 데모</a><a class="nav-link" href="../manage/">검수맵</a><a class="nav-link" href="../building-admin/">건축물 관리</a><span class="nav-link active" aria-current="page">인테리어 관리</span><a class="nav-link" href="../guides/">가이드</a></nav>
+    </div></header>
+    <div class="local-only-banner interior-banner" role="note"><strong>GHOST 배치 · PBR 검수</strong><span>가구·가전을 2D와 3D에서 이동, 회전, 반전, 복제, 삭제할 수 있으며 모든 배치는 현재 브라우저에만 저장됩니다.</span></div>
+    <main id="main" class="admin-page-shell">
+      <section class="admin-hero interior-admin-hero"><div><p class="eyebrow">INTERIOR AUTHORING · LOCAL GHOST</p><h1>분퍼빌 인테리어 관리자</h1><p>인게임 관리자와 같은 로컬 meter 좌표와 공개 가구 이미지를 사용해 평면 배치와 PBR 결과를 함께 조정합니다.</p></div><div class="admin-hero-badge"><span>LOCAL LAYOUT</span><b>MOVE · ROTATE · MIRROR</b></div></section>
+      <section id="interiorEditor" class="interior-editor standalone-editor" data-mode="split" data-loading="true" aria-labelledby="editorTitle">
+        <header class="editor-header"><div><p class="editor-kicker">INTERIOR AUTHORING · LOCAL GHOST</p><h2 id="editorTitle">평면도 · Three.js PBR 가구 배치</h2><p>가구 카드 이미지와 2D/PBR 배치를 같은 자산 ID로 연결합니다.</p></div>
+          <div class="editor-head-actions"><label>검수맵<select id="editorMapSelect" aria-label="가구 배치 검수맵"></select></label><label>평면형<select id="editorPlanVariant" aria-label="평면 A B형 선택"><option value="A">A형 · 원본</option><option value="B">B형 · 단지 회전/대칭</option></select></label><span id="editorLocalCount" class="editor-count">0개 로컬 배치</span><button id="editorExport" class="button secondary" type="button">배치 JSON 내보내기</button><input id="editorImportFile" class="visually-hidden" type="file" accept="application/json,.json" /><label class="button secondary" for="editorImportFile">배치 JSON 가져오기</label><button id="editorReset" class="button danger" type="button">배치 초기화</button></div>
+        </header>
+        <div id="editorStatus" class="editor-status" role="status" aria-live="polite">인테리어 카탈로그를 불러오는 중입니다.</div>
+        <div class="editor-commandbar"><div class="editor-transform-actions"><button id="editorRotateLeft" type="button">−90°</button><button id="editorRotateRight" type="button">+90°</button><button id="editorScaleDown" type="button">− 크기</button><button id="editorScaleUp" type="button">+ 크기</button><button id="editorMirror" type="button">⇆ 좌우 반전</button><button id="editorDuplicate" type="button">⧉ 복제</button><button id="editorDelete" class="is-danger" type="button">선택 삭제</button></div><div class="editor-mode-switch" role="group" aria-label="편집 화면 모드"><button type="button" data-editor-mode="2d">2D 평면도</button><button type="button" data-editor-mode="split" class="is-active">분할</button><button type="button" data-editor-mode="3d">PBR 3D</button></div></div>
+        <div class="editor-workbench"><aside class="editor-palette" aria-label="가구 팔레트"><div class="editor-pane-title"><b>가구 · 가전 팔레트</b><small>이미지 카드를 누르면 GHOST 배치</small></div><input id="editorAssetSearch" type="search" placeholder="가구, 가전, asset id 검색" autocomplete="off" /><div id="editorAssetList" class="editor-asset-list"></div></aside>
+          <div class="editor-viewport"><section class="editor-plan-view"><span class="editor-view-label">2D · LOCAL METER · 0.05m SNAP</span><canvas id="editorPlanCanvas" aria-label="아파트 평면도 가구 배치 편집기"></canvas></section><section class="editor-three-view"><span class="editor-view-label is-pbr">THREE.JS · PBR CUTAWAY</span><canvas id="editorThreeCanvas" aria-label="아파트 Three.js PBR 가구 배치 미리보기"></canvas></section></div>
+          <aside class="editor-inspector" aria-label="선택 소품 속성"><div class="editor-pane-title"><b>선택 · GHOST 속성</b><small>브라우저 로컬 저장</small></div><div id="editorInspector"></div><div class="editor-shortcuts"><b>빠른 조작</b><span>2D·3D 드래그 이동 · 방향키 0.05m · Shift+휠/R 회전 · Alt+클릭/X 반전 · Ctrl+드래그 복제 · Delete 삭제</span></div></aside></div>
+      </section>
+    </main>
+    <footer class="site-footer"><p>서버·로그인·공용 저장·원본 publish가 없는 정적 인테리어 배치 관리자입니다.</p></footer>
+    <script type="module" src="/src/interior-admin.ts"></script>
+  </body>
+</html>

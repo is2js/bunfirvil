@@ -5,6 +5,7 @@ import { ManifestEffectPlayer } from './effect-player';
 import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
 import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from './grid';
 import { FrameMetrics } from './metrics';
+import { FloorPlanMinimap } from './floorplan-minimap';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import {
   applyPlanVariant,
@@ -156,6 +157,7 @@ export class ShowcaseApp {
   private readonly pressedKeys = new Set<string>();
   private readonly cooldowns = new Map<string, number>();
   private readonly frameMetrics = new FrameMetrics();
+  private minimap!: FloorPlanMinimap;
   private readonly abortController = new AbortController();
   private selectedOptionIds: string[] = [];
   private cursorScreenPoint: { x: number; y: number } | null = null;
@@ -201,6 +203,10 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#game-stage').dataset.cellProjection = '32x24';
     this.get<HTMLElement>('#game-stage').dataset.cameraTracking = 'follow';
     this.canvasRenderer = new IsometricWorldRenderer(this.get<HTMLCanvasElement>('#world-canvas'));
+    this.minimap = new FloorPlanMinimap(
+      this.get<HTMLCanvasElement>('#floorplan-minimap'),
+      this.get<HTMLElement>('#minimap-map-label'),
+    );
     this.renderer = this.canvasRenderer;
     this.effectPlayer = new ManifestEffectPlayer(this.get<HTMLElement>('#effect-layer'), () => this.trackAsset());
     try {
@@ -280,6 +286,8 @@ export class ShowcaseApp {
           <nav class="topnav" aria-label="주요 메뉴">
             <a class="is-active" href="${resolveProjectUrl('')}"><span>LIVE</span> 렌더 쇼케이스</a>
             <a href="${resolveProjectUrl('manage/')}">검수맵 관리</a>
+            <a href="${resolveProjectUrl('building-admin/')}">건축물 관리</a>
+            <a href="${resolveProjectUrl('interior-admin/')}">인테리어 관리</a>
             <a href="${resolveProjectUrl('guides/')}">가이드</a>
           </nav>
           <div class="build-chip" title="현재 정적 자산 스냅샷">
@@ -338,16 +346,18 @@ export class ShowcaseApp {
                 <em id="plan-variant-badge">${this.planVariant}형</em>
               </div>
 
-              <div class="performance-hud" aria-label="렌더링 성능">
-                <div class="perf-title"><span></span> RUNTIME</div>
-                <dl>
+              <aside class="floorplan-minimap" aria-label="현재 세대 평면도 미니맵">
+                <div class="minimap-title"><span></span><b>FLOOR PLAN</b><em id="minimap-map-label">${escapeHtml(this.currentMap.unitType)} · ${this.planVariant}형</em></div>
+                <canvas id="floorplan-minimap" aria-label="평면도와 캐릭터 현재 위치"></canvas>
+                <div class="minimap-legend"><i></i><span>조작 캐릭터</span><small>LIVE</small></div>
+                <dl class="runtime-metrics-source" aria-hidden="true">
                   <div><dt>FPS</dt><dd id="metric-fps">—</dd></div>
                   <div><dt>P95</dt><dd id="metric-p95">—</dd></div>
                   <div><dt>RENDER</dt><dd id="metric-renderer">CANVAS2D</dd></div>
                   <div><dt>CHUNKS</dt><dd id="metric-chunks">0/0</dd></div>
                   <div><dt>ASSETS</dt><dd id="metric-assets">0</dd></div>
                 </dl>
-              </div>
+              </aside>
 
               <div class="stage-zoom" aria-label="화면 확대 축소">
                 <button type="button" id="zoom-out" aria-label="화면 축소">−</button>
@@ -890,7 +900,7 @@ export class ShowcaseApp {
 
   private scenePropAt(event: MouseEvent | PointerEvent): ApartmentInteriorProp | undefined {
     if (!this.threeRenderer || this.renderer !== this.threeRenderer) return undefined;
-    if ((event.target as HTMLElement | null)?.closest('.combat-dock,.map-identity,.performance-hud,.stage-option-quote,.game-toast,.stage-zoom,.furniture-selection-toolbar')) return undefined;
+    if ((event.target as HTMLElement | null)?.closest('.combat-dock,.map-identity,.floorplan-minimap,.stage-option-quote,.game-toast,.stage-zoom,.furniture-selection-toolbar')) return undefined;
     const canvas = this.get<HTMLCanvasElement>('#three-world-canvas');
     const bounds = canvas.getBoundingClientRect();
     const propId = this.threeRenderer.pickEditorProp(event.clientX - bounds.left, event.clientY - bounds.top);
@@ -964,7 +974,7 @@ export class ShowcaseApp {
   }
 
   private handleInteriorPointerDown(event: PointerEvent): boolean {
-    if ((event.target as HTMLElement | null)?.closest('.combat-dock,.map-identity,.performance-hud,.stage-option-quote,.game-toast,.stage-zoom,.furniture-selection-toolbar')) return false;
+    if ((event.target as HTMLElement | null)?.closest('.combat-dock,.map-identity,.floorplan-minimap,.stage-option-quote,.game-toast,.stage-zoom,.furniture-selection-toolbar')) return false;
     const apartment = this.activeApartment();
     if (!apartment) return false;
     const canvas = this.get<HTMLCanvasElement>('#three-world-canvas');
@@ -1246,6 +1256,7 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#option-unit').textContent = map.unitType;
     this.get<HTMLElement>('#metric-chunks').textContent = `${world.loadedChunkCount}/${world.requestedChunkCount}`;
     this.get<HTMLElement>('#metric-renderer').textContent = rendererLabel;
+    this.minimap.setWorld(world, planDefinition.variant);
     this.get<HTMLElement>('#stage-loader').classList.add('is-hidden');
 
     if (updateUrl) this.updateQuery();
@@ -1751,6 +1762,7 @@ export class ShowcaseApp {
       const actor = this.actors.get(key);
       if (actor) view.update(actor, this.renderer.project(actor.displayX, actor.displayY), time, actorWorldScale);
     });
+    this.minimap.render(this.actors.values(), this.activeActor, time);
     if (this.selectedLocalPropId) this.updateFurnitureToolbar();
     this.paintCooldowns(time);
 

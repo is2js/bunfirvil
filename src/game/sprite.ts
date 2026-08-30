@@ -27,10 +27,8 @@ export class ActorView {
       <span class="actor-shadow" aria-hidden="true"></span>
       <span class="actor-select-ring" aria-hidden="true"></span>
       <span class="actor-sprite" aria-hidden="true"><span class="actor-fallback">${entry.key}</span></span>
-      <span class="actor-meta">
-        <span class="actor-name">${entry.label}</span>
-        <span class="actor-health"><i></i></span>
-      </span>
+      <span class="actor-health" aria-label="체력"><i></i></span>
+      <span class="actor-name">${entry.label}</span>
     `;
     this.element = element;
     this.sprite = element.querySelector<HTMLElement>('.actor-sprite') as HTMLSpanElement;

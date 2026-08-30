@@ -12,6 +12,8 @@ export default defineConfig({
       input: {
         showcase: resolve(__dirname, "index.html"),
         manage: resolve(__dirname, "manage/index.html"),
+        buildingAdmin: resolve(__dirname, "building-admin/index.html"),
+        interiorAdmin: resolve(__dirname, "interior-admin/index.html"),
         guides: resolve(__dirname, "guides/index.html"),
       },
     },
