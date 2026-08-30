@@ -273,6 +273,7 @@ export class ThreeWorldRenderer {
   private readonly structureRoot = new THREE.Group();
   private readonly propRoot = new THREE.Group();
   private readonly editorSelectionRoot = new THREE.Group();
+  private readonly editorGhostRoot = new THREE.Group();
   private apartmentInspectionLaserGroup: THREE.Group | null = null;
   private readonly modelLoader = new GLTFLoader();
   private readonly modelCache = new Map<string, Promise<THREE.Group>>();
@@ -292,6 +293,11 @@ export class ThreeWorldRenderer {
   private selectedOptionIds: string[] = [];
   private editorProps: ApartmentInteriorProp[] | null = null;
   private editorSelectedPropId = '';
+  private editorGhostProp: ApartmentInteriorProp | null = null;
+  private editorGhostValid = false;
+  private editorGhostSignature = '';
+  private editorGhostHiddenPropId = '';
+  private editorGhostLoadToken = 0;
   private cameraZoom = RPG_CAMERA_BASE_ZOOM;
   private structureOccluders: StructureOccluder[] = [];
   private occlusionFocus: ActorState | null = null;
@@ -319,7 +325,7 @@ export class ThreeWorldRenderer {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene.background = new THREE.Color('#11100e');
     this.scene.fog = new THREE.FogExp2('#11100e', 0.009);
-    this.scene.add(this.structureRoot, this.propRoot, this.editorSelectionRoot);
+    this.scene.add(this.structureRoot, this.propRoot, this.editorSelectionRoot, this.editorGhostRoot);
 
     const hemisphere = new THREE.HemisphereLight('#f8fafc', '#554a3f', 1.55);
     const sun = new THREE.DirectionalLight('#fff1d6', 2.2);
@@ -369,6 +375,133 @@ export class ThreeWorldRenderer {
     this.editorSelectedPropId = String(propId || '');
     this.canvas.dataset.selectedEditorPropId = this.editorSelectedPropId;
     this.refreshEditorSelection();
+  }
+
+  setEditorGhost(prop: ApartmentInteriorProp | null, valid = false, hiddenPropId = ''): void {
+    if (!prop) {
+      this.clearEditorGhost();
+      return;
+    }
+    this.editorGhostProp = { ...prop, positionMeters: [...(prop.positionMeters || [])] };
+    this.editorGhostValid = valid;
+    this.editorGhostHiddenPropId = String(hiddenPropId || '');
+    this.applyEditorGhostHiddenState();
+    this.canvas.dataset.editorGhostState = valid ? 'valid' : 'invalid';
+    this.canvas.dataset.editorGhostPropId = String(prop.id || '');
+    const signature = JSON.stringify({
+      assetId: prop.assetId,
+      dimensionsMeters: prop.dimensionsMeters,
+      renderDimensionsMeters: prop.renderDimensionsMeters,
+      mirrored: prop.mirrored === true,
+      materialVariantId: prop.materialVariantId,
+      valid,
+    });
+    if (signature === this.editorGhostSignature && this.editorGhostRoot.children[0]) {
+      this.positionEditorGhost(this.editorGhostRoot.children[0] as THREE.Group, this.editorGhostProp);
+      return;
+    }
+    this.editorGhostSignature = signature;
+    disposeTree(this.editorGhostRoot);
+    const token = ++this.editorGhostLoadToken;
+    void this.buildEditorGhost(token, signature);
+  }
+
+  clearEditorGhost(): void {
+    this.editorGhostLoadToken += 1;
+    this.editorGhostProp = null;
+    this.editorGhostSignature = '';
+    this.editorGhostHiddenPropId = '';
+    disposeTree(this.editorGhostRoot);
+    this.applyEditorGhostHiddenState();
+    delete this.canvas.dataset.editorGhostState;
+    delete this.canvas.dataset.editorGhostPropId;
+  }
+
+  private async buildEditorGhost(token: number, signature: string): Promise<void> {
+    const source = this.editorGhostProp;
+    const object = this.apartment;
+    if (!source || !object) return;
+    const asset = this.assets.get(String(source.assetId || ''));
+    let group: THREE.Group;
+    try {
+      const template = asset?.rendererKind === 'glb' ? await this.modelTemplate(asset) : null;
+      group = template && asset ? this.modelProp(template, source, asset) : this.proceduralProp(source, asset);
+    } catch {
+      group = this.proceduralProp(source, asset);
+    }
+    if (token !== this.editorGhostLoadToken || signature !== this.editorGhostSignature || !this.editorGhostProp) {
+      disposeTree(group);
+      return;
+    }
+    const color = this.editorGhostValid ? '#34d399' : '#ef4444';
+    group.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const previous = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      previous.forEach((material) => material?.dispose());
+      mesh.material = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: .46,
+        depthWrite: false,
+        depthTest: true,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      });
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+      mesh.renderOrder = 18;
+    });
+    const cellSize = Math.max(.01, finite(object.geometry?.cellSizeMeters, .5));
+    const size = dimensions(source, asset);
+    const footprintMaterial = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .23, depthWrite: false, side: THREE.DoubleSide });
+    const footprint = new THREE.Mesh(new THREE.PlaneGeometry(size[0] / cellSize, size[1] / cellSize), footprintMaterial);
+    footprint.name = 'rpg-interior-ghost-footprint';
+    footprint.rotation.x = -Math.PI / 2;
+    footprint.position.y = .025;
+    footprint.renderOrder = 17.8;
+    group.add(footprint);
+    const outlineGeometry = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-size[0] / cellSize / 2, .035, -size[1] / cellSize / 2),
+      new THREE.Vector3(size[0] / cellSize / 2, .035, -size[1] / cellSize / 2),
+      new THREE.Vector3(size[0] / cellSize / 2, .035, size[1] / cellSize / 2),
+      new THREE.Vector3(-size[0] / cellSize / 2, .035, size[1] / cellSize / 2),
+    ]);
+    const outline = new THREE.LineLoop(outlineGeometry, new THREE.LineBasicMaterial({ color, transparent: true, opacity: .98 }));
+    outline.name = 'rpg-interior-ghost-outline';
+    outline.renderOrder = 19;
+    group.add(outline);
+    this.positionEditorGhost(group, this.editorGhostProp);
+    this.editorGhostRoot.add(group);
+  }
+
+  private positionEditorGhost(group: THREE.Group, prop: ApartmentInteriorProp): void {
+    const object = this.apartment;
+    if (!object?.geometry || !Array.isArray(prop.positionMeters)) return;
+    const asset = this.assets.get(String(prop.assetId || ''));
+    const placement = apartmentPropPlacement(object, prop);
+    const center = this.worldPoint(placement.center.x, placement.center.y, 0);
+    const size = dimensions(prop, asset);
+    const mountingKind = asset?.mountingKind || 'floor';
+    const clearHeight = finite(object.geometry.clearHeightMeters, 2.3);
+    const mountHeight = Number.isFinite(Number(prop.mountHeightMeters))
+      ? Math.max(0, finite(prop.mountHeightMeters))
+      : mountingKind === 'ceiling'
+        ? Math.max(0, clearHeight - size[2])
+        : ['wall', 'anchored'].includes(mountingKind)
+          ? Math.max(0, finite(asset?.defaultMountHeightMeters))
+          : .018;
+    group.position.set(center.x, mountHeight / placement.cellSize, center.z);
+    group.rotation.y = placement.worldYaw;
+  }
+
+  private applyEditorGhostHiddenState(): void {
+    for (const child of this.propRoot.children) {
+      child.visible = !this.editorGhostHiddenPropId || child.userData.editorPropId !== this.editorGhostHiddenPropId;
+    }
   }
 
   getRenderedProp(propId: string): ApartmentInteriorProp | null {
@@ -705,6 +838,7 @@ export class ThreeWorldRenderer {
 
   dispose(): void {
     this.clearApartmentInspectionLaserFrame();
+    this.clearEditorGhost();
     disposeTree(this.structureRoot);
     disposeTree(this.propRoot);
     this.textureCache.forEach((texture) => texture.dispose());
@@ -1169,6 +1303,7 @@ export class ThreeWorldRenderer {
     group.renderOrder = mountingKind === 'room-finish' ? 3.04 : 3.1;
     group.userData.editorPropId = String(prop.id || '');
     this.propRoot.add(group);
+    this.applyEditorGhostHiddenState();
     this.refreshEditorSelection();
   }
 

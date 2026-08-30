@@ -8,6 +8,10 @@ import { FrameMetrics } from './metrics';
 import { FloorPlanMinimap } from './floorplan-minimap';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import {
+  validateInteriorPlacement,
+  type InteriorPlacementValidation,
+} from './interior-placement';
+import {
   measureIstarparkLaserGap,
   type InspectionLaserAxis,
   type InspectionLaserMeasurement,
@@ -180,6 +184,10 @@ export class ShowcaseApp {
   private interiorDragPointer = -1;
   private interiorDragMoved = false;
   private interiorRelocationArmed = false;
+  private interiorGhostProp: ApartmentInteriorProp | null = null;
+  private interiorGhostMode: 'add' | 'move' | null = null;
+  private interiorGhostValidation: InteriorPlacementValidation | null = null;
+  private lastInteriorPointerPoint: NumericPoint | null = null;
   private mapPanPointer = -1;
   private mapPanLastX = 0;
   private mapPanLastY = 0;
@@ -250,6 +258,7 @@ export class ShowcaseApp {
   destroy(): void {
     this.destroyed = true;
     this.stopInspectionLaser('destroy');
+    this.cancelInteriorGhost('', false);
     this.abortController.abort();
     cancelAnimationFrame(this.animationFrame);
     this.effectPlayer?.destroy();
@@ -335,10 +344,10 @@ export class ShowcaseApp {
                 </div>
               </div>
               <div class="actor-switch" role="group" aria-label="조작 캐릭터">
-                <span>CONTROL ACTOR</span>
+                <span>캐릭터</span>
                 <div>
-                  <button type="button" data-actor-key="100" class="${this.activeActor === '100' ? 'is-active' : ''}"><i class="actor-dot actor-dot--100"></i>100</button>
-                  <button type="button" data-actor-key="200" class="${this.activeActor === '200' ? 'is-active' : ''}"><i class="actor-dot actor-dot--200"></i>200</button>
+                  <button type="button" data-actor-key="100" class="${this.activeActor === '100' ? 'is-active' : ''}"><i class="actor-dot actor-dot--100"></i>돌범</button>
+                  <button type="button" data-actor-key="200" class="${this.activeActor === '200' ? 'is-active' : ''}"><i class="actor-dot actor-dot--200"></i>피치</button>
                 </div>
               </div>
               <div class="deck-actions">
@@ -420,8 +429,8 @@ export class ShowcaseApp {
 
               <div class="combat-dock">
                 <div class="active-actor-card">
-                  <span class="portrait portrait--${this.activeActor}" id="active-portrait">${this.activeActor}</span>
-                  <div><small>ACTIVE ACTOR</small><b id="active-actor-label">${this.activeActor}</b></div>
+                  <span class="portrait portrait--${this.activeActor}" id="active-portrait">${CHARACTER_DISPLAY_NAMES[this.activeActor]}</span>
+                  <div><small>ACTIVE ACTOR</small><b id="active-actor-label">${CHARACTER_DISPLAY_NAMES[this.activeActor]}</b></div>
                   <span class="local-tag">LOCAL</span>
                 </div>
                 <div id="hotbar" class="hotbar" aria-label="로컬 스킬 핫바"></div>
@@ -499,7 +508,8 @@ export class ShowcaseApp {
             <div><span class="help-icon">⌨</span><b>캐릭터 이동</b><p>WASD 또는 방향키로 8방향 이동합니다. 정적 chunk의 막힌 셀은 통과하지 않습니다.</p></div>
             <div><span class="help-icon">1–6</span><b>스킬 재생</b><p>1번 또는 휠 클릭은 현재 커서 위치로 텔레포트합니다. 2–4번은 전투 모션과 효과를 재생하며 5–6번은 빈 슬롯입니다.</p></div>
             <div><span class="help-icon">B</span><b>옵션 프리뷰</b><p>B팔레트 선택은 맵의 미리보기 프롭과 견적에 반영되고 이 브라우저에 저장됩니다.</p></div>
-            <div><span class="help-icon">✋</span><b>화면·가구 편집</b><p>빈 맵을 손바닥 커서로 드래그하고 휠로 커서 중심 확대·축소합니다. 가구를 누르면 회전·재배치·삭제 도구가 표시됩니다.</p></div>
+            <div><span class="help-icon">GHOST</span><b>가구 설치·이동</b><p>가구 목록을 누르거나 재배치를 시작하면 반투명 GHOST가 마우스를 따라갑니다. 초록은 설치 가능, 빨강은 벽·문·구조물·가구와 겹친 불가 위치입니다. 좌클릭으로 확정하고 우클릭 또는 Esc로 취소합니다.</p></div>
+            <div><span class="help-icon">L</span><b>벽 자석·회전</b><p>GHOST 상태에서 L을 누르면 가까운 벽·코너 자석을 켜거나 끕니다. Shift+휠 또는 R로 90도 회전하며, 빈 맵은 손바닥 드래그와 휠로 이동·확대합니다.</p></div>
             <div><span class="help-icon">J</span><b>레이저 실측</b><p>J로 켜고 마우스를 빈 공간에 놓으면 130mm 높이의 양쪽 벽·설비·가구 사이 순수 폭을 mm로 표시합니다. Shift+휠로 측정 방향을 바꿉니다.</p></div>
           </div>
           <p class="dialog-note">이 사이트는 시각·성능 검수용입니다. 피해, 명중, MP, 사용자 인증과 공용 저장은 처리하지 않습니다.</p>
@@ -574,10 +584,9 @@ export class ShowcaseApp {
       button.addEventListener('click', () => {
         const action = button.dataset.screenFurnitureAction;
         if (action === 'relocate') {
-          if (!this.ensureEditableSelectedProp()) return;
-          this.interiorRelocationArmed = true;
-          this.get<HTMLElement>('#game-stage').classList.add('is-relocating-furniture');
-          this.get<HTMLElement>('#furniture-status').textContent = 'PBR 맵에서 새 위치를 클릭해 재배치하세요.';
+          const prop = this.selectedSceneProp();
+          if (!prop) return;
+          this.beginInteriorGhost('move', prop);
           return;
         }
         if (action === 'snap') {
@@ -620,6 +629,23 @@ export class ShowcaseApp {
         event.preventDefault();
         if (key === 'escape' || key === 'esc') this.stopInspectionLaser('escape');
         return;
+      }
+      if (this.interiorGhostProp) {
+        if (key === 'l') {
+          event.preventDefault();
+          this.toggleFurnitureWallSnap();
+          return;
+        }
+        if (key === 'r') {
+          event.preventDefault();
+          this.transformInteriorGhost(event.shiftKey ? 'rotate-left' : 'rotate-right');
+          return;
+        }
+        if (key === 'escape' || key === 'delete' || key === 'backspace') {
+          event.preventDefault();
+          this.cancelInteriorGhost('GHOST 배치를 취소했습니다.');
+          return;
+        }
       }
       if (this.selectedSceneProp()) {
         if (key === 'l') {
@@ -681,7 +707,7 @@ export class ShowcaseApp {
         return;
       }
       if (event.button === 0) {
-        if ((this.paletteTab === 'furniture' || this.interiorRelocationArmed) && this.handleInteriorPointerDown(event)) return;
+        if ((this.paletteTab === 'furniture' || this.interiorRelocationArmed || this.interiorGhostProp) && this.handleInteriorPointerDown(event)) return;
         if (this.paletteTab === 'options' && this.handleFurnitureSelectionPointerDown(event)) return;
         this.startMapPan(event);
         return;
@@ -708,6 +734,10 @@ export class ShowcaseApp {
         this.handleInspectionLaserWheel(event);
         return;
       }
+      if (event.shiftKey && this.interiorGhostProp) {
+        this.transformInteriorGhost(event.deltaY < 0 ? 'rotate-left' : 'rotate-right');
+        return;
+      }
       if (event.shiftKey && this.selectedSceneProp()) {
         this.transformLocalProp(event.deltaY < 0 ? 'rotate-left' : 'rotate-right');
         return;
@@ -725,6 +755,10 @@ export class ShowcaseApp {
       // 캡처 단계에서 차단해 자식 UI가 이벤트를 가로채도 Chrome 기본 메뉴가 열리지 않는다.
       event.preventDefault();
       if (this.inspectionLaser.active) return;
+      if (this.interiorGhostProp) {
+        this.cancelInteriorGhost('GHOST 배치를 취소했습니다.');
+        return;
+      }
       this.handleFurnitureContextMenu(event);
     }, { signal, capture: true });
   }
@@ -947,6 +981,7 @@ export class ShowcaseApp {
       this.focusInteriorApartment();
     }
     if (tab !== 'furniture') {
+      this.cancelInteriorGhost('', false);
       this.pendingInteriorAssetId = '';
       this.interiorDragPointer = -1;
       this.interiorRelocationArmed = false;
@@ -1018,14 +1053,18 @@ export class ShowcaseApp {
     }
     list.querySelectorAll<HTMLButtonElement>('[data-furniture-asset]').forEach((button) => {
       button.addEventListener('click', () => {
-        this.pendingInteriorAssetId = button.dataset.furnitureAsset || '';
+        const assetId = button.dataset.furnitureAsset || '';
+        const asset = this.interiorAssets.find((candidate) => candidate.assetId === assetId);
+        if (!asset) return;
+        this.pendingInteriorAssetId = assetId;
         this.selectedLocalPropId = '';
         this.selectedScenePropSnapshot = null;
         this.threeRenderer?.setEditorSelection('');
         this.interiorRelocationArmed = false;
         this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
+        const point = this.lastInteriorPointerPoint || this.defaultInteriorGhostPoint();
+        this.beginInteriorGhost('add', createLocalProp(asset, point[0], point[1]));
         this.renderFurniturePalette();
-        this.get<HTMLElement>('#furniture-status').textContent = 'PBR 바닥의 원하는 위치를 클릭하면 0.05m 스냅으로 배치됩니다.';
       });
     });
     list.querySelectorAll<HTMLButtonElement>('[data-furniture-prop-id]').forEach((button) => {
@@ -1061,6 +1100,125 @@ export class ShowcaseApp {
     if (!world) return null;
     const point = apartmentWorldPointToLocalMeters(apartment, world);
     return point.map((value) => Math.round(value * 20) / 20) as NumericPoint;
+  }
+
+  private defaultInteriorGhostPoint(): NumericPoint {
+    const apartment = this.activeApartment();
+    const rooms = apartment?.geometry?.roomZones || [];
+    const room = rooms.find((candidate) => String(candidate.id || candidate.roomId || '').includes('living')) || rooms[0];
+    const bounds = room?.boundsMeters;
+    if (Array.isArray(bounds) && bounds.length >= 4) {
+      return [(finiteNumber(bounds[0]) + finiteNumber(bounds[2])) / 2, (finiteNumber(bounds[1]) + finiteNumber(bounds[3])) / 2];
+    }
+    const floor = apartmentFloor(apartment);
+    if (!floor.length) return [0, 0];
+    const sum = floor.reduce((total, point) => [total[0] + point[0], total[1] + point[1]] as NumericPoint, [0, 0]);
+    return [Math.round(sum[0] / floor.length * 20) / 20, Math.round(sum[1] / floor.length * 20) / 20];
+  }
+
+  private beginInteriorGhost(mode: 'add' | 'move', prop: ApartmentInteriorProp): void {
+    this.interiorGhostMode = mode;
+    this.interiorGhostProp = { ...prop, positionMeters: [...(prop.positionMeters || this.defaultInteriorGhostPoint())] };
+    this.interiorRelocationArmed = mode === 'move';
+    this.furnitureContextMenuOpen = false;
+    const stage = this.get<HTMLElement>('#game-stage');
+    stage.classList.toggle('is-relocating-furniture', mode === 'move');
+    stage.classList.add('has-interior-ghost');
+    this.threeRenderer?.setEditorSelection('');
+    this.updateInteriorGhost(this.interiorGhostProp.positionMeters as NumericPoint);
+    this.renderFurniturePalette();
+    this.updateFurnitureToolbar();
+  }
+
+  private updateInteriorGhost(point: NumericPoint): void {
+    const prop = this.interiorGhostProp;
+    const apartment = this.activeApartment();
+    if (!prop || !apartment?.geometry) return;
+    const snappedPoint = this.snapFurniturePoint(prop, point.map((value) => Math.round(value * 20) / 20) as NumericPoint);
+    prop.positionMeters = [...snappedPoint];
+    const renderedProps = this.threeRenderer?.getRenderedProps() || this.localInteriorProps;
+    this.interiorGhostValidation = validateInteriorPlacement({
+      prop,
+      geometry: apartment.geometry,
+      props: renderedProps,
+      assets: this.interiorAssets,
+      ignorePropId: this.interiorGhostMode === 'move' ? String(prop.id || '') : '',
+    });
+    if (this.interiorGhostValidation.roomZoneId) prop.roomZoneId = this.interiorGhostValidation.roomZoneId;
+    const valid = this.interiorGhostValidation.ok;
+    this.threeRenderer?.setEditorGhost(prop, valid, this.interiorGhostMode === 'move' ? String(prop.id || '') : '');
+    const stage = this.get<HTMLElement>('#game-stage');
+    stage.classList.toggle('is-furniture-ghost-valid', valid);
+    stage.classList.toggle('is-furniture-ghost-invalid', !valid);
+    stage.dataset.furnitureGhostState = valid ? 'valid' : 'invalid';
+    const asset = this.interiorAssets.find((candidate) => candidate.assetId === prop.assetId);
+    const name = asset?.displayNameKo || String(prop.assetId || '가구');
+    const wallSnap = this.furnitureWallSnapEnabled ? ' · 벽 자석 ON' : '';
+    this.get<HTMLElement>('#furniture-status').textContent = valid
+      ? `${name} GHOST · 설치 가능${wallSnap} · 좌클릭 확정 · 우클릭/Esc 취소`
+      : `${name} GHOST · 배치 불가: ${this.interiorGhostValidation.errors[0]?.message || '위치를 옮겨주세요.'}${wallSnap}`;
+  }
+
+  private confirmInteriorGhost(): boolean {
+    const ghost = this.interiorGhostProp;
+    if (!ghost || !this.interiorGhostValidation?.ok) {
+      const message = this.interiorGhostValidation?.errors[0]?.message || '배치 가능한 초록색 위치로 옮겨주세요.';
+      this.get<HTMLElement>('#furniture-status').textContent = `빨간 GHOST는 설치할 수 없습니다. ${message}`;
+      this.toast('빨간 GHOST는 설치할 수 없습니다.', 'notice');
+      return false;
+    }
+    const mode = this.interiorGhostMode;
+    if (mode === 'add') {
+      const installed = { ...ghost, positionMeters: [...(ghost.positionMeters || [])] };
+      this.localInteriorProps.push(installed);
+      this.selectedLocalPropId = String(installed.id || '');
+      this.selectedScenePropSnapshot = { ...installed, positionMeters: [...(installed.positionMeters || [])] };
+    } else {
+      const editable = this.ensureEditableSelectedProp();
+      if (!editable) return false;
+      editable.positionMeters = [...(ghost.positionMeters || [])];
+      editable.yawDeg = ghost.yawDeg;
+      editable.mirrored = ghost.mirrored;
+      editable.roomZoneId = ghost.roomZoneId;
+      this.selectedScenePropSnapshot = { ...editable, positionMeters: [...editable.positionMeters] };
+    }
+    this.clearInteriorGhostState();
+    this.saveInteriorLayout(mode === 'add'
+      ? '가구를 PBR 맵에 배치했습니다. 다시 선택해 이동할 수 있습니다.'
+      : '가구를 선택한 위치로 재배치했습니다.');
+    return true;
+  }
+
+  private clearInteriorGhostState(): void {
+    this.interiorGhostProp = null;
+    this.interiorGhostMode = null;
+    this.interiorGhostValidation = null;
+    this.pendingInteriorAssetId = '';
+    this.interiorRelocationArmed = false;
+    const stage = this.mount.querySelector<HTMLElement>('#game-stage');
+    if (stage) {
+      stage.classList.remove('has-interior-ghost', 'is-furniture-ghost-valid', 'is-furniture-ghost-invalid', 'is-relocating-furniture');
+      delete stage.dataset.furnitureGhostState;
+    }
+    this.threeRenderer?.clearEditorGhost();
+    this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
+  }
+
+  private cancelInteriorGhost(message = '', repaint = true): void {
+    if (!this.interiorGhostProp && !this.interiorGhostMode) return;
+    this.clearInteriorGhostState();
+    if (!repaint) return;
+    this.renderFurniturePalette();
+    this.updateFurnitureToolbar();
+    if (message) this.get<HTMLElement>('#furniture-status').textContent = message;
+  }
+
+  private transformInteriorGhost(action: 'rotate-left' | 'rotate-right' | 'mirror'): void {
+    const ghost = this.interiorGhostProp;
+    if (!ghost) return;
+    if (action === 'mirror') ghost.mirrored = !ghost.mirrored;
+    else ghost.yawDeg = ((finiteNumber(ghost.yawDeg) + (action === 'rotate-left' ? -90 : 90)) % 360 + 360) % 360;
+    this.updateInteriorGhost((ghost.positionMeters || this.defaultInteriorGhostPoint()) as NumericPoint);
   }
 
   private selectedLocalProp(): ApartmentInteriorProp | undefined {
@@ -1176,17 +1334,21 @@ export class ShowcaseApp {
     if ((event.target as HTMLElement | null)?.closest('.combat-dock,.map-identity,.floorplan-minimap,.stage-option-quote,.game-toast,.stage-zoom,.furniture-selection-toolbar')) return false;
     const apartment = this.activeApartment();
     if (!apartment) return false;
+    const point = this.stageLocalPoint(event);
+    this.lastInteriorPointerPoint = point || this.lastInteriorPointerPoint;
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.interiorGhostProp) {
+      if (point) this.updateInteriorGhost(point);
+      this.confirmInteriorGhost();
+      return true;
+    }
     const canvas = this.get<HTMLCanvasElement>('#three-world-canvas');
     const bounds = canvas.getBoundingClientRect();
-    const pickedId = !this.pendingInteriorAssetId && !this.interiorRelocationArmed
-      ? this.threeRenderer?.pickEditorProp(event.clientX - bounds.left, event.clientY - bounds.top) || ''
-      : '';
+    const pickedId = this.threeRenderer?.pickEditorProp(event.clientX - bounds.left, event.clientY - bounds.top) || '';
     const picked = this.localInteriorProps.find((prop) => String(prop.id) === pickedId && prop.localDeleted !== true)
       || this.threeRenderer?.getRenderedProp(pickedId)
       || undefined;
-    const point = this.stageLocalPoint(event);
-    event.preventDefault();
-    event.stopPropagation();
     if (picked) {
       this.selectSceneProp(picked, true, '가구를 선택했습니다. 드래그하거나 화면 조작창으로 수정하세요.');
       if (event.altKey) {
@@ -1213,29 +1375,6 @@ export class ShowcaseApp {
       this.get<HTMLElement>('#furniture-status').textContent = '가구를 직접 누르거나 세대 바닥 안쪽을 선택해 주세요.';
       return false;
     }
-    if (this.interiorRelocationArmed) {
-      const prop = this.selectedLocalProp();
-      const editable = prop || this.ensureEditableSelectedProp();
-      if (editable) {
-        editable.positionMeters = this.snapFurniturePoint(editable, point);
-        this.interiorRelocationArmed = false;
-        this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
-        this.saveInteriorLayout('가구를 선택한 위치로 재배치했습니다.');
-      }
-      return true;
-    }
-    if (this.pendingInteriorAssetId) {
-      const asset = this.interiorAssets.find((candidate) => candidate.assetId === this.pendingInteriorAssetId);
-      if (!asset) return true;
-      const prop = createLocalProp(asset, point[0], point[1]);
-      prop.positionMeters = this.snapFurniturePoint(prop, point);
-      this.localInteriorProps.push(prop);
-      this.selectedLocalPropId = String(prop.id);
-      this.selectedScenePropSnapshot = { ...prop, positionMeters: [...(prop.positionMeters || [])] };
-      this.pendingInteriorAssetId = '';
-      this.saveInteriorLayout('가구를 PBR 맵에 배치했습니다. 드래그해 다시 이동할 수 있습니다.');
-      return true;
-    }
     const hit = this.hitLocalProp(point);
     this.selectedLocalPropId = String(hit?.id || '');
     this.selectedScenePropSnapshot = hit ? { ...hit, positionMeters: [...(hit.positionMeters || [])] } : null;
@@ -1259,26 +1398,34 @@ export class ShowcaseApp {
   }
 
   private handleInteriorPointerMove(event: PointerEvent): void {
-    if (event.pointerId !== this.interiorDragPointer) return;
     const point = this.stageLocalPoint(event);
-    const apartment = this.activeApartment();
-    const prop = this.ensureEditableSelectedProp();
-    if (!point || !apartment || !prop || !pointInside(point, apartmentFloor(apartment))) return;
-    const previous = prop.positionMeters;
-    if (!Array.isArray(previous) || Math.abs(finiteNumber(previous[0]) - point[0]) > .001 || Math.abs(finiteNumber(previous[1]) - point[1]) > .001) {
-      this.interiorDragMoved = true;
+    if (point) this.lastInteriorPointerPoint = point;
+    if (this.interiorGhostProp) {
+      if (point) {
+        if (event.pointerId === this.interiorDragPointer) this.interiorDragMoved = true;
+        this.updateInteriorGhost(point);
+      }
+      return;
     }
-    prop.positionMeters = this.snapFurniturePoint(prop, point);
-    this.threeRenderer?.setEditorProps(this.localInteriorProps);
-    this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
-    this.updateFurnitureToolbar();
+    if (event.pointerId !== this.interiorDragPointer || !point) return;
+    const selected = this.selectedSceneProp();
+    if (!selected) return;
+    const previous = selected.positionMeters;
+    if (Array.isArray(previous)
+      && Math.abs(finiteNumber(previous[0]) - point[0]) <= .001
+      && Math.abs(finiteNumber(previous[1]) - point[1]) <= .001) return;
+    this.interiorDragMoved = true;
+    this.beginInteriorGhost('move', selected);
+    this.updateInteriorGhost(point);
   }
 
   private handleInteriorPointerUp(event: PointerEvent): void {
     if (event.pointerId !== this.interiorDragPointer) return;
     this.interiorDragPointer = -1;
-    if (this.interiorDragMoved) {
-      this.saveInteriorLayout('가구 위치를 0.05m 단위로 로컬 저장했습니다.');
+    if (this.interiorDragMoved && this.interiorGhostMode === 'move') {
+      if (!this.confirmInteriorGhost()) {
+        this.get<HTMLElement>('#furniture-status').textContent = '빨간 GHOST 위치는 저장하지 않았습니다. 마우스로 초록 영역까지 옮긴 뒤 좌클릭하세요.';
+      }
     } else {
       this.get<HTMLElement>('#furniture-status').textContent = '가구를 선택했습니다. 드래그하거나 화면 조작창으로 수정하세요.';
     }
@@ -1315,9 +1462,16 @@ export class ShowcaseApp {
   }
 
   private toggleFurnitureWallSnap(): void {
-    const selected = this.selectedSceneProp();
+    const ghost = this.interiorGhostProp;
+    const selected = ghost || this.selectedSceneProp();
     if (!selected) return;
     this.furnitureWallSnapEnabled = !this.furnitureWallSnapEnabled;
+    if (ghost) {
+      this.updateInteriorGhost((this.lastInteriorPointerPoint || ghost.positionMeters || this.defaultInteriorGhostPoint()) as NumericPoint);
+      this.updateFurnitureToolbar();
+      this.toast(this.furnitureWallSnapEnabled ? 'GHOST 벽 자석을 켰습니다.' : 'GHOST 벽 자석을 껐습니다.', this.furnitureWallSnapEnabled ? 'success' : 'notice');
+      return;
+    }
     if (!this.furnitureWallSnapEnabled) {
       this.updateFurnitureToolbar();
       this.toast('가구 위치 자석을 껐습니다.', 'notice');
@@ -1361,7 +1515,7 @@ export class ShowcaseApp {
     const stage = this.get<HTMLElement>('#game-stage');
     stage.dataset.furnitureWallSnap = String(this.furnitureWallSnapEnabled);
     const prop = this.selectedSceneProp();
-    if (!prop || !this.threeRenderer || this.renderer !== this.threeRenderer) {
+    if (this.interiorGhostProp || !prop || !this.threeRenderer || this.renderer !== this.threeRenderer) {
       toolbar.hidden = true;
       stage.classList.remove('has-furniture-selection', 'has-furniture-context-menu');
       delete stage.dataset.selectedFurnitureName;
@@ -1399,6 +1553,8 @@ export class ShowcaseApp {
     const map = this.catalog.maps.find((entry) => entry.id === mapId);
     if (!map) return;
     this.stopInspectionLaser('map-change');
+    this.cancelInteriorGhost('', false);
+    this.lastInteriorPointerPoint = null;
     const token = ++this.mapLoadToken;
     this.currentMap = map;
     this.resumeCameraTracking();
@@ -1536,7 +1692,7 @@ export class ShowcaseApp {
     const actor = this.actors.get(key);
     const portrait = this.mount.querySelector<HTMLElement>('#active-portrait');
     if (portrait) {
-      portrait.textContent = key;
+      portrait.textContent = CHARACTER_DISPLAY_NAMES[key];
       portrait.className = `portrait portrait--${key}`;
     }
     const label = this.mount.querySelector<HTMLElement>('#active-actor-label');

@@ -1526,6 +1526,8 @@ input:focus-visible {
 .furniture-manage-link { min-height: 32px; padding: 8px 10px; border-top: 1px solid rgba(225, 185, 99, .12); color: #d3b977; font-size: 9px; text-align: right; }
 .game-stage.is-interior-authoring #three-world-canvas { cursor: grab; }
 .game-stage.is-interior-authoring.is-relocating-furniture #three-world-canvas { cursor: crosshair; }
+.game-stage.has-interior-ghost #three-world-canvas { cursor: crosshair; }
+.game-stage.has-interior-ghost.is-furniture-ghost-invalid #three-world-canvas { cursor: not-allowed; }
 .game-stage.is-interior-authoring .rpg-actor { pointer-events: none; }
 .game-stage.is-interior-authoring .stage-tip { color: #e7cf94; }
 
