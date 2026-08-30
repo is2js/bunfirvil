@@ -874,6 +874,128 @@ input:focus-visible {
 .stage-zoom button:hover { color: #ffe2a0; background: rgba(225, 185, 99, .09); }
 .stage-zoom span { font: 700 8px ui-monospace, monospace; }
 
+.istarpark-laser-toggle {
+  position: absolute;
+  top: 228px;
+  right: 16px;
+  z-index: 96;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 10px;
+  overflow: hidden;
+  border: 1px solid rgb(103 232 249 / .76);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgb(7 31 45 / .78), rgb(8 59 69 / .66), rgb(36 13 48 / .72));
+  box-shadow: inset 0 0 10px rgb(103 232 249 / .12), 0 0 18px rgb(34 211 238 / .24), 0 8px 24px rgb(0 0 0 / .36);
+  backdrop-filter: blur(6px);
+  color: #dffcff;
+  font: 800 11px/1 Y1000Ui, "Malgun Gothic", sans-serif;
+  cursor: pointer;
+}
+
+.istarpark-laser-toggle::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+  border: 1px solid rgb(103 232 249 / .22);
+  border-radius: 5px;
+  box-shadow: inset 0 -1px 0 rgb(255 79 216 / .22);
+}
+
+.istarpark-laser-toggle[hidden],
+.istarpark-laser-hud[hidden] { display: none; }
+
+.istarpark-laser-toggle:hover,
+.istarpark-laser-toggle:focus-visible {
+  border-color: rgb(103 232 249 / .92);
+  box-shadow: inset 0 0 12px rgb(103 232 249 / .16), 0 0 24px rgb(34 211 238 / .34);
+  outline: none;
+}
+
+.istarpark-laser-toggle.is-active {
+  border-color: #c084fc;
+  box-shadow: inset 0 0 12px rgb(103 232 249 / .14), 0 0 0 2px rgb(168 85 247 / .16), 0 0 24px rgb(126 34 206 / .34);
+}
+
+.istarpark-laser-toggle.is-active::before {
+  border-color: rgb(216 180 254 / .5);
+  box-shadow: inset 0 -1px 0 rgb(103 232 249 / .34);
+}
+
+.istarpark-laser-toggle-icon {
+  color: #67e8f9;
+  font-size: 18px;
+  text-shadow: 0 0 8px #22d3ee;
+}
+
+.istarpark-laser-toggle kbd {
+  padding: 2px 5px;
+  border: 1px solid rgb(180 242 250 / .34);
+  border-radius: 4px;
+  background: rgb(0 0 0 / .3);
+  color: #a5f3fc;
+  font: inherit;
+}
+
+.istarpark-laser-hud {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  z-index: 95;
+  width: min(330px, calc(100% - 390px));
+  min-width: 260px;
+  transform: translateX(-50%);
+  padding: 10px 14px 9px;
+  border: 1px solid rgb(103 232 249 / .62);
+  border-radius: 10px;
+  background: linear-gradient(155deg, rgb(4 19 32 / .94), rgb(17 24 39 / .91));
+  box-shadow: 0 0 24px rgb(34 211 238 / .22), 0 10px 28px rgb(0 0 0 / .48);
+  color: #e6ffff;
+  text-align: center;
+  pointer-events: none;
+}
+
+.istarpark-laser-hud::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: -1px;
+  left: 12px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #ff4fd8, #67e8f9, transparent);
+  box-shadow: 0 0 8px #22d3ee;
+}
+
+.istarpark-laser-hud-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #a5f3fc;
+  font: 800 10px/1.2 Y1000Ui, "Malgun Gothic", sans-serif;
+}
+
+.istarpark-laser-hud-head span { color: #f9a8e7; }
+.istarpark-laser-value {
+  display: block;
+  margin: 4px 0 3px;
+  color: #fff;
+  font: 900 18px/1.15 Y1000Ui, "Malgun Gothic", sans-serif;
+  letter-spacing: .02em;
+  text-shadow: 0 0 9px rgb(103 232 249 / .58);
+}
+.istarpark-laser-hud small {
+  display: block;
+  min-height: 1.25em;
+  color: #b8cbd2;
+  font: 700 9px/1.25 Y1000Ui, "Malgun Gothic", sans-serif;
+}
+
+[data-istarpark-laser-active="true"] { cursor: crosshair; }
+
 .furniture-selection-toolbar {
   position: absolute;
   z-index: 3200;

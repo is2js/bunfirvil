@@ -95,6 +95,7 @@ export interface WorldObject {
   displayName?: string;
   x?: number;
   y?: number;
+  elevation?: number;
   width?: number;
   depth?: number;
   bounds?: { x1?: number; y1?: number; x2?: number; y2?: number };

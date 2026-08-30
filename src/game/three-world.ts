@@ -11,6 +11,11 @@ import {
   type NumericPoint,
 } from './apartment-transform';
 import { castsExteriorStructureShadow } from './structure-shadow';
+import {
+  ISTARPARK_LASER_HEIGHT_METERS,
+  type InspectionLaserAxis,
+  type InspectionLaserMeasurement,
+} from './istarpark-laser-measurement';
 import type {
   ActorState,
   ApartmentGeometry,
@@ -268,6 +273,7 @@ export class ThreeWorldRenderer {
   private readonly structureRoot = new THREE.Group();
   private readonly propRoot = new THREE.Group();
   private readonly editorSelectionRoot = new THREE.Group();
+  private apartmentInspectionLaserGroup: THREE.Group | null = null;
   private readonly modelLoader = new GLTFLoader();
   private readonly modelCache = new Map<string, Promise<THREE.Group>>();
   private readonly renderedProps = new Map<string, ApartmentInteriorProp>();
@@ -331,6 +337,7 @@ export class ThreeWorldRenderer {
   }
 
   setWorld(world: WorldData): void {
+    this.clearApartmentInspectionLaserFrame();
     this.world = world;
     this.apartment = world.objects.find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry) || null;
     this.focus.copy(this.worldPoint(world.entry.spawn.x, world.entry.spawn.y, 0));
@@ -367,6 +374,200 @@ export class ThreeWorldRenderer {
   getRenderedProp(propId: string): ApartmentInteriorProp | null {
     const prop = this.renderedProps.get(String(propId || ''));
     return prop ? { ...prop, positionMeters: [...(prop.positionMeters || [])] } : null;
+  }
+
+  getRenderedProps(): ApartmentInteriorProp[] {
+    return [...this.renderedProps.values()].map((prop) => ({
+      ...prop,
+      positionMeters: [...(prop.positionMeters || [])],
+    }));
+  }
+
+  private createApartmentInspectionLaserDistanceLabel(): THREE.Mesh | null {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const context = canvas.getContext('2d');
+    if (!context) return null;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      color: 0xffffff,
+      transparent: true,
+      opacity: 1,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+      alphaTest: .08,
+      side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -3,
+      polygonOffsetUnits: -3,
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, .25), material);
+    mesh.name = 'inspection-laser-distance-label';
+    mesh.renderOrder = 28.8;
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.userData.labelCanvas = canvas;
+    mesh.userData.labelContext = context;
+    mesh.userData.labelTexture = texture;
+    mesh.userData.labelText = '';
+    return mesh;
+  }
+
+  private updateApartmentInspectionLaserDistanceLabel(mesh: THREE.Mesh, distanceMm: number, cellSizeMeters: number): void {
+    const context = mesh.userData.labelContext as CanvasRenderingContext2D | undefined;
+    const canvas = mesh.userData.labelCanvas as HTMLCanvasElement | undefined;
+    const texture = mesh.userData.labelTexture as THREE.CanvasTexture | undefined;
+    if (!context || !canvas || !texture) return;
+    const roundedDistance = Math.max(0, Math.round(distanceMm));
+    const textWidthWorld = (roundedDistance < 1000 ? .9 : 1.5) / Math.max(.01, cellSizeMeters);
+    mesh.scale.set(textWidthWorld, textWidthWorld, 1);
+    const label = `${roundedDistance}mm`;
+    if (mesh.userData.labelText === label) return;
+    mesh.userData.labelText = label;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.font = '600 52px "Noto Sans KR", "Malgun Gothic", sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.lineJoin = 'round';
+    context.lineWidth = 12;
+    context.strokeStyle = 'rgba(46, 16, 101, 0.96)';
+    context.strokeText(label, canvas.width / 2, canvas.height / 2 + 2);
+    context.fillStyle = 'rgba(221, 214, 254, 0.9)';
+    context.fillText(label, canvas.width / 2, canvas.height / 2 + 2);
+    texture.needsUpdate = true;
+  }
+
+  private ensureApartmentInspectionLaserGroup(): THREE.Group {
+    if (this.apartmentInspectionLaserGroup?.parent) return this.apartmentInspectionLaserGroup;
+    const group = new THREE.Group();
+    group.name = 'apartment-inspection-laser';
+    group.renderOrder = 28;
+    const material = (color: THREE.ColorRepresentation, opacity: number, blending: THREE.Blending = THREE.NormalBlending): THREE.MeshBasicMaterial =>
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthTest: false, depthWrite: false, toneMapped: false, side: THREE.DoubleSide, blending });
+    const beam = (name: string, radius: number, color: THREE.ColorRepresentation, opacity: number, renderOrder: number, blending: THREE.Blending = THREE.AdditiveBlending): THREE.Mesh => {
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, 1, 16, 1, false), material(color, opacity, blending));
+      mesh.name = name;
+      mesh.renderOrder = renderOrder;
+      group.add(mesh);
+      return mesh;
+    };
+    const contact = (name: string): THREE.Mesh => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material('#6d28d9', .24));
+      mesh.name = name;
+      mesh.renderOrder = 28.6;
+      group.add(mesh);
+      return mesh;
+    };
+    group.userData.glow = beam('inspection-laser-glow', .082, '#4c1d95', .14, 28.1);
+    group.userData.outline = beam('inspection-laser-outline', .043, '#7c3aed', .62, 28.2);
+    group.userData.core = beam('inspection-laser-core', .026, '#8b5cf6', .08, 28.4, THREE.NormalBlending);
+    group.userData.negative = contact('inspection-laser-negative-contact-section');
+    group.userData.positive = contact('inspection-laser-positive-contact-section');
+    const anchor = new THREE.Mesh(new THREE.SphereGeometry(.045, 14, 10), material('#8b5cf6', .84, THREE.AdditiveBlending));
+    anchor.name = 'inspection-laser-anchor';
+    anchor.renderOrder = 28.6;
+    group.userData.anchor = anchor;
+    group.add(anchor);
+    const distanceLabel = this.createApartmentInspectionLaserDistanceLabel();
+    group.userData.distanceLabel = distanceLabel;
+    if (distanceLabel) group.add(distanceLabel);
+    group.visible = false;
+    this.scene.add(group);
+    this.apartmentInspectionLaserGroup = group;
+    return group;
+  }
+
+  private positionApartmentInspectionLaserBeam(mesh: THREE.Mesh, start: THREE.Vector3, end: THREE.Vector3): void {
+    const direction = new THREE.Vector3().subVectors(end, start);
+    const length = direction.length();
+    if (length <= .0001) {
+      mesh.visible = false;
+      return;
+    }
+    mesh.visible = true;
+    mesh.position.copy(start).add(end).multiplyScalar(.5);
+    mesh.scale.set(1, length, 1);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+  }
+
+  private positionApartmentInspectionLaserContact(mesh: THREE.Mesh, point: THREE.Vector3, direction: THREE.Vector3, cellSizeMeters: number): void {
+    mesh.visible = true;
+    mesh.scale.set(.34 / cellSizeMeters, .3 / cellSizeMeters, .026 / cellSizeMeters);
+    mesh.position.copy(point);
+    mesh.rotation.set(0, Math.atan2(direction.x, direction.z), 0);
+  }
+
+  setApartmentInspectionLaserFrame(object: WorldObject, measurement: InspectionLaserMeasurement): boolean {
+    const negativePoint = measurement.negativeHit?.point;
+    const positivePoint = measurement.positiveHit?.point;
+    const anchorPoint = measurement.anchorPlanPoint;
+    if (!object.geometry || !measurement.valid || !negativePoint || !positivePoint || !anchorPoint) {
+      this.hideApartmentInspectionLaserFrame();
+      return false;
+    }
+    const group = this.ensureApartmentInspectionLaserGroup();
+    const cellSize = Math.max(.01, finite(object.geometry.cellSizeMeters, .5));
+    const elevation = finite(object.elevation) + finite(measurement.laserHeightMeters, ISTARPARK_LASER_HEIGHT_METERS) / cellSize;
+    const start = this.localPoint(object, negativePoint, elevation);
+    const end = this.localPoint(object, positivePoint, elevation);
+    const center = this.localPoint(object, anchorPoint, elevation + .015);
+    const direction = end.clone().sub(start).normalize();
+    this.positionApartmentInspectionLaserBeam(group.userData.glow as THREE.Mesh, start, end);
+    this.positionApartmentInspectionLaserBeam(group.userData.outline as THREE.Mesh, start, end);
+    this.positionApartmentInspectionLaserBeam(group.userData.core as THREE.Mesh, start, end);
+    this.positionApartmentInspectionLaserContact(group.userData.negative as THREE.Mesh, start, direction, cellSize);
+    this.positionApartmentInspectionLaserContact(group.userData.positive as THREE.Mesh, end, direction, cellSize);
+    (group.userData.anchor as THREE.Mesh).position.copy(center);
+    const label = group.userData.distanceLabel as THREE.Mesh | null;
+    if (label) {
+      this.updateApartmentInspectionLaserDistanceLabel(label, finite(measurement.distanceMm, start.distanceTo(end) * cellSize * 1000), cellSize);
+      label.position.copy(start).add(end).multiplyScalar(.5);
+      label.position.y = finite(object.elevation) + .09;
+      label.rotation.set(-Math.PI / 2, 0, 0);
+      label.visible = true;
+    }
+    group.visible = true;
+    this.canvas.dataset.inspectionLaserVisible = 'true';
+    this.canvas.dataset.inspectionLaserDistanceMm = String(Math.round(finite(measurement.distanceMm)));
+    this.canvas.dataset.inspectionLaserAxis = measurement.axis;
+    return true;
+  }
+
+  hideApartmentInspectionLaserFrame(): void {
+    if (this.apartmentInspectionLaserGroup) this.apartmentInspectionLaserGroup.visible = false;
+    delete this.canvas.dataset.inspectionLaserVisible;
+    delete this.canvas.dataset.inspectionLaserDistanceMm;
+  }
+
+  clearApartmentInspectionLaserFrame(): void {
+    const group = this.apartmentInspectionLaserGroup;
+    if (!group) return;
+    const label = group.userData.distanceLabel as THREE.Mesh | null;
+    (label?.userData.labelTexture as THREE.Texture | undefined)?.dispose();
+    group.removeFromParent();
+    disposeTree(group);
+    this.apartmentInspectionLaserGroup = null;
+    delete this.canvas.dataset.inspectionLaserVisible;
+    delete this.canvas.dataset.inspectionLaserDistanceMm;
+    delete this.canvas.dataset.inspectionLaserAxis;
+  }
+
+  apartmentInspectionLaserScreenDirection(object: WorldObject | null, axis: InspectionLaserAxis): 'nw-se' | 'ne-sw' {
+    if (!object?.geometry) return axis === 'y' ? 'ne-sw' : 'nw-se';
+    this.camera.updateMatrixWorld();
+    const cellSize = Math.max(.01, finite(object.geometry.cellSizeMeters, .5));
+    const elevation = finite(object.elevation) + ISTARPARK_LASER_HEIGHT_METERS / cellSize;
+    const start = this.localPoint(object, [0, 0], elevation).project(this.camera);
+    const end = this.localPoint(object, axis === 'y' ? [0, 1] : [1, 0], elevation).project(this.camera);
+    const dx = end.x - start.x;
+    const dy = -(end.y - start.y);
+    return dx * dy >= 0 ? 'nw-se' : 'ne-sw';
   }
 
   getCameraZoom(): number {
@@ -503,6 +704,7 @@ export class ThreeWorldRenderer {
   }
 
   dispose(): void {
+    this.clearApartmentInspectionLaserFrame();
     disposeTree(this.structureRoot);
     disposeTree(this.propRoot);
     this.textureCache.forEach((texture) => texture.dispose());

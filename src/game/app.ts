@@ -8,6 +8,11 @@ import { FrameMetrics } from './metrics';
 import { FloorPlanMinimap } from './floorplan-minimap';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import {
+  measureIstarparkLaserGap,
+  type InspectionLaserAxis,
+  type InspectionLaserMeasurement,
+} from './istarpark-laser-measurement';
+import {
   applyPlanVariant,
   planVariantDefinition,
   planVariantFromQuery,
@@ -185,6 +190,16 @@ export class ShowcaseApp {
   private assetCount = 0;
   private mapLoadToken = 0;
   private planVariant: ApartmentPlanVariant = 'A';
+  private readonly inspectionLaser = {
+    active: false,
+    axis: 'x' as InspectionLaserAxis,
+    lastScreenPoint: null as { x: number; y: number } | null,
+    measurement: null as InspectionLaserMeasurement | null,
+    frameRequest: 0,
+    wheelDelta: 0,
+    wheelLatched: false,
+    wheelResetTimer: 0,
+  };
   private destroyed = false;
 
   constructor(private readonly mount: HTMLElement) {}
@@ -234,6 +249,7 @@ export class ShowcaseApp {
 
   destroy(): void {
     this.destroyed = true;
+    this.stopInspectionLaser('destroy');
     this.abortController.abort();
     cancelAnimationFrame(this.animationFrame);
     this.effectPlayer?.destroy();
@@ -365,6 +381,17 @@ export class ShowcaseApp {
                 <button type="button" id="zoom-in" aria-label="화면 확대">＋</button>
               </div>
 
+              <button type="button" id="inspection-laser-toggle" class="istarpark-laser-toggle" aria-pressed="false" title="레이저 실측 시작 (J)" hidden>
+                <span class="istarpark-laser-toggle-icon" aria-hidden="true">⌁</span>
+                <span>레이저 실측</span>
+                <kbd>J</kbd>
+              </button>
+              <div id="inspection-laser-hud" class="istarpark-laser-hud" aria-live="polite" hidden>
+                <div class="istarpark-laser-hud-head"><strong>레이저 실측</strong><span id="inspection-laser-direction">북서 ↔ 남동</span></div>
+                <output class="istarpark-laser-value" id="inspection-laser-value">— mm</output>
+                <small id="inspection-laser-status">빈 공간을 가리키세요 · Shift+휠 방향 전환 · J/Esc 종료</small>
+              </div>
+
               <div id="furniture-selection-toolbar" class="furniture-selection-toolbar" hidden>
                 <b id="furniture-selection-name">선택 가구</b>
                 <div>
@@ -473,6 +500,7 @@ export class ShowcaseApp {
             <div><span class="help-icon">1–6</span><b>스킬 재생</b><p>1번 또는 휠 클릭은 현재 커서 위치로 텔레포트합니다. 2–4번은 전투 모션과 효과를 재생하며 5–6번은 빈 슬롯입니다.</p></div>
             <div><span class="help-icon">B</span><b>옵션 프리뷰</b><p>B팔레트 선택은 맵의 미리보기 프롭과 견적에 반영되고 이 브라우저에 저장됩니다.</p></div>
             <div><span class="help-icon">✋</span><b>화면·가구 편집</b><p>빈 맵을 손바닥 커서로 드래그하고 휠로 커서 중심 확대·축소합니다. 가구를 누르면 회전·재배치·삭제 도구가 표시됩니다.</p></div>
+            <div><span class="help-icon">J</span><b>레이저 실측</b><p>J로 켜고 마우스를 빈 공간에 놓으면 130mm 높이의 양쪽 벽·설비·가구 사이 순수 폭을 mm로 표시합니다. Shift+휠로 측정 방향을 바꿉니다.</p></div>
           </div>
           <p class="dialog-note">이 사이트는 시각·성능 검수용입니다. 피해, 명중, MP, 사용자 인증과 공용 저장은 처리하지 않습니다.</p>
         </form>
@@ -577,10 +605,22 @@ export class ShowcaseApp {
     }, { signal });
     const dialog = this.get<HTMLDialogElement>('#help-dialog');
     this.get<HTMLButtonElement>('#open-help').addEventListener('click', () => dialog.showModal(), { signal });
+    this.get<HTMLButtonElement>('#inspection-laser-toggle').addEventListener('click', () => this.toggleInspectionLaser(), { signal });
 
     window.addEventListener('keydown', (event) => {
       if (isFormTarget(event.target)) return;
       const key = event.key.toLowerCase();
+      if (key === 'j' && this.inspectionLaserSupported()) {
+        event.preventDefault();
+        if (!event.repeat) this.toggleInspectionLaser();
+        return;
+      }
+      if (this.inspectionLaser.active) {
+        if (key === 'b') return;
+        event.preventDefault();
+        if (key === 'escape' || key === 'esc') this.stopInspectionLaser('escape');
+        return;
+      }
       if (this.selectedSceneProp()) {
         if (key === 'l') {
           event.preventDefault();
@@ -626,9 +666,20 @@ export class ShowcaseApp {
     const stage = this.get<HTMLElement>('#game-stage');
     stage.addEventListener('pointermove', (event) => {
       this.cursorScreenPoint = this.screenPoint(event.clientX, event.clientY);
+      if (this.inspectionLaser.active) {
+        this.scheduleInspectionLaserMeasurement(event);
+        return;
+      }
       this.handleMapPanMove(event);
     }, { signal });
     stage.addEventListener('pointerdown', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('.istarpark-laser-toggle')) return;
+      if (this.inspectionLaser.active) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (event.button === 0) {
         if ((this.paletteTab === 'furniture' || this.interiorRelocationArmed) && this.handleInteriorPointerDown(event)) return;
         if (this.paletteTab === 'options' && this.handleFurnitureSelectionPointerDown(event)) return;
@@ -640,7 +691,9 @@ export class ShowcaseApp {
       const point = this.screenPoint(event.clientX, event.clientY);
       if (point) this.activateSkill('common-teleport', point, true);
     }, { signal });
-    stage.addEventListener('pointermove', (event) => this.handleInteriorPointerMove(event), { signal });
+    stage.addEventListener('pointermove', (event) => {
+      if (!this.inspectionLaser.active) this.handleInteriorPointerMove(event);
+    }, { signal });
     stage.addEventListener('pointerup', (event) => {
       this.handleInteriorPointerUp(event);
       this.finishMapPan(event);
@@ -651,6 +704,10 @@ export class ShowcaseApp {
     }, { signal });
     stage.addEventListener('wheel', (event) => {
       event.preventDefault();
+      if (this.inspectionLaser.active) {
+        this.handleInspectionLaserWheel(event);
+        return;
+      }
       if (event.shiftKey && this.selectedSceneProp()) {
         this.transformLocalProp(event.deltaY < 0 ? 'rotate-left' : 'rotate-right');
         return;
@@ -658,6 +715,7 @@ export class ShowcaseApp {
       const point = this.screenPoint(event.clientX, event.clientY);
       if (point) this.applyCameraZoom(event.deltaY, point.x, point.y);
     }, { signal, passive: false });
+    stage.addEventListener('pointerleave', () => this.clearInspectionLaserPointer(), { signal });
     stage.addEventListener('auxclick', (event) => {
       if (event.button === 1) event.preventDefault();
     }, { signal });
@@ -666,6 +724,7 @@ export class ShowcaseApp {
       if (!target?.closest('#game-stage')) return;
       // 캡처 단계에서 차단해 자식 UI가 이벤트를 가로채도 Chrome 기본 메뉴가 열리지 않는다.
       event.preventDefault();
+      if (this.inspectionLaser.active) return;
       this.handleFurnitureContextMenu(event);
     }, { signal, capture: true });
   }
@@ -733,6 +792,146 @@ export class ShowcaseApp {
     const y = clientY - bounds.top;
     if (x < 0 || y < 0 || x > bounds.width || y > bounds.height) return null;
     return { x, y };
+  }
+
+  private inspectionLaserSupported(): boolean {
+    return Boolean(this.threeRenderer && this.renderer === this.threeRenderer && this.activeApartment()?.geometry);
+  }
+
+  private toggleInspectionLaser(force?: boolean): void {
+    const shouldStart = force ?? !this.inspectionLaser.active;
+    if (shouldStart) this.startInspectionLaser();
+    else this.stopInspectionLaser('toggle');
+  }
+
+  private startInspectionLaser(): void {
+    if (!this.inspectionLaserSupported()) return;
+    this.pressedKeys.clear();
+    this.inspectionLaser.active = true;
+    this.inspectionLaser.axis = 'x';
+    this.inspectionLaser.lastScreenPoint = null;
+    this.inspectionLaser.measurement = null;
+    this.get<HTMLElement>('#game-stage').dataset.istarparkLaserActive = 'true';
+    this.renderInspectionLaserHud();
+  }
+
+  private stopInspectionLaser(_reason: string): void {
+    if (this.inspectionLaser.frameRequest) cancelAnimationFrame(this.inspectionLaser.frameRequest);
+    if (this.inspectionLaser.wheelResetTimer) window.clearTimeout(this.inspectionLaser.wheelResetTimer);
+    this.inspectionLaser.active = false;
+    this.inspectionLaser.lastScreenPoint = null;
+    this.inspectionLaser.measurement = null;
+    this.inspectionLaser.frameRequest = 0;
+    this.inspectionLaser.wheelDelta = 0;
+    this.inspectionLaser.wheelLatched = false;
+    this.inspectionLaser.wheelResetTimer = 0;
+    const stage = this.mount.querySelector<HTMLElement>('#game-stage');
+    if (stage) delete stage.dataset.istarparkLaserActive;
+    this.threeRenderer?.clearApartmentInspectionLaserFrame();
+    this.renderInspectionLaserHud();
+  }
+
+  private clearInspectionLaserPointer(): void {
+    if (!this.inspectionLaser.active) return;
+    this.inspectionLaser.lastScreenPoint = null;
+    this.inspectionLaser.measurement = null;
+    this.threeRenderer?.hideApartmentInspectionLaserFrame();
+    this.renderInspectionLaserHud();
+  }
+
+  private inspectionLaserDirectionLabel(): string {
+    const direction = this.threeRenderer?.apartmentInspectionLaserScreenDirection(
+      this.activeApartment(),
+      this.inspectionLaser.axis,
+    ) || (this.inspectionLaser.axis === 'y' ? 'ne-sw' : 'nw-se');
+    return direction === 'ne-sw' ? '북동 ↔ 남서' : '북서 ↔ 남동';
+  }
+
+  private renderInspectionLaserHud(): void {
+    const supported = this.inspectionLaserSupported();
+    const active = supported && this.inspectionLaser.active;
+    const toggle = this.mount.querySelector<HTMLButtonElement>('#inspection-laser-toggle');
+    if (toggle) {
+      toggle.hidden = !supported;
+      toggle.classList.toggle('is-active', active);
+      toggle.setAttribute('aria-pressed', String(active));
+      toggle.title = `레이저 실측 ${active ? '종료' : '시작'} (J)`;
+    }
+    const hud = this.mount.querySelector<HTMLElement>('#inspection-laser-hud');
+    if (!hud) return;
+    hud.hidden = !active;
+    if (!active) return;
+    this.get<HTMLElement>('#inspection-laser-direction').textContent = this.inspectionLaserDirectionLabel();
+    const measurement = this.inspectionLaser.measurement;
+    this.get<HTMLOutputElement>('#inspection-laser-value').textContent = measurement?.valid
+      ? measurement.label || `${measurement.distanceMm || 0}mm`
+      : '— mm';
+    const status = !this.inspectionLaser.lastScreenPoint
+      ? '빈 공간을 가리키세요 · Shift+휠 방향 전환 · J/Esc 종료'
+      : measurement?.reason === 'anchor-inside-obstacle'
+        ? '구조물 위입니다. 측정할 빈 공간으로 마우스를 옮기세요.'
+        : measurement?.reason === 'outside-floor'
+          ? '세대 바닥 안쪽을 가리키세요.'
+          : measurement?.valid !== true
+            ? '양쪽 경계가 닿는 빈 공간에서 측정할 수 있습니다.'
+            : measurement.anchorSnapped
+              ? '구조물 가장자리의 빈 폭으로 자동 맞춤 · J/Esc 종료'
+              : '현재 배치 가구 포함 · Shift+휠 방향 전환 · J/Esc 종료';
+    this.get<HTMLElement>('#inspection-laser-status').textContent = status;
+  }
+
+  private scheduleInspectionLaserMeasurement(event: PointerEvent): void {
+    if (!this.inspectionLaser.active) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('.istarpark-laser-toggle,.istarpark-laser-hud')) return;
+    const point = this.screenPoint(event.clientX, event.clientY);
+    if (!point) return;
+    this.inspectionLaser.lastScreenPoint = point;
+    if (this.inspectionLaser.frameRequest) return;
+    this.inspectionLaser.frameRequest = requestAnimationFrame(() => {
+      this.inspectionLaser.frameRequest = 0;
+      this.refreshInspectionLaserMeasurement();
+    });
+  }
+
+  private refreshInspectionLaserMeasurement(): void {
+    const screenPoint = this.inspectionLaser.lastScreenPoint;
+    const apartment = this.activeApartment();
+    if (!this.inspectionLaser.active || !screenPoint || !apartment?.geometry || !this.threeRenderer) {
+      this.renderInspectionLaserHud();
+      return;
+    }
+    const worldPoint = this.threeRenderer.unproject(screenPoint.x, screenPoint.y);
+    const anchorPlanPoint = worldPoint ? apartmentWorldPointToLocalMeters(apartment, worldPoint) : null;
+    const measurement = anchorPlanPoint
+      ? measureIstarparkLaserGap({
+        anchorPlanPoint,
+        axis: this.inspectionLaser.axis,
+        geometry: apartment.geometry,
+        props: this.threeRenderer.getRenderedProps(),
+        assets: this.interiorAssets,
+      })
+      : { valid: false, reason: 'outside-floor', axis: this.inspectionLaser.axis } as InspectionLaserMeasurement;
+    this.inspectionLaser.measurement = measurement;
+    if (measurement.valid) this.threeRenderer.setApartmentInspectionLaserFrame(apartment, measurement);
+    else this.threeRenderer.hideApartmentInspectionLaserFrame();
+    this.renderInspectionLaserHud();
+  }
+
+  private handleInspectionLaserWheel(event: WheelEvent): void {
+    if (!event.shiftKey) return;
+    this.inspectionLaser.wheelDelta += Math.abs(event.deltaY);
+    if (this.inspectionLaser.wheelResetTimer) window.clearTimeout(this.inspectionLaser.wheelResetTimer);
+    this.inspectionLaser.wheelResetTimer = window.setTimeout(() => {
+      this.inspectionLaser.wheelDelta = 0;
+      this.inspectionLaser.wheelLatched = false;
+      this.inspectionLaser.wheelResetTimer = 0;
+    }, 160);
+    if (!this.inspectionLaser.wheelLatched && this.inspectionLaser.wheelDelta >= 40) {
+      this.inspectionLaser.wheelLatched = true;
+      this.inspectionLaser.axis = this.inspectionLaser.axis === 'x' ? 'y' : 'x';
+      this.refreshInspectionLaserMeasurement();
+    }
   }
 
   private setPaletteTab(tab: 'options' | 'furniture'): void {
@@ -1199,6 +1398,7 @@ export class ShowcaseApp {
   private async selectMap(mapId: string, updateUrl = true): Promise<void> {
     const map = this.catalog.maps.find((entry) => entry.id === mapId);
     if (!map) return;
+    this.stopInspectionLaser('map-change');
     const token = ++this.mapLoadToken;
     this.currentMap = map;
     this.resumeCameraTracking();
@@ -1258,6 +1458,7 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#metric-renderer').textContent = rendererLabel;
     this.minimap.setWorld(world, planDefinition.variant);
     this.get<HTMLElement>('#stage-loader').classList.add('is-hidden');
+    this.renderInspectionLaserHud();
 
     if (updateUrl) this.updateQuery();
     const sourceMessage = world.sourceMode === 'chunks'
