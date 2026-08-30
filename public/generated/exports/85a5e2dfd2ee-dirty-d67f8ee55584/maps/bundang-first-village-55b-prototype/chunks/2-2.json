@@ -1,0 +1,159 @@
+{
+  "schemaVersion": "rpg-world-chunk-v2",
+  "worldId": "bundang-first-village-55b-prototype",
+  "revision": "bundang-55b-prototype-r38",
+  "chunkX": 2,
+  "chunkY": 2,
+  "origin": {
+    "x": 32,
+    "y": 32
+  },
+  "size": {
+    "width": 16,
+    "height": 16
+  },
+  "tileEncoding": "row-major-rle",
+  "tileRuns": [
+    {
+      "tileId": "tiled-floor",
+      "count": 13
+    },
+    {
+      "tileId": "light-soil",
+      "count": 3
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 13
+    },
+    {
+      "tileId": "light-soil",
+      "count": 3
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 13
+    },
+    {
+      "tileId": "light-soil",
+      "count": 3
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 13
+    },
+    {
+      "tileId": "light-soil",
+      "count": 3
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 2
+    },
+    {
+      "tileId": "light-soil",
+      "count": 14
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 2
+    },
+    {
+      "tileId": "light-soil",
+      "count": 14
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 2
+    },
+    {
+      "tileId": "light-soil",
+      "count": 14
+    },
+    {
+      "tileId": "tiled-floor",
+      "count": 2
+    },
+    {
+      "tileId": "light-soil",
+      "count": 142
+    }
+  ],
+  "elevationEncoding": "world-unit-rle",
+  "elevationRuns": [
+    {
+      "value": 0,
+      "count": 256
+    }
+  ],
+  "blockedCellIndices": [
+    2,
+    6,
+    13,
+    18,
+    22,
+    29,
+    34,
+    38,
+    45,
+    50,
+    54,
+    61,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    82,
+    98,
+    114,
+    128,
+    129,
+    130
+  ],
+  "visibleBlockerCellIndices": [
+    2,
+    6,
+    13,
+    18,
+    22,
+    29,
+    34,
+    38,
+    45,
+    50,
+    54,
+    61,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    82,
+    98,
+    114,
+    128,
+    129,
+    130
+  ],
+  "occlusionCellIndices": [],
+  "transparencyCellIndices": [],
+  "objects": [],
+  "zones": [
+    "bundang-55b-prototype-zone"
+  ]
+}

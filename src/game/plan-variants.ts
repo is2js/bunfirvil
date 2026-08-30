@@ -103,6 +103,71 @@ function transformedFloorBounds(apartment: WorldObject): WorldObject['bounds'] {
   };
 }
 
+function record(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function normalizedYaw(value: unknown): number {
+  return ((Number(value) || 0) % 360 + 360) % 360;
+}
+
+/** pvp optionAnchors의 비대칭 설비 규칙을 정적 A 원형에 결정적으로 적용한다. */
+export function applyPlanVariantInteriorOverrides(
+  apartment: WorldObject,
+  variant: ApartmentPlanVariant,
+): void {
+  const geometry = apartment.geometry;
+  const anchors = record(geometry?.optionAnchors);
+  if (!geometry || !anchors) return;
+  anchors.resolvedPlanVariant = variant;
+  const overrides = record(anchors.planVariantOverrides);
+  const override = record(overrides?.[variant]);
+  if (!override) return;
+
+  const bathroomOverride = record(override.bathrooms);
+  const bathrooms = record(anchors.bathrooms);
+  if (bathroomOverride && bathrooms) {
+    const fixtureIds = Array.isArray(bathroomOverride.fixtureIds)
+      ? bathroomOverride.fixtureIds.map(String)
+      : [];
+    const yawOffsetDeg = Number(bathroomOverride.yawOffsetDeg) || 0;
+    for (const fixturesValue of Object.values(bathrooms)) {
+      const fixtures = record(fixturesValue);
+      if (!fixtures) continue;
+      for (const fixtureId of fixtureIds) {
+        const fixture = record(fixtures[fixtureId]);
+        if (fixture) fixture.yawDeg = normalizedYaw(Number(fixture.yawDeg) + yawOffsetDeg);
+      }
+    }
+  }
+
+  const islandOverride = record(record(override.kitchen)?.island);
+  const island = record(record(anchors.kitchen)?.island);
+  if (islandOverride && island) {
+    island.yawDeg = normalizedYaw(
+      Number(island.yawDeg) + (Number(islandOverride.yawOffsetDeg) || 0),
+    );
+    for (const field of ['frontFaces', 'diningChairYawOffsetDeg', 'diningChairFacingRule']) {
+      if (field in islandOverride) island[field] = islandOverride[field];
+    }
+  }
+
+  // options/runtime.mjs가 준비되기 전 geometry.interiorProps fallback도
+  // 같은 앵커를 사용하게 해 첫 paint의 방향 불일치를 막는다.
+  for (const prop of geometry.interiorProps || []) {
+    const anchorId = String(prop.anchorId || '');
+    const match = anchorId.match(/^(bathroom-[12])\.(toilet|basin|wetFixture)$/);
+    if (!match) continue;
+    const fixture = record(record(bathrooms?.[match[1]])?.[match[2]]);
+    if (!fixture) continue;
+    if (Array.isArray(fixture.positionMeters)) prop.positionMeters = [...fixture.positionMeters].map(Number);
+    prop.yawDeg = normalizedYaw(fixture.yawDeg);
+    prop.mirrored = fixture.mirrored === true;
+  }
+}
+
 /** 원본 RPG 단지배치의 A/B 변환을 구조물, 가구와 충돌 셀에 한 번에 적용한다. */
 export function applyPlanVariant(world: WorldData, variant: ApartmentPlanVariant): ApartmentPlanVariantDefinition {
   const definition = planVariantDefinition(world.entry.unitType, variant);
@@ -121,6 +186,7 @@ export function applyPlanVariant(world: WorldData, variant: ApartmentPlanVariant
     targetPlan: definition.targetPlan,
     operations: [...definition.operations],
   };
+  applyPlanVariantInteriorOverrides(apartment, definition.variant);
 
   const transformedBlockedCells = transformAbsoluteCells(apartment, sourceTransform, sourceBlockedCells);
   if (transformedBlockedCells.length) {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyPlanVariant,
+  applyPlanVariantInteriorOverrides,
   inverseTransformPlanPoint,
   planVariantDefinition,
   planVariantFromQuery,
@@ -54,5 +55,68 @@ describe('RPG apartment plan variants', () => {
     expect(apartment.transform).toEqual(expectedB['55A']);
     expect(apartment.blockedCells).toEqual([{ x: 11, y: 12 }]);
     expect(world.blocked).toEqual(new Set(['1,1', '11,12']));
+  });
+
+  it('applies pvp-authored B fixture and 55B dining direction overrides without losing glass mirroring', () => {
+    const apartment: WorldObject = {
+      unitTypeId: '55B',
+      planVariant: 'A',
+      geometry: {
+        optionAnchors: {
+          resolvedPlanVariant: 'A',
+          planVariantOverrides: {
+            schemaVersion: 'bundang-apartment-plan-variant-overrides-v1',
+            B: {
+              bathrooms: {
+                fixtureIds: ['toilet', 'basin', 'wetFixture'],
+                yawOffsetDeg: 180,
+              },
+              kitchen: {
+                island: {
+                  yawOffsetDeg: 180,
+                  frontFaces: 'toward-refrigerator-cabinet',
+                  diningChairYawOffsetDeg: 180,
+                  diningChairFacingRule: 'toward-table-center',
+                },
+              },
+            },
+          },
+          bathrooms: {
+            'bathroom-1': {
+              toilet: { positionMeters: [3.78, 3.72], yawDeg: 180 },
+              basin: { positionMeters: [4.3, 3.72], yawDeg: 180 },
+              wetFixture: { positionMeters: [5.05, 3.05], yawDeg: 180, mirrored: true },
+            },
+          },
+          kitchen: {
+            island: { yawDeg: 270, frontFaces: 'away-from-living' },
+          },
+        },
+        interiorProps: [
+          { id: 'toilet', anchorId: 'bathroom-1.toilet', positionMeters: [0, 0], yawDeg: 180 },
+          { id: 'basin', anchorId: 'bathroom-1.basin', positionMeters: [0, 0], yawDeg: 180 },
+          { id: 'shower', anchorId: 'bathroom-1.wetFixture', positionMeters: [0, 0], yawDeg: 180, mirrored: true },
+        ],
+      },
+    };
+
+    applyPlanVariantInteriorOverrides(apartment, 'B');
+    const anchors = apartment.geometry?.optionAnchors as Record<string, any>;
+    expect(anchors.resolvedPlanVariant).toBe('B');
+    expect(anchors.bathrooms['bathroom-1'].toilet.yawDeg).toBe(0);
+    expect(anchors.bathrooms['bathroom-1'].basin.yawDeg).toBe(0);
+    expect(anchors.bathrooms['bathroom-1'].wetFixture.yawDeg).toBe(0);
+    expect(anchors.bathrooms['bathroom-1'].wetFixture.mirrored).toBe(true);
+    expect(anchors.kitchen.island).toMatchObject({
+      yawDeg: 90,
+      frontFaces: 'toward-refrigerator-cabinet',
+      diningChairYawOffsetDeg: 180,
+      diningChairFacingRule: 'toward-table-center',
+    });
+    expect(apartment.geometry?.interiorProps).toEqual([
+      { id: 'toilet', anchorId: 'bathroom-1.toilet', positionMeters: [3.78, 3.72], yawDeg: 0, mirrored: false },
+      { id: 'basin', anchorId: 'bathroom-1.basin', positionMeters: [4.3, 3.72], yawDeg: 0, mirrored: false },
+      { id: 'shower', anchorId: 'bathroom-1.wetFixture', positionMeters: [5.05, 3.05], yawDeg: 0, mirrored: true },
+    ]);
   });
 });

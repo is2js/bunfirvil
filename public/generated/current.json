@@ -1,12 +1,12 @@
 {
   "schemaVersion": "bunfirvil-current-v1",
-  "exportId": "5847f2bc6867-dirty-f1070a816e46",
-  "generatedAt": "2026-08-27T13:10:11.966Z",
-  "basePath": "exports/5847f2bc6867-dirty-f1070a816e46/",
+  "exportId": "85a5e2dfd2ee-dirty-d67f8ee55584",
+  "generatedAt": "2026-08-30T09:18:12.397Z",
+  "basePath": "exports/85a5e2dfd2ee-dirty-d67f8ee55584/",
   "catalogUrl": "catalog.v1.json",
-  "sourceExportUrl": "exports/5847f2bc6867-dirty-f1070a816e46/source-export.json",
+  "sourceExportUrl": "exports/85a5e2dfd2ee-dirty-d67f8ee55584/source-export.json",
   "source": {
-    "head": "5847f2bc68678bdb8fe65d3a5399018f3fae1284",
+    "head": "85a5e2dfd2ee7e651e6a53f0a7dd4a28d44ec44b",
     "dirty": true
   }
 }

@@ -1,0 +1,206 @@
+{
+  "schemaVersion": "ShowcaseCatalogV1-rich",
+  "exportId": "85a5e2dfd2ee-dirty-d67f8ee55584",
+  "generatedAt": "2026-08-30T09:18:12.397Z",
+  "maps": [
+    {
+      "id": "bundang-first-village-51a-prototype",
+      "unitType": "51A",
+      "label": "분당퍼스트빌리지 51A 평면도A 검수",
+      "displayName": "분당퍼스트빌리지 51A 평면도A 검수",
+      "revision": "bundang-51a-prototype-r30",
+      "width": 64,
+      "height": 64,
+      "chunkCount": 16,
+      "blockedCellCount": 140,
+      "renderer": "three-pbr",
+      "fallbackRenderer": "canvas2d",
+      "manifestUrl": "maps/bundang-first-village-51a-prototype/manifest.json",
+      "minimapUrl": "maps/bundang-first-village-51a-prototype/minimap.png",
+      "spawn": {
+        "x": 25,
+        "y": 21
+      },
+      "assetBytes": 281865
+    },
+    {
+      "id": "bundang-first-village-55a-prototype",
+      "unitType": "55A",
+      "label": "분당퍼스트빌리지 55A 평면도A 검수",
+      "displayName": "분당퍼스트빌리지 55A 평면도A 검수",
+      "revision": "bundang-55a-prototype-r31",
+      "width": 64,
+      "height": 64,
+      "chunkCount": 16,
+      "blockedCellCount": 160,
+      "renderer": "three-pbr",
+      "fallbackRenderer": "canvas2d",
+      "manifestUrl": "maps/bundang-first-village-55a-prototype/manifest.json",
+      "minimapUrl": "maps/bundang-first-village-55a-prototype/minimap.png",
+      "spawn": {
+        "x": 38,
+        "y": 21
+      },
+      "assetBytes": 309078
+    },
+    {
+      "id": "bundang-first-village-55b-prototype",
+      "unitType": "55B",
+      "label": "분당퍼스트빌리지 55B 평면도A 검수",
+      "displayName": "분당퍼스트빌리지 55B 평면도A 검수",
+      "revision": "bundang-55b-prototype-r38",
+      "width": 64,
+      "height": 64,
+      "chunkCount": 16,
+      "blockedCellCount": 187,
+      "renderer": "three-pbr",
+      "fallbackRenderer": "canvas2d",
+      "manifestUrl": "maps/bundang-first-village-55b-prototype/manifest.json",
+      "minimapUrl": "maps/bundang-first-village-55b-prototype/minimap.png",
+      "spawn": {
+        "x": 37,
+        "y": 20
+      },
+      "assetBytes": 609338
+    },
+    {
+      "id": "bundang-first-village-59a-prototype",
+      "unitType": "59A",
+      "label": "분당퍼스트빌리지 59A 평면도A 검수",
+      "displayName": "분당퍼스트빌리지 59A 평면도A 검수",
+      "revision": "bundang-59a-prototype-r30",
+      "width": 64,
+      "height": 64,
+      "chunkCount": 16,
+      "blockedCellCount": 162,
+      "renderer": "three-pbr",
+      "fallbackRenderer": "canvas2d",
+      "manifestUrl": "maps/bundang-first-village-59a-prototype/manifest.json",
+      "minimapUrl": "maps/bundang-first-village-59a-prototype/minimap.png",
+      "spawn": {
+        "x": 40,
+        "y": 21
+      },
+      "assetBytes": 321388
+    }
+  ],
+  "characters": [
+    {
+      "id": "100",
+      "assetKey": "100",
+      "displayName": "남자의료진",
+      "revision": "idle00-locked-body-arm-mansae-cast-seed10-20260701",
+      "descriptorUrl": "characters/100/animation.json",
+      "defaultMotion": "idle",
+      "defaultAction": "normal"
+    },
+    {
+      "id": "200",
+      "assetKey": "200",
+      "displayName": "여자의료진",
+      "revision": "idle00-locked-body-arm-mansae-cast-seed10-20260701",
+      "descriptorUrl": "characters/200/animation.json",
+      "defaultMotion": "idle",
+      "defaultAction": "normal"
+    }
+  ],
+  "skills": [
+    {
+      "id": "basic-attack",
+      "name": "기본 공격",
+      "description": "선택한 캐릭터의 기본 근접 공격 모션을 재생합니다.",
+      "iconUrl": "",
+      "cooldownMs": 650,
+      "motion": {
+        "motion": "attack",
+        "action": "fist1"
+      },
+      "effects": [],
+      "serverAuthority": false
+    },
+    {
+      "id": "warrior-shock-stun",
+      "name": "쇼크스턴",
+      "description": "근접 공격과 머리 위 별 회전 상태 효과를 재생합니다.",
+      "iconUrl": "skills/icons/shock-stun.png",
+      "cooldownMs": 2800,
+      "motion": {
+        "motion": "attack",
+        "action": "sword"
+      },
+      "effects": [
+        {
+          "effectId": "rpg-shock-stun-status",
+          "phase": "impact",
+          "manifestUrl": "skills/effects/rpg-shock-stun-status/manifest.json"
+        }
+      ],
+      "serverAuthority": false
+    },
+    {
+      "id": "common-double-arrow",
+      "name": "더블애로우",
+      "description": "활 모션과 8방향 에너지궁·투사체 효과를 재생합니다.",
+      "iconUrl": "skills/icons/double-arrow.png",
+      "cooldownMs": 1600,
+      "motion": {
+        "motion": "attack",
+        "action": "bow"
+      },
+      "effects": [
+        {
+          "effectId": "rpg-summoned-bow-energy-overlay",
+          "phase": "primary",
+          "manifestUrl": "skills/effects/rpg-summoned-bow-energy-overlay/manifest.json"
+        },
+        {
+          "effectId": "rpg-summoned-bow-energy-projectile",
+          "phase": "projectile",
+          "manifestUrl": "skills/effects/rpg-summoned-bow-energy-projectile/manifest.json"
+        }
+      ],
+      "serverAuthority": false
+    },
+    {
+      "id": "common-teleport",
+      "name": "텔레포트",
+      "description": "마우스 커서가 가리키는 이동 가능한 셀로 순간이동하고 효과를 재생합니다.",
+      "iconUrl": "skills/icons/teleport.png",
+      "cooldownMs": 4200,
+      "motion": {
+        "motion": "cast",
+        "action": "normal"
+      },
+      "effects": [
+        {
+          "effectId": "rpg-teleport-origin",
+          "phase": "impact",
+          "manifestUrl": "skills/effects/rpg-teleport-origin/manifest.json"
+        }
+      ],
+      "serverAuthority": false
+    }
+  ],
+  "defaultHotbar": [
+    "common-teleport",
+    "basic-attack",
+    "warrior-shock-stun",
+    "common-double-arrow"
+  ],
+  "bOptions": {
+    "catalogUrl": "options/catalog.json",
+    "optionCount": 41,
+    "unitTypes": [
+      "51A",
+      "55A",
+      "55B",
+      "59A"
+    ]
+  },
+  "renderAssets": {
+    "interiorCatalogUrl": "generated/exports/85a5e2dfd2ee-dirty-d67f8ee55584/interior/catalog.json",
+    "recipeCatalogUrl": "generated/exports/85a5e2dfd2ee-dirty-d67f8ee55584/interior/recipes.json",
+    "optionModuleUrl": "generated/exports/85a5e2dfd2ee-dirty-d67f8ee55584/options/runtime.mjs",
+    "materialManifestUrl": "generated/exports/85a5e2dfd2ee-dirty-d67f8ee55584/maps/bundang-first-village-55b-prototype/materials/materials.json"
+  }
+}
