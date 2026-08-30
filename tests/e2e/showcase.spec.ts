@@ -378,6 +378,24 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(page.locator("#markdownSource")).toContainText("# B옵션 팔레트 사용법");
   await expect(page.getByRole("link", { name: "GitHub에서 Markdown 수정" })).toHaveAttribute("href", /src\/guides\/content\/b-option\.md$/);
 
+  expect(forbiddenRequests).toEqual([]);
+  expect(consoleErrors).toEqual([]);
+});
+
+test("runs the map review, interior editor, and JSON workflow", async ({ page }) => {
+  const forbiddenRequests: string[] = [];
+  const consoleErrors: string[] = [];
+  page.on("request", (request) => {
+    const url = request.url();
+    if (/^wss?:/i.test(url) || /socket\.io/i.test(url) || new URL(url).pathname.includes("/api/")) {
+      forbiddenRequests.push(url);
+    }
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  page.on("pageerror", (error) => consoleErrors.push(error.message));
+
   await page.goto("manage/");
   await expect(page.locator("#loadingState")).toBeHidden();
   await expect(page.locator("#errorState")).toBeHidden();
