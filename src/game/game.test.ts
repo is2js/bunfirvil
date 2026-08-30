@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { normalizeHotbar } from './catalog';
 import { resolveEffectSource, selectEffectVariant, type EffectManifest } from './effect-player';
 import { readHotbar, reorderHotbar } from './hotbar';
@@ -105,19 +106,24 @@ describe('game-local state helpers', () => {
       .toBe('https://example.test/effects/variants/n.png');
   });
 
-  it('normalizes and reorders a four-slot hotbar', () => {
+  it('normalizes and reorders a six-slot hotbar', () => {
     const slots = normalizeHotbar(['basic-attack', '', 'common-teleport']);
-    expect(slots).toHaveLength(4);
-    expect(slots).toEqual(['basic-attack', null, 'common-teleport', null]);
-    expect(reorderHotbar(slots, 0, 3)).toEqual([null, null, 'common-teleport', 'basic-attack']);
+    expect(slots).toHaveLength(6);
+    expect(slots).toEqual(['basic-attack', null, 'common-teleport', null, null, null]);
+    expect(reorderHotbar(slots, 0, 3)).toEqual([null, null, 'common-teleport', 'basic-attack', null, null]);
   });
 
-  it('migrates the legacy eight-slot browser value to the new teleport-first default', () => {
-    const legacyStorage = {
-      getItem: () => JSON.stringify(['basic-attack', 'warrior-shock-stun', 'common-double-arrow', 'common-teleport', null, null, null, null]),
+  it('migrates the four-slot browser value by appending two empty slots', () => {
+    const fourSlotStorage = {
+      getItem: () => JSON.stringify(['common-teleport', 'basic-attack', 'warrior-shock-stun', 'common-double-arrow']),
     } as unknown as Storage;
-    const currentDefault = ['common-teleport', 'basic-attack', 'warrior-shock-stun', 'common-double-arrow'];
-    expect(readHotbar(currentDefault, legacyStorage)).toEqual(currentDefault);
+    const currentDefault = ['common-teleport', 'basic-attack', 'warrior-shock-stun', 'common-double-arrow', null, null];
+    expect(readHotbar(currentDefault, fourSlotStorage)).toEqual(currentDefault);
+  });
+
+  it('labels the RPG 1.29 camera scale as the 100 percent baseline', () => {
+    expect(cameraZoomPercent(RPG_CAMERA_BASE_ZOOM)).toBe(100);
+    expect(cameraZoomPercent(RPG_CAMERA_BASE_ZOOM * 1.5)).toBe(150);
   });
 
   it('blocks diagonal corner cutting and movement across apartment wall segments', () => {

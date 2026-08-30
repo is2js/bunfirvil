@@ -67,7 +67,7 @@ export function createFallbackCatalog(): ShowcaseCatalog {
         manaCost: 25,
       },
     ],
-    defaultHotbar: ['common-teleport', 'basic-attack', 'warrior-shock-stun', 'common-double-arrow'],
+    defaultHotbar: ['common-teleport', 'basic-attack', 'warrior-shock-stun', 'common-double-arrow', null, null],
     bOptions: fallbackOptions(),
     renderAssets: undefined,
   };
@@ -294,8 +294,8 @@ export async function loadCatalog(): Promise<{ catalog: ShowcaseCatalog; fallbac
 
 export function normalizeHotbar(value: unknown): Array<string | null> {
   const source = Array.isArray(value) ? value : [];
-  const normalized = source.slice(0, 4).map((item) => (typeof item === 'string' && item.trim() ? item : null));
-  while (normalized.length < 4) normalized.push(null);
+  const normalized = source.slice(0, 6).map((item) => (typeof item === 'string' && item.trim() ? item : null));
+  while (normalized.length < 6) normalized.push(null);
   return normalized;
 }
 

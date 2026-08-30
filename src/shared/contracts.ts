@@ -66,12 +66,7 @@ export interface ShowcaseCatalogV1 {
   maps: StaticMapEntryV1[];
   characters: CharacterEntryV1[];
   skills: SkillEntryV1[];
-  defaultHotbar: [
-    ActionId,
-    ActionId,
-    ActionId,
-    ActionId,
-  ];
+  defaultHotbar: Array<ActionId | null>;
   bOptions: BOptionEntryV1[];
   renderAssets?: {
     interiorCatalogUrl: string;

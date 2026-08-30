@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { fetchJson, resolveProjectUrl, resolveReferencedUrl } from './base';
+import { RPG_CAMERA_BASE_ZOOM } from './camera';
 import {
   apartmentPropPlacement,
   apartmentSolidBlockVisualFootprint,
@@ -285,7 +286,7 @@ export class ThreeWorldRenderer {
   private selectedOptionIds: string[] = [];
   private editorProps: ApartmentInteriorProp[] | null = null;
   private editorSelectedPropId = '';
-  private cameraZoom = 1;
+  private cameraZoom = RPG_CAMERA_BASE_ZOOM;
   private structureOccluders: StructureOccluder[] = [];
   private occlusionFocus: ActorState | null = null;
   private lastOcclusionTime = 0;
@@ -372,10 +373,28 @@ export class ThreeWorldRenderer {
     return this.cameraZoom;
   }
 
+  panByScreenDelta(deltaX: number, deltaY: number): void {
+    if (!this.world || (!deltaX && !deltaY)) return;
+    this.resize();
+    const centerX = this.cssWidth / 2;
+    const centerY = this.cssHeight / 2;
+    const before = this.unproject(centerX, centerY);
+    const after = this.unproject(centerX + deltaX, centerY + deltaY);
+    if (!before || !after) return;
+    this.focus.x += before.x - after.x;
+    this.focus.z += before.y - after.y;
+    this.updateCamera();
+    this.canvas.dataset.panCount = String(Number(this.canvas.dataset.panCount || 0) + 1);
+  }
+
   zoomAt(screenX: number, screenY: number, wheelDelta: number): number {
     this.resize();
     const before = this.unproject(screenX, screenY);
-    const next = THREE.MathUtils.clamp(this.cameraZoom * Math.exp(-wheelDelta * 0.0014), 0.65, 2.8);
+    const next = THREE.MathUtils.clamp(
+      this.cameraZoom * Math.exp(-wheelDelta * 0.0014),
+      RPG_CAMERA_BASE_ZOOM * 0.65,
+      RPG_CAMERA_BASE_ZOOM * 2.8,
+    );
     if (Math.abs(next - this.cameraZoom) < 0.001) return this.cameraZoom;
     this.cameraZoom = next;
     this.camera.zoom = next;
@@ -391,10 +410,10 @@ export class ThreeWorldRenderer {
   }
 
   resetCameraZoom(): number {
-    this.cameraZoom = 1;
-    this.camera.zoom = 1;
+    this.cameraZoom = RPG_CAMERA_BASE_ZOOM;
+    this.camera.zoom = RPG_CAMERA_BASE_ZOOM;
     this.camera.updateProjectionMatrix();
-    this.canvas.dataset.cameraZoom = '1.000';
+    this.canvas.dataset.cameraZoom = RPG_CAMERA_BASE_ZOOM.toFixed(3);
     return this.cameraZoom;
   }
 

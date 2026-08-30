@@ -6,8 +6,8 @@ export const HOTBAR_STORAGE_KEY = 'bunfirvil:hotbar:v1';
 export function readHotbar(defaultHotbar: HotbarValue[], storage: Storage = localStorage): HotbarValue[] {
   try {
     const stored = JSON.parse(storage.getItem(HOTBAR_STORAGE_KEY) || 'null') as unknown;
-    // 기존 8칸 저장값은 새 4칸/텔레포트 1번 계약으로 한 번 마이그레이션한다.
-    if (Array.isArray(stored) && stored.length === 4) return normalizeHotbar(stored);
+    // 기존 4칸 저장값은 앞 네 칸을 유지하고 5·6번 빈 슬롯을 덧붙인다.
+    if (Array.isArray(stored) && (stored.length === 4 || stored.length === 6)) return normalizeHotbar(stored);
   } catch {
     // Invalid browser state is replaced with the catalog default.
   }

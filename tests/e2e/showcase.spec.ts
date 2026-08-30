@@ -88,18 +88,42 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   const actor100 = page.locator('.rpg-actor[data-actor="100"]');
   const actor200 = page.locator('.rpg-actor[data-actor="200"]');
   const hotbarSlots = page.locator("#hotbar .hotbar-slot");
-  await expect(hotbarSlots).toHaveCount(4);
+  await expect(hotbarSlots).toHaveCount(6);
   await expect(hotbarSlots.nth(0)).toHaveAttribute("data-skill-id", "common-teleport");
   await expect(hotbarSlots.nth(1)).toHaveAttribute("data-skill-id", "basic-attack");
+  const thirdSlotBounds = await hotbarSlots.nth(2).boundingBox();
+  const fourthSlotBounds = await hotbarSlots.nth(3).boundingBox();
+  expect(thirdSlotBounds).not.toBeNull();
+  expect(fourthSlotBounds).not.toBeNull();
+  expect(fourthSlotBounds!.x - (thirdSlotBounds!.x + thirdSlotBounds!.width)).toBeGreaterThan(10);
+
+  const panBounds = await page.locator('#game-stage').boundingBox();
+  expect(panBounds).not.toBeNull();
+  const panStart = { x: panBounds!.x + 24, y: panBounds!.y + panBounds!.height * .58 };
+  await page.mouse.move(panStart.x, panStart.y);
+  expect(await page.locator('#three-world-canvas').evaluate((element) => getComputedStyle(element).cursor)).toBe('grab');
+  await page.mouse.down();
+  await expect(page.locator('#game-stage')).toHaveClass(/is-panning/);
+  expect(await page.locator('#three-world-canvas').evaluate((element) => getComputedStyle(element).cursor)).toBe('grabbing');
+  await page.mouse.move(panStart.x + 54, panStart.y + 28, { steps: 3 });
+  await page.mouse.up();
+  await expect(page.locator('#game-stage')).toHaveAttribute('data-camera-tracking', 'free');
+  await expect(page.locator('#game-stage')).toHaveAttribute('data-last-pan-moved', 'true');
+  await expect.poll(async () => Number(await threeCanvas.getAttribute('data-pan-count'))).toBeGreaterThan(0);
+
   await page.getByRole("button", { name: "100", exact: true }).click();
-  await expect(page.locator("#active-actor-label")).toHaveText("남자의료진");
+  await expect(page.locator('#game-stage')).toHaveAttribute('data-camera-tracking', 'follow');
+  await expect(page.locator("#active-actor-label")).toHaveText("돌범");
   await observeNextMotion(actor100, "attack");
   await page.getByRole("button", { name: "2번 기본 공격" }).click();
   await expect(actor100).toHaveAttribute("data-observed-motion", "attack");
 
   await page.getByRole("button", { name: "200", exact: true }).click();
-  await expect(page.locator("#active-actor-label")).toHaveText("여자의료진");
-  expect(await actor200.locator(".actor-sprite").evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBe(58);
+  await expect(page.locator("#active-actor-label")).toHaveText("피치");
+  expect(await actor200.locator(".actor-sprite").evaluate((element) => Number.parseFloat(getComputedStyle(element).width))).toBe(56);
+  await expect(actor200.locator('.actor-motion')).toHaveCount(0);
+  await expect(page.locator('#zoom-value')).toHaveText('100%');
+  await expect(threeCanvas).toHaveAttribute('data-camera-zoom', '1.290');
   await expect(page.locator("#game-stage")).toHaveAttribute("data-movement-interval-ms", "420");
   await expect(page.locator("#game-stage")).toHaveAttribute("data-cell-projection", "32x24");
   const startX = Number(await actor200.getAttribute("data-world-x"));

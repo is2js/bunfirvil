@@ -10,7 +10,6 @@ import type {
 export class ActorView {
   readonly element: HTMLButtonElement;
   private readonly sprite: HTMLSpanElement;
-  private readonly motionLabel: HTMLSpanElement;
   private manifest: CharacterManifest | null = null;
   private manifestUrl = '';
   private lastSheet = '';
@@ -31,12 +30,10 @@ export class ActorView {
       <span class="actor-meta">
         <span class="actor-name">${entry.label}</span>
         <span class="actor-health"><i></i></span>
-        <span class="actor-motion">IDLE</span>
       </span>
     `;
     this.element = element;
     this.sprite = element.querySelector<HTMLElement>('.actor-sprite') as HTMLSpanElement;
-    this.motionLabel = element.querySelector<HTMLElement>('.actor-motion') as HTMLSpanElement;
     element.addEventListener('click', () => this.onSelect(entry.key));
   }
 
@@ -73,8 +70,6 @@ export class ActorView {
     this.element.dataset.travelProgress = actor.travel
       ? String(Math.max(0, Math.min(1, (time - actor.travel.startedAt) / Math.max(1, actor.travel.endsAt - actor.travel.startedAt))))
       : '1';
-    this.motionLabel.textContent = actor.motion.toUpperCase();
-
     if (!this.manifest) return;
     const motion = this.manifest.motions?.[actor.motion] || this.manifest.motions?.idle;
     if (!motion?.actions) return;

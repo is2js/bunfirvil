@@ -268,6 +268,15 @@ export class IsometricWorldRenderer {
     this.camera.y += (target.displayY - this.camera.y) * smoothing;
   }
 
+  panByScreenDelta(deltaX: number, deltaY: number): void {
+    if (!this.world || (!deltaX && !deltaY)) return;
+    const before = this.unproject(this.cssWidth / 2, this.cssHeight / 2);
+    const after = this.unproject(this.cssWidth / 2 + deltaX, this.cssHeight / 2 + deltaY);
+    this.camera.x += before.x - after.x;
+    this.camera.y += before.y - after.y;
+    this.canvas.dataset.panCount = String(Number(this.canvas.dataset.panCount || 0) + 1);
+  }
+
   project(x: number, y: number): ProjectedPoint {
     const rawX = (x - y) * (this.tileWidth / 2);
     const rawY = (x + y) * (this.tileHeight / 2);

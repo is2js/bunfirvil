@@ -1,5 +1,6 @@
 import { escapeHtml, formatBytes, resolveProjectUrl, resolveReferencedUrl } from './base';
 import { loadCatalog, mapFromQuery } from './catalog';
+import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { ManifestEffectPlayer } from './effect-player';
 import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
 import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from './grid';
@@ -57,11 +58,16 @@ const numberFormat = new Intl.NumberFormat('ko-KR');
 // 원본 RPG의 기본 walk/movement duration과 동일한 한 cell cadence.
 const MOVEMENT_INTERVAL_MS = 420;
 const TURN_ONLY_HOLD_TO_MOVE_MS = 96;
+const CHARACTER_DISPLAY_NAMES: Record<CharacterKey, string> = {
+  '100': '돌범',
+  '200': '피치',
+};
 
 interface WorldRendererPort {
   setWorld(world: WorldData): void;
   setSelectedOptions(optionIds: string[]): void;
   follow(target: ActorState, smoothing?: number): void;
+  panByScreenDelta(deltaX: number, deltaY: number): void;
   project(x: number, y: number): { x: number; y: number };
   unproject(x: number, y: number): { x: number; y: number } | null;
   render(time: number): void;
@@ -167,6 +173,11 @@ export class ShowcaseApp {
   private interiorDragPointer = -1;
   private interiorDragMoved = false;
   private interiorRelocationArmed = false;
+  private mapPanPointer = -1;
+  private mapPanLastX = 0;
+  private mapPanLastY = 0;
+  private mapPanMoved = false;
+  private cameraTrackingPaused = false;
   private animationFrame = 0;
   private lastMetricPaint = 0;
   private assetCount = 0;
@@ -188,6 +199,7 @@ export class ShowcaseApp {
     this.renderShell(fallback);
     this.get<HTMLElement>('#game-stage').dataset.movementIntervalMs = String(MOVEMENT_INTERVAL_MS);
     this.get<HTMLElement>('#game-stage').dataset.cellProjection = '32x24';
+    this.get<HTMLElement>('#game-stage').dataset.cameraTracking = 'follow';
     this.canvasRenderer = new IsometricWorldRenderer(this.get<HTMLCanvasElement>('#world-canvas'));
     this.renderer = this.canvasRenderer;
     this.effectPlayer = new ManifestEffectPlayer(this.get<HTMLElement>('#effect-layer'), () => this.trackAsset());
@@ -355,7 +367,7 @@ export class ShowcaseApp {
                 <small>드래그 이동 · Shift+휠 회전 · Del 삭제</small>
               </div>
 
-              <div class="stage-tip"><kbd>WASD</kbd><span>또는</span><kbd>방향키</kbd><b>이동</b></div>
+              <div class="stage-tip"><kbd>WASD</kbd><span>또는</span><kbd>방향키</kbd><b>이동</b><span>· 빈 화면 드래그</span></div>
               <div id="toast" class="game-toast" role="status" aria-live="polite"></div>
               <div id="stage-loader" class="stage-loader" aria-live="polite">
                 <span class="loader-orbit"><i></i></span>
@@ -448,9 +460,9 @@ export class ShowcaseApp {
           <h2>로컬 렌더 랩 조작법</h2>
           <div class="help-grid">
             <div><span class="help-icon">⌨</span><b>캐릭터 이동</b><p>WASD 또는 방향키로 8방향 이동합니다. 정적 chunk의 막힌 셀은 통과하지 않습니다.</p></div>
-            <div><span class="help-icon">1–4</span><b>스킬 재생</b><p>1번 또는 휠 클릭은 현재 커서 위치로 텔레포트합니다. 2–4번은 전투 모션과 효과를 재생하며 슬롯은 드래그해 맞바꿀 수 있습니다.</p></div>
+            <div><span class="help-icon">1–6</span><b>스킬 재생</b><p>1번 또는 휠 클릭은 현재 커서 위치로 텔레포트합니다. 2–4번은 전투 모션과 효과를 재생하며 5–6번은 빈 슬롯입니다.</p></div>
             <div><span class="help-icon">B</span><b>옵션 프리뷰</b><p>B팔레트 선택은 맵의 미리보기 프롭과 견적에 반영되고 이 브라우저에 저장됩니다.</p></div>
-            <div><span class="help-icon">⟳</span><b>화면·가구 편집</b><p>휠로 커서 중심 확대·축소합니다. 가구 배치 탭에서 화면의 가구를 누르면 회전·재배치·삭제 도구가 표시됩니다.</p></div>
+            <div><span class="help-icon">✋</span><b>화면·가구 편집</b><p>빈 맵을 손바닥 커서로 드래그하고 휠로 커서 중심 확대·축소합니다. 가구를 누르면 회전·재배치·삭제 도구가 표시됩니다.</p></div>
           </div>
           <p class="dialog-note">이 사이트는 시각·성능 검수용입니다. 피해, 명중, MP, 사용자 인증과 공용 저장은 처리하지 않습니다.</p>
         </form>
@@ -461,12 +473,13 @@ export class ShowcaseApp {
   private createActors(): void {
     const entries = new Map(this.catalog.characters.map((entry) => [entry.key, entry]));
     const fallbackEntries: StaticCharacterEntry[] = [
-      { key: '100', label: '남자 의료진', manifestUrl: 'generated/characters/100/animation.json' },
-      { key: '200', label: '여자 의료진', manifestUrl: 'generated/characters/200/animation.json' },
+      { key: '100', label: CHARACTER_DISPLAY_NAMES['100'], manifestUrl: 'generated/characters/100/animation.json' },
+      { key: '200', label: CHARACTER_DISPLAY_NAMES['200'], manifestUrl: 'generated/characters/200/animation.json' },
     ];
     const layer = this.get<HTMLElement>('#actor-layer');
     for (const fallback of fallbackEntries) {
-      const entry = entries.get(fallback.key) || fallback;
+      const sourceEntry = entries.get(fallback.key) || fallback;
+      const entry = { ...sourceEntry, label: CHARACTER_DISPLAY_NAMES[fallback.key] };
       const actor: ActorState = {
         key: entry.key,
         label: entry.label,
@@ -543,11 +556,12 @@ export class ShowcaseApp {
     this.get<HTMLButtonElement>('#zoom-out').addEventListener('click', () => zoomFromButton(.75), { signal });
     this.get<HTMLButtonElement>('#zoom-in').addEventListener('click', () => zoomFromButton(1.25), { signal });
     this.get<HTMLButtonElement>('#zoom-reset').addEventListener('click', () => {
-      const zoom = this.threeRenderer?.resetCameraZoom() || 1;
+      const zoom = this.threeRenderer?.resetCameraZoom() || RPG_CAMERA_BASE_ZOOM;
       this.paintZoom(zoom);
     }, { signal });
 
     this.get<HTMLButtonElement>('#reset-position').addEventListener('click', () => {
+      this.resumeCameraTracking();
       this.resetActors();
       this.toast('두 캐릭터를 스폰 위치로 이동했습니다.', 'notice');
     }, { signal });
@@ -587,7 +601,7 @@ export class ShowcaseApp {
         this.updateFurnitureToolbar();
         return;
       }
-      if (/^[1-4]$/.test(key)) {
+      if (/^[1-6]$/.test(key)) {
         event.preventDefault();
         this.activateHotbarSlot(Number(key) - 1, this.cursorScreenPoint);
         return;
@@ -602,11 +616,14 @@ export class ShowcaseApp {
     const stage = this.get<HTMLElement>('#game-stage');
     stage.addEventListener('pointermove', (event) => {
       this.cursorScreenPoint = this.screenPoint(event.clientX, event.clientY);
+      this.handleMapPanMove(event);
     }, { signal });
     stage.addEventListener('pointerdown', (event) => {
       if (event.button === 0) {
         if ((this.paletteTab === 'furniture' || this.interiorRelocationArmed) && this.handleInteriorPointerDown(event)) return;
         if (this.paletteTab === 'options' && this.handleFurnitureSelectionPointerDown(event)) return;
+        this.startMapPan(event);
+        return;
       }
       if (event.button !== 1) return;
       event.preventDefault();
@@ -614,8 +631,14 @@ export class ShowcaseApp {
       if (point) this.activateSkill('common-teleport', point, true);
     }, { signal });
     stage.addEventListener('pointermove', (event) => this.handleInteriorPointerMove(event), { signal });
-    stage.addEventListener('pointerup', (event) => this.handleInteriorPointerUp(event), { signal });
-    stage.addEventListener('pointercancel', (event) => this.handleInteriorPointerUp(event), { signal });
+    stage.addEventListener('pointerup', (event) => {
+      this.handleInteriorPointerUp(event);
+      this.finishMapPan(event);
+    }, { signal });
+    stage.addEventListener('pointercancel', (event) => {
+      this.handleInteriorPointerUp(event);
+      this.finishMapPan(event);
+    }, { signal });
     stage.addEventListener('wheel', (event) => {
       event.preventDefault();
       if (event.shiftKey && this.selectedSceneProp()) {
@@ -644,8 +667,51 @@ export class ShowcaseApp {
 
   private paintZoom(zoom: number): void {
     const value = this.mount.querySelector<HTMLElement>('#zoom-value');
-    if (value) value.textContent = `${Math.round(zoom * 100)}%`;
+    if (value) value.textContent = `${cameraZoomPercent(zoom)}%`;
     this.updateFurnitureToolbar();
+  }
+
+  private startMapPan(event: PointerEvent): void {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target || target.closest('button,a,input,textarea,select,label,[contenteditable="true"],.furniture-selection-toolbar')) return;
+    event.preventDefault();
+    this.mapPanPointer = event.pointerId;
+    this.mapPanLastX = event.clientX;
+    this.mapPanLastY = event.clientY;
+    this.mapPanMoved = false;
+    const stage = this.get<HTMLElement>('#game-stage');
+    stage.classList.add('is-panning');
+    stage.setPointerCapture(event.pointerId);
+  }
+
+  private handleMapPanMove(event: PointerEvent): void {
+    if (event.pointerId !== this.mapPanPointer) return;
+    const deltaX = event.clientX - this.mapPanLastX;
+    const deltaY = event.clientY - this.mapPanLastY;
+    this.mapPanLastX = event.clientX;
+    this.mapPanLastY = event.clientY;
+    if (Math.abs(deltaX) + Math.abs(deltaY) < .5) return;
+    this.mapPanMoved = true;
+    this.cameraTrackingPaused = true;
+    const stage = this.get<HTMLElement>('#game-stage');
+    stage.dataset.cameraTracking = 'free';
+    this.renderer.panByScreenDelta(deltaX, deltaY);
+  }
+
+  private finishMapPan(event: PointerEvent): void {
+    if (event.pointerId !== this.mapPanPointer) return;
+    const stage = this.get<HTMLElement>('#game-stage');
+    if (stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
+    stage.classList.remove('is-panning');
+    stage.dataset.lastPanMoved = String(this.mapPanMoved);
+    this.mapPanPointer = -1;
+    this.mapPanMoved = false;
+  }
+
+  private resumeCameraTracking(): void {
+    this.cameraTrackingPaused = false;
+    const stage = this.mount.querySelector<HTMLElement>('#game-stage');
+    if (stage) stage.dataset.cameraTracking = 'follow';
   }
 
   private screenPoint(clientX: number, clientY: number): { x: number; y: number } | null {
@@ -936,7 +1002,7 @@ export class ShowcaseApp {
       this.threeRenderer?.setEditorSelection('');
       this.updateFurnitureToolbar();
       this.get<HTMLElement>('#furniture-status').textContent = '가구를 직접 누르거나 세대 바닥 안쪽을 선택해 주세요.';
-      return true;
+      return false;
     }
     if (this.interiorRelocationArmed) {
       const prop = this.selectedLocalProp();
@@ -980,7 +1046,7 @@ export class ShowcaseApp {
     if (hit) this.get<HTMLElement>('#game-stage').setPointerCapture(event.pointerId);
     this.renderFurniturePalette();
     this.updateFurnitureToolbar();
-    return true;
+    return Boolean(hit);
   }
 
   private handleInteriorPointerMove(event: PointerEvent): void {
@@ -1125,6 +1191,7 @@ export class ShowcaseApp {
     if (!map) return;
     const token = ++this.mapLoadToken;
     this.currentMap = map;
+    this.resumeCameraTracking();
     this.get<HTMLElement>('#stage-loader').classList.remove('is-hidden');
     this.get<HTMLSelectElement>('#map-select').value = map.id;
     this.mount.querySelectorAll<HTMLElement>('[data-map-id]').forEach((button) => button.classList.toggle('is-active', button.dataset.mapId === map.id));
@@ -1248,6 +1315,7 @@ export class ShowcaseApp {
   private setActiveActor(key: CharacterKey, updateUrl = true): void {
     if (!this.actors.has(key) && this.actors.size > 0) key = [...this.actors.keys()][0];
     this.activeActor = key;
+    this.resumeCameraTracking();
     this.actorViews.forEach((view, actorKey) => view.setSelected(actorKey === key));
     this.mount.querySelectorAll<HTMLElement>('[data-actor-key]').forEach((button) => button.classList.toggle('is-active', button.dataset.actorKey === key));
     const actor = this.actors.get(key);
@@ -1660,7 +1728,7 @@ export class ShowcaseApp {
       }
     }
     const active = this.actors.get(this.activeActor);
-    if (active && this.paletteTab !== 'furniture' && !this.selectedLocalPropId) this.renderer.follow(active);
+    if (active && !this.cameraTrackingPaused && this.paletteTab !== 'furniture' && !this.selectedLocalPropId) this.renderer.follow(active);
     this.threeRenderer?.setOcclusionFocus(active || null);
     try {
       this.renderer.render(time);
