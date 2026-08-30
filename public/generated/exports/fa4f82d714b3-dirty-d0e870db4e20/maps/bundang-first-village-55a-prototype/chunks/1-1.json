@@ -17039,7 +17039,7 @@
           "coordinateSystem": "canonical-local-meters",
           "resolvedPlanVariant": "A",
           "planVariantOverrides": {
-            "schemaVersion": "bundang-apartment-plan-variant-overrides-v2",
+            "schemaVersion": "bundang-apartment-plan-variant-overrides-v3",
             "B": {
               "bathrooms": {
                 "fixtureIds": [
@@ -17050,9 +17050,16 @@
                 "yawOffsetDeg": 180,
                 "facingRule": "toward-door-wall-after-plan-transform",
                 "showerFacingRule": "service-wall-opposite-door-facing-door-glass-separates-basin",
+                "showerGlassDividerRule": "local-x-side-toward-basin-between-basin-and-shower",
                 "preserveWetFixtureMirror": true,
                 "minimumFixtureClearanceMeters": 0.02,
-                "roomOverrides": {}
+                "roomOverrides": {
+                  "bathroom-1": {
+                    "wetFixture": {
+                      "yawOffsetDeg": 0
+                    }
+                  }
+                }
               }
             }
           },
@@ -17203,13 +17210,14 @@
                   2.56,
                   3.15
                 ],
-                "yawDeg": 270,
+                "yawDeg": 90,
                 "dimensionsMeters": [
                   0.68,
                   0.7,
                   2.05
                 ],
-                "mountSurface": "bathroom-1-northeast-service-l.protruding-south-face"
+                "mountSurface": "bathroom-1-northeast-service-l.protruding-south-face",
+                "mirrored": false
               }
             },
             "bathroom-2": {
@@ -17304,7 +17312,7 @@
               2.56,
               3.15
             ],
-            "yawDeg": 270,
+            "yawDeg": 90,
             "mirrored": false,
             "materialVariantId": "clear-glass-chrome",
             "dimensionsMeters": [

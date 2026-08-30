@@ -65,7 +65,7 @@ describe('RPG apartment plan variants', () => {
         optionAnchors: {
           resolvedPlanVariant: 'A',
           planVariantOverrides: {
-            schemaVersion: 'bundang-apartment-plan-variant-overrides-v2',
+            schemaVersion: 'bundang-apartment-plan-variant-overrides-v3',
             B: {
               bathrooms: {
                 fixtureIds: ['toilet', 'basin', 'wetFixture'],
@@ -136,7 +136,7 @@ describe('RPG apartment plan variants', () => {
         optionAnchors: {
           resolvedPlanVariant: 'A',
           planVariantOverrides: {
-            schemaVersion: 'bundang-apartment-plan-variant-overrides-v2',
+            schemaVersion: 'bundang-apartment-plan-variant-overrides-v3',
             B: {
               bathrooms: {
                 fixtureIds: ['toilet', 'basin', 'wetFixture'],
