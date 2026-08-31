@@ -47,6 +47,7 @@ import {
   groupMutuallyExclusiveOptions,
   optionSelectionIntent,
   readSelectedOptions,
+  resolvedOptionPrice,
   systemAcChoice,
   systemAcChoices,
   type SystemAcTier,
@@ -117,7 +118,7 @@ const SKILL_GLYPHS: Record<string, string> = {
 };
 
 function isFormTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, .stage-option-chips button, [contenteditable="true"]'));
+  return target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, .stage-option-chips button, .stage-option-clear, [contenteditable="true"]'));
 }
 
 function mapLabelShort(map: StaticMapEntry): string {
@@ -444,7 +445,7 @@ export class ShowcaseApp {
                   </button>
                 </div>
                 <div class="stage-option-quote" aria-label="선택 B옵션과 합계">
-                  <div class="stage-option-title"><b>B</b><span>선택 옵션</span><em id="stage-option-count">0개</em></div>
+                  <div class="stage-option-title"><b>B</b><span>선택 옵션</span><em id="stage-option-count">0개</em><button type="button" id="stage-option-clear" class="stage-option-clear" hidden>전체 옵션 해제</button></div>
                   <div class="stage-option-chips" id="stage-option-chips"><span>기본 마감</span></div>
                   <strong id="stage-option-total">0<small>원</small></strong>
                 </div>
@@ -620,6 +621,9 @@ export class ShowcaseApp {
         price: option.prices?.[this.currentMap.unitType] ?? option.price,
       }));
       void this.removeSelectedOptionWithConfirmation(options, target.dataset.stageOptionRemove || '');
+    }, { signal });
+    this.get<HTMLButtonElement>('#stage-option-clear').addEventListener('click', () => {
+      void this.clearAllSelectedOptionsWithConfirmation();
     }, { signal });
     this.get<HTMLInputElement>('#furniture-search').addEventListener('input', () => this.renderFurniturePalette(), { signal });
     this.get<HTMLButtonElement>('#furniture-rotate-left').addEventListener('click', () => this.transformLocalProp('rotate-left'), { signal });
@@ -2184,10 +2188,10 @@ export class ShowcaseApp {
   }
 
   private renderOptions(): void {
-    const options = compatibleOptions(this.catalog.bOptions, this.currentMap.unitType).map((option) => ({
-      ...option,
-      price: option.prices?.[this.currentMap.unitType] ?? option.price,
-    }));
+    const options = compatibleOptions(this.catalog.bOptions, this.currentMap.unitType).map((option) => {
+      const resolved = resolvedOptionPrice(option, this.currentMap.unitType, this.selectedOptionIds);
+      return { ...option, price: resolved.price, activePriceVariantLabel: resolved.label };
+    });
     const allowedIds = new Set(options.map((option) => option.id));
     this.selectedOptionIds = this.selectedOptionIds.filter((id) => allowedIds.has(id));
     const sourceCategories = [...new Set(options.map((option) => option.category))];
@@ -2263,6 +2267,7 @@ export class ShowcaseApp {
       ? selectedOptions.map((option) => `<span>${escapeHtml(option.label)}</span>`).join('')
       : '<span>기본 마감</span>';
     this.get<HTMLElement>('#stage-option-count').textContent = `${selectedOptions.length}개`;
+    this.get<HTMLButtonElement>('#stage-option-clear').hidden = selectedOptions.length === 0;
     this.get<HTMLElement>('#stage-option-total').innerHTML = `${numberFormat.format(total)}<small>원</small>`;
     this.get<HTMLElement>('#stage-option-chips').innerHTML = selectedOptions.length
       ? selectedOptions.map((option) => `<button type="button" data-stage-option-remove="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 선택 취소 확인"><b>${escapeHtml(option.label)}</b><em>+${numberFormat.format(option.price)}원</em></button>`).join('')
@@ -2350,6 +2355,23 @@ export class ShowcaseApp {
     }
   }
 
+  private async clearAllSelectedOptionsWithConfirmation(): Promise<void> {
+    if (this.optionChangePending || this.selectedOptionIds.length === 0) return;
+    this.optionChangePending = true;
+    try {
+      const accepted = await this.confirmOptionChange({
+        title: '전체 옵션 해제',
+        message: `선택한 B옵션 ${this.selectedOptionIds.length}개를 모두 해제하시겠습니까?`,
+        confirmLabel: '전체 해제',
+      });
+      if (!accepted) return;
+      this.selectedOptionIds = [];
+      this.commitSelectedOptions();
+    } finally {
+      this.optionChangePending = false;
+    }
+  }
+
   private confirmOptionChange({
     title,
     message,
@@ -2414,7 +2436,7 @@ export class ShowcaseApp {
           <b>${escapeHtml(option.label)}</b>
           <small>${escapeHtml(option.description)}</small>
           ${dependencyCopy ? `<span class="dependency">+ ${escapeHtml(dependencyCopy)} 필요</span>` : ''}
-          <strong>+ ${numberFormat.format(option.price)}원</strong>
+          <strong>+ ${numberFormat.format(option.price)}원${option.activePriceVariantLabel ? `<em class="price-variant-label">${escapeHtml(option.activePriceVariantLabel)}</em>` : ''}</strong>
         </span>
         <input type="checkbox" data-option-id="${escapeHtml(option.id)}" ${selected ? 'checked' : ''} />
         <span class="check-ui" aria-hidden="true"></span>

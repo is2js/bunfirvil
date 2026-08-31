@@ -50,6 +50,24 @@ export const BUNDANG_OPTION_DISPLAY_OVERRIDES: Readonly<Record<string, Pick<BOpt
   }),
 });
 
+export const BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES: Readonly<Record<string, NonNullable<BOptionEntry['priceVariants']>>> = {
+  'island-counter-modern': [{
+    whenSelectedAny: ['kitchen-wall-countertop-radianz-golden-shore'],
+    prices: { '51A': 1_410_000, '55A': 1_410_000, '55B': 1_430_000, '59A': 1_410_000 },
+    label: '마감재 업글',
+  }],
+  'island-counter-dining-integrated': [{
+    whenSelectedAny: ['kitchen-wall-countertop-radianz-golden-shore'],
+    prices: { '55B': 2_490_000 },
+    label: '마감재 업글',
+  }],
+  [BUNDANG_DESIGN_WALL_OPTION_ID]: [{
+    whenSelectedAny: ['island-counter-modern', 'island-counter-dining-integrated'],
+    prices: { '55B': 1_600_000 },
+    label: '아일랜드 연동',
+  }],
+};
+
 export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLayoutV1>> = Object.freeze({
   '51A': {
     unitType: '51A',

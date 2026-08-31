@@ -8,6 +8,18 @@ function finite(value: unknown, fallback = 0): number {
   return Number.isFinite(number) ? number : fallback;
 }
 
+/** canonical diagonal world 좌표를 WASD 화면 동선과 같은 북쪽 고정 평면으로 바꾼다. */
+export function worldPointToNorthUpMinimap(point: { x: number; y: number }): { x: number; y: number } {
+  return {
+    x: (point.x - point.y) / 2,
+    y: (point.x + point.y) / 2,
+  };
+}
+
+function apartmentMinimapPoint(apartment: WorldObject, point: NumericPoint): { x: number; y: number } {
+  return worldPointToNorthUpMinimap(apartmentUnitWorldPoint(apartment, point));
+}
+
 function points(value: unknown): NumericPoint[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((point): NumericPoint[] => Array.isArray(point) && point.length >= 2
@@ -45,7 +57,7 @@ export class FloorPlanMinimap {
     this.world = world;
     this.apartment = world.objects.find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry) || null;
     const apartment = this.apartment;
-    const floor = apartment ? points(apartment.geometry?.floorPolygon).map((point) => apartmentUnitWorldPoint(apartment, point)) : [];
+    const floor = apartment ? points(apartment.geometry?.floorPolygon).map((point) => apartmentMinimapPoint(apartment, point)) : [];
     this.bounds = floor.length >= 3 ? {
       minX: Math.min(...floor.map((point) => point.x)) - 1,
       minY: Math.min(...floor.map((point) => point.y)) - 1,
@@ -56,6 +68,7 @@ export class FloorPlanMinimap {
     this.canvas.dataset.mapId = world.entry.id;
     this.canvas.dataset.planVariant = variant;
     this.canvas.dataset.floorplanReady = 'true';
+    this.canvas.dataset.northUp = 'true';
     this.background = null;
     this.lastPaint = 0;
   }
@@ -77,7 +90,7 @@ export class FloorPlanMinimap {
     let actorCount = 0;
     for (const actor of actors) {
       actorCount += 1;
-      const point = this.toCanvas({ x: actor.displayX, y: actor.displayY }, width, height);
+      const point = this.toCanvas(worldPointToNorthUpMinimap({ x: actor.displayX, y: actor.displayY }), width, height);
       const active = actor.key === activeKey;
       context.beginPath(); context.arc(point[0], point[1], active ? 4.2 : 3.1, 0, Math.PI * 2);
       context.fillStyle = active ? '#ffe08a' : actor.key === '100' ? '#66d6c0' : '#e99ab0';
@@ -102,18 +115,18 @@ export class FloorPlanMinimap {
     if (!context || !apartment) return background;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     context.fillStyle = '#081216'; context.fillRect(0, 0, width, height);
-    const floor = points(apartment.geometry?.floorPolygon).map((point) => apartmentUnitWorldPoint(apartment, point));
+    const floor = points(apartment.geometry?.floorPolygon).map((point) => apartmentMinimapPoint(apartment, point));
     this.fillWorldPolygon(context, floor, 'rgba(199, 183, 164, .18)', 'rgba(231, 220, 202, .74)', 1.4, width, height);
     for (const raw of apartment.geometry?.roomZones || []) {
-      const area = rowPolygon(raw).map((point) => apartmentUnitWorldPoint(apartment, point));
+      const area = rowPolygon(raw).map((point) => apartmentMinimapPoint(apartment, point));
       this.fillWorldPolygon(context, area, 'rgba(80, 132, 119, .08)', 'rgba(105, 154, 141, .2)', .65, width, height);
     }
     for (const raw of apartment.geometry?.wallSegments || []) {
       const wall = raw as Record<string, unknown>;
       const ends = points([wall.a, wall.b]);
       if (ends.length !== 2) continue;
-      const a = this.toCanvas(apartmentUnitWorldPoint(apartment, ends[0]), width, height);
-      const b = this.toCanvas(apartmentUnitWorldPoint(apartment, ends[1]), width, height);
+      const a = this.toCanvas(apartmentMinimapPoint(apartment, ends[0]), width, height);
+      const b = this.toCanvas(apartmentMinimapPoint(apartment, ends[1]), width, height);
       const exterior = String(wall.kind || '').includes('exterior');
       context.strokeStyle = exterior ? '#e7ddd0' : '#8d918c'; context.lineWidth = exterior ? 2.3 : 1.25;
       context.beginPath(); context.moveTo(a[0], a[1]); context.lineTo(b[0], b[1]); context.stroke();
@@ -131,7 +144,7 @@ export class FloorPlanMinimap {
     const [x, y] = [finite(prop.positionMeters[0]), finite(prop.positionMeters[1])];
     const yaw = finite(prop.yawDeg) * Math.PI / 180;
     const corners: NumericPoint[] = [[-sizeX / 2, -sizeY / 2], [sizeX / 2, -sizeY / 2], [sizeX / 2, sizeY / 2], [-sizeX / 2, sizeY / 2]];
-    const area = corners.map(([cx, cy]) => apartmentUnitWorldPoint(apartment, [x + cx * Math.cos(yaw) - cy * Math.sin(yaw), y + cx * Math.sin(yaw) + cy * Math.cos(yaw)]));
+    const area = corners.map(([cx, cy]) => apartmentMinimapPoint(apartment, [x + cx * Math.cos(yaw) - cy * Math.sin(yaw), y + cx * Math.sin(yaw) + cy * Math.cos(yaw)]));
     this.fillWorldPolygon(context, area, 'rgba(229, 191, 111, .2)', 'rgba(229, 191, 111, .45)', .55, width, height);
   }
 

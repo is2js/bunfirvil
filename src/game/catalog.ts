@@ -1,6 +1,9 @@
 import { fetchJson, resolveProjectUrl } from './base';
 import type { BOptionEntry, ShowcaseCatalog, StaticMapEntry } from './types';
-import { BUNDANG_OPTION_DISPLAY_OVERRIDES } from './bundang-option-layout';
+import {
+  BUNDANG_OPTION_DISPLAY_OVERRIDES,
+  BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES,
+} from './bundang-option-layout';
 
 const MAP_IDS = [
   'bundang-first-village-51a-prototype',
@@ -159,6 +162,7 @@ interface RawOptionCatalog {
     requires?: string[];
     requiresAny?: string[];
     previewUrl?: string;
+    priceVariants?: BOptionEntry['priceVariants'];
   }>;
 }
 
@@ -192,6 +196,7 @@ async function normalizeExternalOptions(catalogUrl: string): Promise<BOptionEntr
         previewUrl: option.previewUrl ? new URL(option.previewUrl, resolvedCatalogUrl).toString() : undefined,
         // The currently selected unit price is applied just before display.
         prices: option.prices,
+        priceVariants: option.priceVariants,
       } as BOptionEntry & { prices: Record<string, number> }];
     });
   } catch (error) {
@@ -203,7 +208,8 @@ async function normalizeExternalOptions(catalogUrl: string): Promise<BOptionEntr
 function applyBOptionDisplayOverrides(options: BOptionEntry[]): BOptionEntry[] {
   return options.map((option) => {
     const override = BUNDANG_OPTION_DISPLAY_OVERRIDES[option.id];
-    return override ? { ...option, ...override } : option;
+    const priceVariants = BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES[option.id] || option.priceVariants;
+    return override || priceVariants ? { ...option, ...override, priceVariants } : option;
   });
 }
 

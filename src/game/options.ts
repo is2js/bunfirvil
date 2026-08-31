@@ -25,24 +25,69 @@ export interface OptionChoiceGroup {
 }
 
 export function groupMutuallyExclusiveOptions(options: BOptionEntry[]): OptionChoiceGroup[] {
-  const groupCounts = new Map<string, number>();
+  const byId = new Map(options.map((option) => [option.id, option]));
+  const adjacency = new Map(options.map((option) => [option.id, new Set<string>()]));
+  const explicitGroups = new Map<string, string[]>();
   for (const option of options) {
-    const group = String(option.exclusiveGroup || '');
-    if (group) groupCounts.set(group, (groupCounts.get(group) || 0) + 1);
+    const explicit = String(option.exclusiveGroup || '');
+    if (explicit) explicitGroups.set(explicit, [...(explicitGroups.get(explicit) || []), option.id]);
+    for (const excluded of option.excludes) {
+      if (!byId.has(excluded)) continue;
+      adjacency.get(option.id)?.add(excluded);
+      adjacency.get(excluded)?.add(option.id);
+    }
+  }
+  for (const members of explicitGroups.values()) {
+    for (const id of members) {
+      for (const peer of members) if (id !== peer) adjacency.get(id)?.add(peer);
+    }
+  }
+  const groupById = new Map<string, string>();
+  const visited = new Set<string>();
+  for (const option of options) {
+    if (visited.has(option.id)) continue;
+    const stack = [option.id];
+    const component: string[] = [];
+    while (stack.length) {
+      const id = stack.pop();
+      if (!id || visited.has(id)) continue;
+      visited.add(id);
+      component.push(id);
+      adjacency.get(id)?.forEach((peer) => { if (!visited.has(peer)) stack.push(peer); });
+    }
+    if (component.length < 2) continue;
+    const explicit = component.map((id) => String(byId.get(id)?.exclusiveGroup || '')).find(Boolean);
+    const key = explicit || `mutually-exclusive:${component.slice().sort().join('|')}`;
+    component.forEach((id) => groupById.set(id, key));
   }
   const emitted = new Set<string>();
   const result: OptionChoiceGroup[] = [];
   for (const option of options) {
-    const group = String(option.exclusiveGroup || '');
-    if (!group || (groupCounts.get(group) || 0) < 2) {
+    const group = groupById.get(option.id) || '';
+    if (!group) {
       result.push({ exclusiveGroup: '', options: [option] });
       continue;
     }
     if (emitted.has(group)) continue;
     emitted.add(group);
-    result.push({ exclusiveGroup: group, options: options.filter((candidate) => candidate.exclusiveGroup === group) });
+    result.push({ exclusiveGroup: group, options: options.filter((candidate) => groupById.get(candidate.id) === group) });
   }
   return result;
+}
+
+export function resolvedOptionPrice(
+  option: BOptionEntry,
+  unitType: string,
+  selected: Iterable<string>,
+): { price: number; label?: string } {
+  const selectedIds = new Set(selected);
+  const basePrice = option.prices?.[unitType] ?? option.price;
+  const variant = option.priceVariants?.find((candidate) =>
+    candidate.whenSelectedAny.some((id) => selectedIds.has(id))
+      && Number.isFinite(candidate.prices[unitType]));
+  return variant
+    ? { price: variant.prices[unitType], label: variant.label }
+    : { price: basePrice };
 }
 
 export function systemAcChoice(optionId: string): SystemAcChoice | null {

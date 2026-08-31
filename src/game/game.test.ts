@@ -9,6 +9,7 @@ import {
   calculateOptionPrice,
   groupMutuallyExclusiveOptions,
   optionSelectionIntent,
+  resolvedOptionPrice,
 } from './options';
 import type { BOptionEntry } from './types';
 import { canTraverse, crossesApartmentWall, expandTileRuns, livingRoomSpawnCells } from './world';
@@ -290,5 +291,31 @@ describe('game-local state helpers', () => {
     const grouped = groupMutuallyExclusiveOptions(choiceOptions);
     expect(grouped.map((group) => [group.exclusiveGroup, group.options.map((option) => option.id)]))
       .toEqual([['system-ac-package', ['general', 'premium']], ['', ['independent']]]);
+  });
+
+  it('infers 택1 groups from mutual excludes when the static catalog omitted exclusiveGroup', () => {
+    const grouped = groupMutuallyExclusiveOptions([
+      { ...options[0], id: 'general', excludes: ['premium'] },
+      { ...options[0], id: 'premium', excludes: ['general'] },
+      { ...options[0], id: 'independent', excludes: [] },
+    ]);
+    expect(grouped.map((group) => group.options.map((option) => option.id)))
+      .toEqual([['general', 'premium'], ['independent']]);
+  });
+
+  it('applies the official island material-upgrade price only while the surface option is selected', () => {
+    const island: BOptionEntry = {
+      ...options[0],
+      id: 'island-counter-modern',
+      prices: { '55B': 1_300_000 },
+      priceVariants: [{
+        whenSelectedAny: ['kitchen-wall-countertop-radianz-golden-shore'],
+        prices: { '55B': 1_430_000 },
+        label: '마감재 업글',
+      }],
+    };
+    expect(resolvedOptionPrice(island, '55B', []).price).toBe(1_300_000);
+    expect(resolvedOptionPrice(island, '55B', ['kitchen-wall-countertop-radianz-golden-shore']))
+      .toEqual({ price: 1_430_000, label: '마감재 업글' });
   });
 });

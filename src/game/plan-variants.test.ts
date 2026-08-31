@@ -128,6 +128,30 @@ describe('RPG apartment plan variants', () => {
     ]);
   });
 
+  it('uses the kitchen-window-facing island as the default for 51A·55A·59A B plans', () => {
+    for (const unitTypeId of ['51A', '55A', '59A']) {
+      const apartment: WorldObject = {
+        unitTypeId,
+        geometry: {
+          optionAnchors: {
+            kitchen: { island: { yawDeg: 180, frontFaces: 'away-from-living' } },
+          },
+          solidBlocks: unitTypeId === '55A'
+            ? [{ id: 'entry-pantry-west-service-block' }, { id: 'bathroom-1-northeast-service-l' }]
+            : [],
+        },
+      };
+      applyPlanVariantInteriorOverrides(apartment, 'B');
+      const geometry = apartment.geometry as any;
+      expect(geometry.optionAnchors.kitchen.island.yawDeg, unitTypeId).toBe(0);
+      expect(geometry.optionAnchors.kitchen.island.frontFaces, unitTypeId).toBe('toward-kitchen-window-wall');
+      if (unitTypeId === '55A') {
+        expect(geometry.solidBlocks.map((block: { id: string }) => block.id))
+          .toEqual(['bathroom-1-northeast-service-l']);
+      }
+    }
+  });
+
   it('keeps the 59AB bathtub fixed while separating the basin and toilet footprints', () => {
     const apartment: WorldObject = {
       unitTypeId: '59A',

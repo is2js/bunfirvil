@@ -122,6 +122,9 @@ const SERVICE_WALL_SHOWER_YAW: Record<string, Record<ApartmentPlanVariant, numbe
   '59A': { A: 90, B: 270 },
 });
 
+const PLAN_B_ISLAND_WINDOW_FACING_UNITS = new Set(['51A', '55A', '59A']);
+const PLAN_B_55A_REMOVED_SOLID_BLOCK_ID = 'entry-pantry-west-service-block';
+
 /**
  * 샤워부스 recipe에서 유리벽은 local +X에, 샤워기는 local -Y에 있다.
  * 샤워기 yaw는 설비벽 기준으로 유지하고 유리벽만 세면대 쪽으로 반사해
@@ -156,6 +159,7 @@ export function applyPlanVariantInteriorOverrides(
   const geometry = apartment.geometry;
   const anchors = record(geometry?.optionAnchors);
   if (!geometry || !anchors) return;
+  const unitType = String(apartment.unitTypeId || '').toUpperCase();
   anchors.resolvedPlanVariant = variant;
   const overrides = record(anchors.planVariantOverrides);
   const override = record(overrides?.[variant]);
@@ -208,6 +212,17 @@ export function applyPlanVariantInteriorOverrides(
     for (const field of ['frontFaces', 'diningChairYawOffsetDeg', 'diningChairFacingRule']) {
       if (field in islandOverride) island[field] = islandOverride[field];
     }
+  }
+  if (variant === 'B' && island && PLAN_B_ISLAND_WINDOW_FACING_UNITS.has(unitType)) {
+    island.yawDeg = normalizedYaw(Number(island.yawDeg) + 180);
+    island.frontFaces = 'toward-kitchen-window-wall';
+  }
+
+  // 55A B형에서 현관 팬트리 설비 블록이 주방 하부장 아래 마루까지 돌출되던
+  // 정적 snapshot 아티팩트를 Bunfirvil 변형 계층에서만 제거한다.
+  if (variant === 'B' && unitType === '55A' && Array.isArray(geometry.solidBlocks)) {
+    geometry.solidBlocks = geometry.solidBlocks.filter((value) =>
+      String(record(value)?.id || '') !== PLAN_B_55A_REMOVED_SOLID_BLOCK_ID);
   }
 
   // options/runtime.mjs가 준비되기 전 geometry.interiorProps fallback도

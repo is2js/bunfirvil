@@ -47,6 +47,12 @@ export interface BOptionEntry {
   exclusiveGroup?: string;
   previewUrl?: string;
   prices?: Record<string, number>;
+  priceVariants?: Array<{
+    whenSelectedAny: string[];
+    prices: Record<string, number>;
+    label?: string;
+  }>;
+  activePriceVariantLabel?: string;
 }
 
 export interface ShowcaseCatalog {
