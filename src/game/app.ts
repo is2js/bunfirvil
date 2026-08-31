@@ -996,9 +996,12 @@ export class ShowcaseApp {
   private resolveInspectionLaserLineSnapAxis(pointerPlanPoint: NumericPoint | null): InspectionLaserAxis | null {
     if (!this.inspectionLaser.lineSnap) return null;
     if (this.inspectionLaser.lineSnapManualAxis) return this.inspectionLaser.axis;
-    const startPlanPoint = this.inspectionLaser.firstHit?.sourcePlanPoint
-      || this.inspectionLaser.firstPlanPoint
-      || this.inspectionLaser.firstHit?.point;
+    // Three.js의 벽 세로 면 클릭은 바닥 교차점으로 역투영되어 원시 좌표가
+    // 실제 벽 자석점에서 멀어질 수 있다. L축은 확정된 표면점을 기준으로 잡아야
+    // 벽과 평행한 잘못된 축으로 발사되어 벽 두께 안에서 막히지 않는다.
+    const startPlanPoint = this.inspectionLaser.firstPlanPoint
+      || this.inspectionLaser.firstHit?.point
+      || this.inspectionLaser.firstHit?.sourcePlanPoint;
     if (!startPlanPoint || !pointerPlanPoint) return this.inspectionLaser.axis;
     this.inspectionLaser.axis = istarparkLaserAxisTowardPointer({
       startPlanPoint,

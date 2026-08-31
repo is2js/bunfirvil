@@ -10,6 +10,8 @@ import {
   measureIstarparkLaserGap,
   snapIstarparkLaserPoint,
 } from './istarpark-laser-measurement';
+import { refineBundangOptionProps } from './bundang-option-layout';
+import { applyPlanVariant } from './plan-variants';
 
 const room = {
   floorPolygon: [[0, 0], [4, 0], [4, 3], [0, 3]],
@@ -215,8 +217,20 @@ describe('이스타파크 레이저 실측 계약', () => {
       .map((name) => JSON.parse(readFileSync(join(chunksRoot, name), 'utf8')))
       .flatMap((chunk) => chunk.objects || [])
       .find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry);
+    applyPlanVariant({
+      entry: { unitType: '51A' },
+      objects: [apartment],
+      blocked: new Set<string>(),
+    } as any, 'B');
     const geometry = apartment.geometry;
-    const props = geometry.interiorProps || [];
+    const props = refineBundangOptionProps(
+      geometry,
+      '51A',
+      [],
+      geometry.interiorProps || [],
+      'B',
+    );
+    expect(apartment.planVariant).toBe('B');
     const startHit = snapIstarparkLaserPoint({
       candidatePlanPoint: [7.4, 4.8],
       geometry,
@@ -244,6 +258,47 @@ describe('이스타파크 레이저 실측 계약', () => {
         props,
       })).toMatchObject({ valid: true, axis: 'y', distanceMm: expected.distanceMm });
     }
+
+    const perspectiveShiftedHit = snapIstarparkLaserPoint({
+      candidatePlanPoint: [9, 5.5],
+      geometry,
+      props,
+      maxSnapDistanceMeters: null,
+      requireSurface: true,
+    });
+    expect(perspectiveShiftedHit).toMatchObject({
+      obstacleId: 'bathroom-1-south',
+      sourcePlanPoint: [9, 5.5],
+      point: [8.3, 4.9],
+    });
+    const bedroomPointer = [7.4, 7];
+    const projectedAxis = istarparkLaserAxisTowardPointer({
+      startPlanPoint: perspectiveShiftedHit.sourcePlanPoint,
+      pointerPlanPoint: bedroomPointer,
+      fallbackAxis: 'x',
+    });
+    expect(projectedAxis).toBe('x');
+    expect(measureIstarparkLaserDirectionalGap({
+      startHit: perspectiveShiftedHit,
+      pointerPlanPoint: bedroomPointer,
+      axisLock: projectedAxis,
+      geometry,
+      props,
+    })).toMatchObject({ valid: false, reason: 'blocked-start-direction' });
+
+    const snappedAxis = istarparkLaserAxisTowardPointer({
+      startPlanPoint: perspectiveShiftedHit.point,
+      pointerPlanPoint: bedroomPointer,
+      fallbackAxis: 'x',
+    });
+    expect(snappedAxis).toBe('y');
+    expect(measureIstarparkLaserDirectionalGap({
+      startHit: perspectiveShiftedHit,
+      pointerPlanPoint: bedroomPointer,
+      axisLock: snappedAxis,
+      geometry,
+      props,
+    })).toMatchObject({ valid: true, axis: 'y', distanceMm: 3000 });
   });
 
   it('축 정렬 2점 실측도 자동 실측의 마감 보정값을 재사용한다', () => {
