@@ -1,5 +1,6 @@
 import { fetchJson, resolveProjectUrl } from './base';
 import type { BOptionEntry, ShowcaseCatalog, StaticMapEntry } from './types';
+import { BUNDANG_OPTION_DISPLAY_OVERRIDES } from './bundang-option-layout';
 
 const MAP_IDS = [
   'bundang-first-village-51a-prototype',
@@ -198,6 +199,13 @@ async function normalizeExternalOptions(catalogUrl: string): Promise<BOptionEntr
   }
 }
 
+function applyBOptionDisplayOverrides(options: BOptionEntry[]): BOptionEntry[] {
+  return options.map((option) => {
+    const override = BUNDANG_OPTION_DISPLAY_OVERRIDES[option.id];
+    return override ? { ...option, ...override } : option;
+  });
+}
+
 async function normalizeCatalog(raw: unknown): Promise<ShowcaseCatalog> {
   if (!raw || typeof raw !== 'object') throw new Error('catalog.v1.json이 JSON 객체가 아닙니다.');
   const value = raw as Record<string, unknown>;
@@ -254,6 +262,7 @@ async function normalizeCatalog(raw: unknown): Promise<ShowcaseCatalog> {
       : '';
     bOptions = await normalizeExternalOptions(reference);
   }
+  bOptions = applyBOptionDisplayOverrides(bOptions);
 
   return {
     schemaVersion: 1,

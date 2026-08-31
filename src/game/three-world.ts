@@ -12,6 +12,11 @@ import {
 } from './apartment-transform';
 import { castsExteriorStructureShadow } from './structure-shadow';
 import {
+  bundangEditorSelectionPropIds,
+  refineBundangOptionProps,
+  replacedBundangOpeningIds,
+} from './bundang-option-layout';
+import {
   ISTARPARK_LASER_HEIGHT_METERS,
   type InspectionLaserAxis,
   type InspectionLaserMeasurement,
@@ -142,10 +147,10 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
     defaultDimensionsMeters: [0.9, 0.08, 2.2],
     parts: [
       { shape: 'box', scale: [1, 1, 1], offset: [0, 0, 0.5], materialRole: 'primary' },
-      { shape: 'box', scale: [0.018, 1.08, 0.96], offset: [-0.491, 0.04, 0.5], materialRole: 'secondary' },
-      { shape: 'box', scale: [0.018, 1.08, 0.96], offset: [0.491, 0.04, 0.5], materialRole: 'secondary' },
-      { shape: 'box', scale: [1, 1.08, 0.018], offset: [0, 0.04, 0.982], materialRole: 'secondary' },
-      { shape: 'cylinder', scale: [0.035, 0.09, 0.035], offset: [0.36, 0.53, 0.52], materialRole: 'accent' },
+      { shape: 'box', scale: [0.018, 1.08, 0.96], offset: [-0.491, 0.04, 0.5], materialRole: 'door-outline' },
+      { shape: 'box', scale: [0.018, 1.08, 0.96], offset: [0.491, 0.04, 0.5], materialRole: 'door-outline' },
+      { shape: 'box', scale: [1, 1.08, 0.018], offset: [0, 0.04, 0.982], materialRole: 'door-outline' },
+      { shape: 'box', scale: [1, 1.08, 0.014], offset: [0, 0.04, 0.007], materialRole: 'door-outline' },
     ],
   },
   {
@@ -301,6 +306,7 @@ export class ThreeWorldRenderer {
   private editorGhostLoadToken = 0;
   private cameraZoom = RPG_CAMERA_BASE_ZOOM;
   private structureOccluders: StructureOccluder[] = [];
+  private finishOccluders: StructureOccluder[] = [];
   private occlusionFocus: ActorState | null = null;
   private lastOcclusionTime = 0;
   private loadToken = 0;
@@ -362,8 +368,12 @@ export class ThreeWorldRenderer {
 
   setSelectedOptions(optionIds: string[]): void {
     this.selectedOptionIds = [...optionIds];
+    this.rebuildStructure();
     this.rebuildProps();
-    void this.contractsReady.then(() => this.rebuildProps());
+    void this.contractsReady.then(() => {
+      this.rebuildStructure();
+      this.rebuildProps();
+    });
   }
 
   setEditorProps(props: ApartmentInteriorProp[] | null): void {
@@ -1179,8 +1189,13 @@ export class ThreeWorldRenderer {
     this.canvas.dataset.exteriorShadowCasterCount = String(exteriorShadowCasterCount);
     this.canvas.dataset.interiorShadowCasterCount = '0';
 
+    const replacedOpeningIds = replacedBundangOpeningIds(
+      object.unitTypeId || this.world?.entry.unitType || '',
+      this.selectedOptionIds,
+    );
     for (const openingValue of geometry.openings || []) {
       const opening = openingValue as Record<string, unknown>;
+      if (replacedOpeningIds.has(String(opening.id || ''))) continue;
       const ends = points([opening.a, opening.b]);
       if (ends.length !== 2) continue;
       const start = this.localPoint(object, ends[0]);
@@ -1212,7 +1227,8 @@ export class ThreeWorldRenderer {
     const camera: NumericPoint = [this.camera.position.x, this.camera.position.z];
     const focus: NumericPoint | null = focusWorld ? [focusWorld.x, focusWorld.z] : null;
     let fadedCount = 0;
-    for (const entry of this.structureOccluders) {
+    const occluders = [...this.structureOccluders, ...this.finishOccluders];
+    for (const entry of occluders) {
       const occluded = Boolean(focus && entry.segments.some(([start, end]) => wallCrossesSightline(start, end, camera, focus)));
       const target = occluded ? Math.min(entry.baseOpacity, 0.28) : entry.baseOpacity;
       if (occluded) fadedCount += 1;
@@ -1234,8 +1250,9 @@ export class ThreeWorldRenderer {
       entry.mesh.castShadow = entry.castsShadow && entry.currentOpacity >= 0.7;
     }
     this.canvas.dataset.occludedWallCount = String(fadedCount);
+    this.canvas.dataset.finishOccluderCount = String(this.finishOccluders.length);
     this.canvas.dataset.wallFadeOpacity = fadedCount
-      ? Math.min(...this.structureOccluders.filter((entry) => entry.currentOpacity < entry.baseOpacity).map((entry) => entry.currentOpacity)).toFixed(3)
+      ? Math.min(...occluders.filter((entry) => entry.currentOpacity < entry.baseOpacity).map((entry) => entry.currentOpacity)).toFixed(3)
       : '1.000';
   }
 
@@ -1271,14 +1288,21 @@ export class ThreeWorldRenderer {
   private rebuildProps(): void {
     disposeTree(this.propRoot);
     disposeTree(this.editorSelectionRoot);
+    this.finishOccluders = [];
     this.renderedProps.clear();
     const propLoadToken = ++this.propLoadToken;
     const object = this.apartment;
     const geometry = object?.geometry;
     if (!object || !geometry) return;
-    const baseProps = this.optionRuntime
+    const runtimeProps = this.optionRuntime
       ? this.optionRuntime.bundangPrototypeOptionProps(geometry, object.unitTypeId || this.world?.entry.unitType || '', this.selectedOptionIds)
       : geometry.interiorProps || [];
+    const baseProps = refineBundangOptionProps(
+      geometry,
+      object.unitTypeId || this.world?.entry.unitType || '',
+      this.selectedOptionIds,
+      runtimeProps,
+    );
     const sourceOverrides = new Set((this.editorProps || []).map((prop) => String(prop.sourcePropId || '')).filter(Boolean));
     const props = this.editorProps
       ? [...baseProps.filter((prop) => !sourceOverrides.has(String(prop.id || ''))), ...this.editorProps.filter((prop) => prop.localDeleted !== true)]
@@ -1347,8 +1371,51 @@ export class ThreeWorldRenderer {
     group.renderOrder = mountingKind === 'room-finish' ? 3.04 : 3.1;
     group.userData.editorPropId = String(prop.id || '');
     this.propRoot.add(group);
+    this.registerFinishOccluders(object, prop, group);
     this.applyEditorGhostHiddenState();
     this.refreshEditorSelection();
+  }
+
+  private registerFinishOccluders(object: WorldObject, prop: ApartmentInteriorProp, group: THREE.Group): void {
+    const localSegments = Array.isArray(prop.occlusionSegmentsMeters) ? prop.occlusionSegmentsMeters : [];
+    const segments = localSegments.flatMap((segment): Array<[NumericPoint, NumericPoint]> => {
+      const start = points([segment?.[0]])[0];
+      const end = points([segment?.[1]])[0];
+      if (!start || !end) return [];
+      const worldStart = this.localPoint(object, start);
+      const worldEnd = this.localPoint(object, end);
+      return [[[worldStart.x, worldStart.z], [worldEnd.x, worldEnd.z]]];
+    });
+    if (!segments.length) return;
+    const inheritedBaseOpacity = this.structureOccluders.find((entry) => entry.segments.some(([candidateStart, candidateEnd]) => (
+      segments.some(([start, end]) => {
+        const direct = Math.hypot(start[0] - candidateStart[0], start[1] - candidateStart[1]) < .001
+          && Math.hypot(end[0] - candidateEnd[0], end[1] - candidateEnd[1]) < .001;
+        const reversed = Math.hypot(start[0] - candidateEnd[0], start[1] - candidateEnd[1]) < .001
+          && Math.hypot(end[0] - candidateStart[0], end[1] - candidateStart[1]) < .001;
+        return direct || reversed;
+      })
+    )))?.baseOpacity;
+    group.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const materialOpacity = Math.min(...materials.map((material) => Number.isFinite(material.opacity) ? material.opacity : 1));
+      const baseOpacity = Math.min(materialOpacity, inheritedBaseOpacity ?? 1);
+      for (const material of materials) {
+        material.opacity = Math.min(material.opacity, baseOpacity);
+        material.transparent = material.opacity < .995;
+        material.depthWrite = material.opacity >= .7;
+        material.needsUpdate = true;
+      }
+      this.finishOccluders.push({
+        mesh,
+        segments,
+        baseOpacity,
+        currentOpacity: baseOpacity,
+        castsShadow: false,
+      });
+    });
   }
 
   private refreshEditorSelection(): void {
@@ -1356,32 +1423,45 @@ export class ThreeWorldRenderer {
     delete this.canvas.dataset.selectedEditorX;
     delete this.canvas.dataset.selectedEditorY;
     delete this.canvas.dataset.selectedEditorMask;
+    delete this.canvas.dataset.selectedEditorGroupId;
+    delete this.canvas.dataset.selectedEditorCount;
     if (!this.editorSelectedPropId) return;
-    const selected = this.propRoot.children.find((child) => child.userData.editorPropId === this.editorSelectedPropId);
-    if (!selected) return;
-    selected.updateWorldMatrix(true, true);
-    const bounds = new THREE.Box3().setFromObject(selected).expandByScalar(0.035);
+    const selectedPropIds = new Set(bundangEditorSelectionPropIds(
+      [...this.renderedProps.values()],
+      this.editorSelectedPropId,
+    ));
+    const selectedObjects = this.propRoot.children.filter((child) => selectedPropIds.has(String(child.userData.editorPropId || '')));
+    if (!selectedObjects.length) return;
+    const primary = selectedObjects.find((child) => child.userData.editorPropId === this.editorSelectedPropId) || selectedObjects[0];
+    primary.updateWorldMatrix(true, true);
+    const bounds = new THREE.Box3().setFromObject(primary);
+    if (bounds.isEmpty()) return;
+    bounds.expandByScalar(0.035);
     this.resize();
     this.camera.updateMatrixWorld();
     const screen = bounds.getCenter(new THREE.Vector3()).project(this.camera);
     this.canvas.dataset.selectedEditorX = String((screen.x * .5 + .5) * this.cssWidth);
     this.canvas.dataset.selectedEditorY = String((-screen.y * .5 + .5) * this.cssHeight);
     this.canvas.dataset.selectedEditorMask = 'rpg-gold';
-    const mask = selected.clone(true);
-    mask.name = 'rpg-selected-furniture-mask';
-    mask.scale.multiplyScalar(1.012);
-    mask.traverse((object) => {
-      const mesh = object as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      mesh.userData.sharedGeometry = true;
-      mesh.material = new THREE.MeshBasicMaterial({
-        color: '#fbbf24', transparent: true, opacity: .34, depthWrite: false,
-        depthTest: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
-        polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+    this.canvas.dataset.selectedEditorCount = String(selectedObjects.length);
+    if (selectedObjects.length > 1) this.canvas.dataset.selectedEditorGroupId = 'living-design-wall-panel';
+    for (const selected of selectedObjects) {
+      const mask = selected.clone(true);
+      mask.name = selectedObjects.length > 1 ? 'rpg-selected-design-wall-mask' : 'rpg-selected-furniture-mask';
+      mask.scale.multiplyScalar(1.012);
+      mask.traverse((object) => {
+        const mesh = object as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        mesh.userData.sharedGeometry = true;
+        mesh.material = new THREE.MeshBasicMaterial({
+          color: '#fbbf24', transparent: true, opacity: .34, depthWrite: false,
+          depthTest: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+          polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+        });
+        mesh.renderOrder = 8;
       });
-      mesh.renderOrder = 8;
-    });
-    this.editorSelectionRoot.add(mask);
+      this.editorSelectionRoot.add(mask);
+    }
     const helper = new THREE.Box3Helper(bounds, new THREE.Color('#ffe58a'));
     helper.renderOrder = 9;
     this.editorSelectionRoot.add(helper);
@@ -1419,6 +1499,7 @@ export class ThreeWorldRenderer {
     const cellSize = Math.max(0.01, finite(this.apartment?.geometry?.cellSizeMeters, 0.5));
     const palette = this.palette(prop.materialVariantId);
     const roomFinish = asset?.mountingKind === 'room-finish';
+    const wallFinish = String(prop.installationRole || '').includes('wall-');
     for (const part of asset?.parts?.length ? asset.parts : [{ shape: 'box', scale: [1, 1, 1], offset: [0, 0, 0.5] }]) {
       const width = size[0] * finite(part.scale?.[0], 1) / cellSize;
       const depth = size[1] * finite(part.scale?.[1], 1) / cellSize;
@@ -1445,8 +1526,10 @@ export class ThreeWorldRenderer {
       const role = String(part.materialRole || 'primary');
       const material = role === 'glass'
         ? this.material('#d9f0ef', { glass: true })
+        : asset?.assetId === 'interior-infinity-door-panel' && role === 'door-outline'
+          ? this.material('#3b342d', { roughness: 0.72 })
         : this.material(palette[role] || palette.primary, { roughness: prop.materialVariantId === 'charcoal-accent' ? 0.62 : 0.88 });
-      if (roomFinish) {
+      if (roomFinish || wallFinish) {
         material.polygonOffset = true;
         material.polygonOffsetFactor = -2;
         material.polygonOffsetUnits = -2;
@@ -1459,6 +1542,7 @@ export class ThreeWorldRenderer {
       );
       mesh.castShadow = false;
       mesh.receiveShadow = false;
+      if (wallFinish) mesh.renderOrder = 3.06;
       group.add(mesh);
     }
     return group;

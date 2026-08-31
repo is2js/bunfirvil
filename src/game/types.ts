@@ -142,6 +142,16 @@ export interface ApartmentInteriorProp {
   mirrored?: boolean;
   materialVariantId?: string;
   mountHeightMeters?: number;
+  sourceOptionId?: string;
+  anchorId?: string;
+  anchorWallSegmentId?: string;
+  installationRole?: string;
+  collisionMode?: 'solid' | 'visual-only' | string;
+  collisionDefault?: 'solid' | 'visual-only' | string;
+  measurementObstacle?: boolean;
+  replacesOpeningId?: string;
+  occlusionGroupId?: string;
+  occlusionSegmentsMeters?: number[][][];
   [key: string]: unknown;
 }
 

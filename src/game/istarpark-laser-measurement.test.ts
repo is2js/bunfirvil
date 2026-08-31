@@ -64,6 +64,22 @@ describe('이스타파크 레이저 실측 계약', () => {
     expect(result).toMatchObject({ valid: true, anchorSnapped: true, distanceMm: 900 });
   });
 
+  it('디자인 월과 통과형 도어처럼 measurementObstacle=false인 마감 두께는 실측에서 제외한다', () => {
+    const baseline = measureIstarparkLaserGap({ anchorPlanPoint: [2, 1.5], axis: 'x', geometry: room });
+    const withFinish = measureIstarparkLaserGap({
+      anchorPlanPoint: [2, 1.5],
+      axis: 'x',
+      geometry: room,
+      props: [{
+        id: 'design-wall-finish', assetId: 'living-art-wall-greige-stone',
+        positionMeters: [2, 1.5], dimensionsMeters: [1, 1, 2.2],
+        collisionMode: 'visual-only', measurementObstacle: false,
+      }],
+    });
+    expect(withFinish.distanceMm).toBe(baseline.distanceMm);
+    expect(withFinish.anchorSnapped).toBe(false);
+  });
+
   it('평면도 마감 치수보다 크게 표시하지 않고 가구가 막은 나머지 순수 폭만 계산한다', () => {
     const result = measureIstarparkLaserGap({
       anchorPlanPoint: [2.5, 1.5],

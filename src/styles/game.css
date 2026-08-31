@@ -1854,7 +1854,12 @@ input:focus-visible {
 .stage-option-chips { min-width: 0; max-height: min(132px, 27vh); grid-column: 1 / 3; display: flex; align-content: flex-start; flex-wrap: wrap; gap: 4px; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(213, 183, 112, .34) transparent; }
 .stage-option-chips::-webkit-scrollbar { width: 5px; }
 .stage-option-chips::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(213, 183, 112, .34); }
-.stage-option-chips span { min-width: max-content; height: 22px; display: inline-flex; align-items: center; gap: 6px; padding: 0 7px; border: 1px solid rgba(179, 167, 137, .14); background: rgba(255, 255, 255, .025); }
+.stage-option-chips :is(span, button) { min-width: max-content; height: 22px; display: inline-flex; align-items: center; gap: 6px; padding: 0 7px; border: 1px solid rgba(179, 167, 137, .14); background: rgba(255, 255, 255, .025); }
+.stage-option-chips button { appearance: none; color: inherit; font: inherit; cursor: pointer; }
+.stage-option-chips button:hover,
+.stage-option-chips button:focus-visible { border-color: rgba(229, 196, 116, .58); background: rgba(213, 183, 112, .10); outline: none; }
+.stage-option-chips button:hover b,
+.stage-option-chips button:focus-visible b { color: #f2dfac; }
 .stage-option-chips b { color: #aca38e; font-size: 9px; }
 .stage-option-chips em { color: #d5b96f; font: normal 650 8px ui-monospace, monospace; }
 .stage-option-quote > strong { min-height: 100%; grid-column: 3; grid-row: 1 / 3; padding-left: 11px; display: flex; align-items: center; border-left: 1px solid rgba(213, 183, 112, .14); color: #f0d18b; font: 800 18px ui-monospace, monospace; white-space: nowrap; }
@@ -1869,6 +1874,41 @@ input:focus-visible {
   color: #405753;
   font: 650 7px ui-monospace, monospace;
   letter-spacing: .08em;
+}
+
+.option-confirm-dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid rgba(209, 176, 104, .4);
+  border-radius: 12px;
+  color: var(--ink);
+  background: linear-gradient(145deg, #17272a, #09171b);
+  box-shadow: 0 32px 100px rgba(0, 0, 0, .7);
+}
+
+.option-confirm-dialog::backdrop {
+  background: rgba(1, 7, 10, .78);
+  backdrop-filter: blur(8px);
+}
+
+.option-confirm-dialog form { padding: 28px; }
+.option-confirm-dialog h2 { margin: 4px 0 12px; font-size: 21px; }
+.option-confirm-message { margin: 0; color: #b8c8c5; font-size: 13px; line-height: 1.72; }
+.option-confirm-actions { margin-top: 24px; display: flex; justify-content: flex-end; gap: 8px; }
+.option-confirm-actions button {
+  min-width: 92px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: #aebfbc;
+  background: rgba(5, 17, 21, .8);
+  cursor: pointer;
+  font: 750 12px/1.2 inherit;
+}
+.option-confirm-actions button.is-primary {
+  border-color: rgba(209, 176, 104, .6);
+  color: #16130d;
+  background: linear-gradient(135deg, #f2d796, #bd9251);
 }
 
 .help-dialog {

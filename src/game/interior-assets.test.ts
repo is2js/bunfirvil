@@ -3,6 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { auditApartmentPropPlacements } from './apartment-transform';
+import { refineBundangOptionProps } from './bundang-option-layout';
 import { STRUCTURAL_PROP_ASSETS } from './three-world';
 import type { ApartmentInteriorProp, ShowcaseCatalog, WorldChunk, WorldManifest, WorldObject } from './types';
 
@@ -46,7 +47,12 @@ describe('exported interior placement contract', () => {
       const options = catalog.bOptions.filter((option) => option.compatibleUnitTypes.includes(map.unitType));
       for (const option of options) {
         const selected = [...option.requires, ...(option.requiresAny || []).slice(0, 1), option.id];
-        const props = runtime.bundangPrototypeOptionProps(apartment.geometry, map.unitType, selected);
+        const props = refineBundangOptionProps(
+          apartment.geometry,
+          map.unitType,
+          selected,
+          runtime.bundangPrototypeOptionProps(apartment.geometry, map.unitType, selected),
+        );
         for (const prop of props) {
           const assetId = String(prop.assetId || '');
           if (!assetIds.has(assetId)) issues.push(`${map.unitType}:${option.id}:${assetId}:missing-asset`);

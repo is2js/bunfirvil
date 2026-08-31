@@ -1,5 +1,6 @@
 import { escapeHtml, formatBytes, resolveProjectUrl, resolveReferencedUrl } from './base';
 import { loadCatalog, mapFromQuery } from './catalog';
+import { BUNDANG_DESIGN_WALL_OPTION_ID } from './bundang-option-layout';
 import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { ManifestEffectPlayer } from './effect-player';
 import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
@@ -40,10 +41,10 @@ import {
   type LocalInteriorLayoutV1,
 } from '../manage/interior-layout';
 import {
-  applyOptionToggle,
   adjustSystemAcSelection,
   calculateOptionPrice,
   compatibleOptions,
+  optionSelectionIntent,
   readSelectedOptions,
   systemAcChoice,
   systemAcChoices,
@@ -115,7 +116,7 @@ const SKILL_GLYPHS: Record<string, string> = {
 };
 
 function isFormTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
+  return target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, .stage-option-chips button, [contenteditable="true"]'));
 }
 
 function mapLabelShort(map: StaticMapEntry): string {
@@ -177,6 +178,7 @@ export class ShowcaseApp {
   private optionCategory = '전체';
   private paletteTab: 'options' | 'furniture' = 'options';
   private paletteAppliedOnly = false;
+  private optionChangePending = false;
   private interiorAssets: InteriorAssetEntry[] = [];
   private interiorCatalogUrl = '';
   private localInteriorProps: ApartmentInteriorProp[] = [];
@@ -518,6 +520,18 @@ export class ShowcaseApp {
         </footer>
       </div>
 
+      <dialog id="option-confirm-dialog" class="option-confirm-dialog">
+        <form method="dialog">
+          <p class="eyebrow">B OPTION DEPENDENCY</p>
+          <h2 id="option-confirm-title">옵션 선택 확인</h2>
+          <p id="option-confirm-message" class="option-confirm-message"></p>
+          <div class="option-confirm-actions">
+            <button type="submit" value="cancel">취소</button>
+            <button type="submit" value="confirm" id="option-confirm-accept" class="is-primary">확인</button>
+          </div>
+        </form>
+      </dialog>
+
       <dialog id="help-dialog" class="help-dialog">
         <form method="dialog">
           <button class="dialog-close" value="close" aria-label="닫기">×</button>
@@ -594,6 +608,17 @@ export class ShowcaseApp {
       this.renderOptions();
       this.renderFurniturePalette();
     }, { signal });
+    this.get<HTMLElement>('#stage-option-chips').addEventListener('click', (event) => {
+      const target = event.target instanceof Element
+        ? event.target.closest<HTMLButtonElement>('button[data-stage-option-remove]')
+        : null;
+      if (!target) return;
+      const options = compatibleOptions(this.catalog.bOptions, this.currentMap.unitType).map((option) => ({
+        ...option,
+        price: option.prices?.[this.currentMap.unitType] ?? option.price,
+      }));
+      void this.removeSelectedOptionWithConfirmation(options, target.dataset.stageOptionRemove || '');
+    }, { signal });
     this.get<HTMLInputElement>('#furniture-search').addEventListener('input', () => this.renderFurniturePalette(), { signal });
     this.get<HTMLButtonElement>('#furniture-rotate-left').addEventListener('click', () => this.transformLocalProp('rotate-left'), { signal });
     this.get<HTMLButtonElement>('#furniture-rotate-right').addEventListener('click', () => this.transformLocalProp('rotate-right'), { signal });
@@ -633,6 +658,11 @@ export class ShowcaseApp {
     }, { signal });
     const dialog = this.get<HTMLDialogElement>('#help-dialog');
     this.get<HTMLButtonElement>('#open-help').addEventListener('click', () => dialog.showModal(), { signal });
+    const optionDialog = this.get<HTMLDialogElement>('#option-confirm-dialog');
+    optionDialog.addEventListener('cancel', () => { optionDialog.returnValue = 'cancel'; }, { signal });
+    optionDialog.addEventListener('click', (event) => {
+      if (event.target === optionDialog) optionDialog.close('cancel');
+    }, { signal });
     this.get<HTMLButtonElement>('#inspection-laser-toggle').addEventListener('click', () => this.toggleInspectionLaser(), { signal });
     this.get<HTMLButtonElement>('#inspection-laser-point-mode').addEventListener('click', () => this.toggleInspectionLaserPointMode(), { signal });
     this.get<HTMLButtonElement>('#inspection-laser-line-snap').addEventListener('click', () => this.toggleInspectionLaserLineSnap(), { signal });
@@ -2180,8 +2210,7 @@ export class ShowcaseApp {
 
     this.get<HTMLElement>('#option-list').querySelectorAll<HTMLInputElement>('input[data-option-id]').forEach((input) => {
       input.addEventListener('change', () => {
-        this.selectedOptionIds = applyOptionToggle(options, this.selectedOptionIds, input.dataset.optionId || '');
-        this.commitSelectedOptions();
+        void this.toggleOptionWithConfirmation(options, input.dataset.optionId || '');
       }, { signal: this.abortController.signal });
     });
     this.get<HTMLElement>('#option-list').querySelectorAll<HTMLButtonElement>('[data-system-ac-adjust]').forEach((button) => {
@@ -2204,7 +2233,7 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#stage-option-count').textContent = `${selectedOptions.length}개`;
     this.get<HTMLElement>('#stage-option-total').innerHTML = `${numberFormat.format(total)}<small>원</small>`;
     this.get<HTMLElement>('#stage-option-chips').innerHTML = selectedOptions.length
-      ? selectedOptions.map((option) => `<span><b>${escapeHtml(option.label)}</b><em>+${numberFormat.format(option.price)}원</em></span>`).join('')
+      ? selectedOptions.map((option) => `<button type="button" data-stage-option-remove="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 선택 취소 확인"><b>${escapeHtml(option.label)}</b><em>+${numberFormat.format(option.price)}원</em></button>`).join('')
       : '<span><b>기본 마감</b><em>+0원</em></span>';
     this.paintPaletteViewToggle();
   }
@@ -2215,6 +2244,106 @@ export class ShowcaseApp {
     this.threeRenderer?.setSelectedOptions(this.selectedOptionIds);
     this.renderOptions();
     this.toast('B옵션 프리뷰를 로컬에 저장했습니다.', 'success');
+  }
+
+  private async toggleOptionWithConfirmation(options: BOptionEntry[], optionId: string): Promise<void> {
+    if (this.optionChangePending) {
+      this.renderOptions();
+      return;
+    }
+    const intent = optionSelectionIntent(options, this.selectedOptionIds, optionId);
+    if (!intent.option || intent.kind === 'invalid') {
+      this.renderOptions();
+      return;
+    }
+    this.optionChangePending = true;
+    try {
+      if (intent.requiresToAdd.length) {
+        const labels = intent.requiresToAdd
+          .map((id) => options.find((option) => option.id === id)?.label || id)
+          .join(' + ');
+        const accepted = await this.confirmOptionChange({
+          title: '선행 옵션이 필요합니다',
+          message: `${intent.option.label}을(를) 선택하려면 ${labels}이(가) 필요합니다. 필요한 옵션을 함께 선택할까요?`,
+          confirmLabel: '함께 선택',
+        });
+        if (!accepted) {
+          this.renderOptions();
+          return;
+        }
+      }
+      if (intent.dependentsToRemove.length) {
+        const labels = intent.dependentsToRemove
+          .map((id) => options.find((option) => option.id === id)?.label || id)
+          .join(', ');
+        const accepted = await this.confirmOptionChange({
+          title: '종속 옵션도 해제됩니다',
+          message: `${intent.option.label}을(를) 해제하면 ${labels}도 함께 해제됩니다. 계속할까요?`,
+          confirmLabel: '함께 해제',
+        });
+        if (!accepted) {
+          this.renderOptions();
+          return;
+        }
+      }
+      this.selectedOptionIds = intent.nextSelection;
+      this.commitSelectedOptions();
+      if (intent.kind === 'select' && intent.option.id === BUNDANG_DESIGN_WALL_OPTION_ID) {
+        this.selectInstalledOptionGroup(BUNDANG_DESIGN_WALL_OPTION_ID);
+      }
+    } finally {
+      this.optionChangePending = false;
+    }
+  }
+
+  private async removeSelectedOptionWithConfirmation(options: BOptionEntry[], optionId: string): Promise<void> {
+    if (this.optionChangePending) return;
+    const intent = optionSelectionIntent(options, this.selectedOptionIds, optionId);
+    if (!intent.option || intent.kind !== 'deselect') return;
+    this.optionChangePending = true;
+    try {
+      const dependentLabels = intent.dependentsToRemove
+        .map((id) => options.find((option) => option.id === id)?.label || id)
+        .join(', ');
+      const message = dependentLabels
+        ? `${intent.option.label} 선택을 취소하면 ${dependentLabels}도 함께 해제됩니다. 취소하시겠습니까?`
+        : `${intent.option.label} 선택을 취소하시겠습니까?`;
+      const accepted = await this.confirmOptionChange({
+        title: '옵션 선택 취소',
+        message,
+        confirmLabel: '선택 취소',
+      });
+      if (!accepted) return;
+      this.selectedOptionIds = intent.nextSelection;
+      this.commitSelectedOptions();
+    } finally {
+      this.optionChangePending = false;
+    }
+  }
+
+  private selectInstalledOptionGroup(optionId: string): void {
+    if (!this.threeRenderer || this.renderer !== this.threeRenderer) return;
+    const prop = this.threeRenderer.getRenderedProps().find((candidate) => candidate.sourceOptionId === optionId);
+    if (!prop?.id) return;
+    this.selectSceneProp(prop, false, `${prop.sourceOptionId === BUNDANG_DESIGN_WALL_OPTION_ID ? '설치된 디자인 월 전체' : '옵션'}를 선택했습니다.`);
+  }
+
+  private confirmOptionChange({
+    title,
+    message,
+    confirmLabel,
+  }: { title: string; message: string; confirmLabel: string }): Promise<boolean> {
+    const dialog = this.get<HTMLDialogElement>('#option-confirm-dialog');
+    if (dialog.open) dialog.close('cancel');
+    this.get<HTMLElement>('#option-confirm-title').textContent = title;
+    this.get<HTMLElement>('#option-confirm-message').textContent = message;
+    this.get<HTMLButtonElement>('#option-confirm-accept').textContent = confirmLabel;
+    dialog.returnValue = 'cancel';
+    return new Promise((resolve) => {
+      dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true });
+      dialog.showModal();
+      this.get<HTMLButtonElement>('#option-confirm-accept').focus();
+    });
   }
 
   private systemAcCard(tier: SystemAcTier, allOptions: BOptionEntry[]): string {

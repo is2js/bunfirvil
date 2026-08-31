@@ -10,6 +10,15 @@ export interface SystemAcChoice {
   tier: SystemAcTier;
 }
 
+export interface OptionSelectionIntent {
+  kind: 'select' | 'deselect' | 'invalid';
+  option: BOptionEntry | null;
+  nextSelection: string[];
+  requiresToAdd: string[];
+  dependentsToRemove: string[];
+  exclusivesToRemove: string[];
+}
+
 export function systemAcChoice(optionId: string): SystemAcChoice | null {
   const match = optionId.match(SYSTEM_AC_ID);
   if (!match) return null;
@@ -86,18 +95,22 @@ export function compatibleOptions(options: BOptionEntry[], unitType: string): BO
   );
 }
 
-export function applyOptionToggle(
+export function optionSelectionIntent(
   options: BOptionEntry[],
   current: Iterable<string>,
   optionId: string,
-): string[] {
+): OptionSelectionIntent {
   const byId = new Map(options.map((option) => [option.id, option]));
   const selected = new Set([...current].filter((id) => byId.has(id)));
   const target = byId.get(optionId);
-  if (!target) return [...selected];
+  if (!target) {
+    return {
+      kind: 'invalid', option: null, nextSelection: [...selected], requiresToAdd: [], dependentsToRemove: [], exclusivesToRemove: [],
+    };
+  }
 
-  if (selected.has(optionId)) {
-    selected.delete(optionId);
+  const dependentsToRemove: string[] = [];
+  const cascadeInvalidDependents = (): void => {
     let changed = true;
     while (changed) {
       changed = false;
@@ -108,13 +121,25 @@ export function applyOptionToggle(
         const missingAny = requiresAny.length > 0 && !requiresAny.some((required) => selected.has(required));
         if (missingRequired || missingAny) {
           selected.delete(id);
+          dependentsToRemove.push(id);
           changed = true;
         }
       }
     }
-    return [...selected];
+  };
+
+  if (selected.has(optionId)) {
+    selected.delete(optionId);
+    cascadeInvalidDependents();
+    return {
+      kind: 'deselect', option: target, nextSelection: [...selected], requiresToAdd: [],
+      dependentsToRemove: [...new Set(dependentsToRemove)], exclusivesToRemove: [],
+    };
   }
 
+  const original = new Set(selected);
+  const requiresToAdd: string[] = [];
+  const exclusivesToRemove: string[] = [];
   const addWithRequirements = (id: string, seen = new Set<string>()): void => {
     if (seen.has(id)) return;
     seen.add(id);
@@ -126,14 +151,31 @@ export function applyOptionToggle(
       const defaultRequirement = requiresAny.find((required) => byId.has(required));
       if (defaultRequirement) addWithRequirements(defaultRequirement, seen);
     }
-    for (const excluded of option.excludes) selected.delete(excluded);
+    for (const excluded of option.excludes) {
+      if (selected.delete(excluded)) exclusivesToRemove.push(excluded);
+    }
     for (const [selectedId, selectedOption] of byId) {
-      if (selectedOption.excludes.includes(id)) selected.delete(selectedId);
+      if (selectedOption.excludes.includes(id) && selected.delete(selectedId)) exclusivesToRemove.push(selectedId);
     }
     selected.add(id);
+    if (id !== optionId && !original.has(id)) requiresToAdd.push(id);
   };
   addWithRequirements(optionId);
-  return [...selected];
+  cascadeInvalidDependents();
+  return {
+    kind: 'select', option: target, nextSelection: [...selected],
+    requiresToAdd: [...new Set(requiresToAdd)],
+    dependentsToRemove: [...new Set(dependentsToRemove.filter((id) => id !== optionId))],
+    exclusivesToRemove: [...new Set(exclusivesToRemove)],
+  };
+}
+
+export function applyOptionToggle(
+  options: BOptionEntry[],
+  current: Iterable<string>,
+  optionId: string,
+): string[] {
+  return optionSelectionIntent(options, current, optionId).nextSelection;
 }
 
 export function calculateOptionPrice(options: BOptionEntry[], selected: Iterable<string>): number {

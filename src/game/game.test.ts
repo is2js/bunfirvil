@@ -3,7 +3,7 @@ import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { normalizeHotbar } from './catalog';
 import { resolveEffectSource, selectEffectVariant, type EffectManifest } from './effect-player';
 import { readHotbar, reorderHotbar } from './hotbar';
-import { adjustSystemAcSelection, applyOptionToggle, calculateOptionPrice } from './options';
+import { adjustSystemAcSelection, applyOptionToggle, calculateOptionPrice, optionSelectionIntent } from './options';
 import type { BOptionEntry } from './types';
 import { canTraverse, crossesApartmentWall, expandTileRuns, livingRoomSpawnCells } from './world';
 import { travelLockedDirection } from './grid';
@@ -223,6 +223,34 @@ describe('game-local state helpers', () => {
     expect(new Set(applyOptionToggle(options, ['island-alt'], 'oven'))).toEqual(new Set(['island-alt', 'oven']));
     expect(new Set(applyOptionToggle(options, [], 'oven'))).toEqual(new Set(['island', 'oven']));
     expect(applyOptionToggle(options, ['island-alt', 'oven'], 'island-alt')).toEqual([]);
+  });
+
+  it('returns a confirmable dependency intent before selecting all infinity doors', () => {
+    const dependencyOptions: BOptionEntry[] = [
+      {
+        id: 'living-design-wall-panel', label: '디자인 월(거실/복도면)', category: '현관/거실', price: 1,
+        description: '', compatibleUnitTypes: ['59A'], requires: [], requiresAny: [], excludes: [],
+      },
+      {
+        id: 'infinity-door-bedroom-1', label: '침실1 인피니티 도어', category: '현관/거실', price: 1,
+        description: '', compatibleUnitTypes: ['59A'], requires: [], requiresAny: [], excludes: ['infinity-door-all-bedrooms'],
+      },
+      {
+        id: 'infinity-door-all-bedrooms', label: '전체 침실 인피니티 도어', category: '현관/거실', price: 1,
+        description: '', compatibleUnitTypes: ['59A'], requires: ['living-design-wall-panel'], requiresAny: [], excludes: ['infinity-door-bedroom-1'],
+      },
+    ];
+    const current = ['infinity-door-bedroom-1'];
+    const selectAll = optionSelectionIntent(dependencyOptions, current, 'infinity-door-all-bedrooms');
+    expect(current).toEqual(['infinity-door-bedroom-1']);
+    expect(selectAll.requiresToAdd).toEqual(['living-design-wall-panel']);
+    expect(new Set(selectAll.nextSelection)).toEqual(new Set(['living-design-wall-panel', 'infinity-door-all-bedrooms']));
+    expect(selectAll.exclusivesToRemove).toEqual(['infinity-door-bedroom-1']);
+
+    const removeWall = optionSelectionIntent(dependencyOptions, selectAll.nextSelection, 'living-design-wall-panel');
+    expect(removeWall.kind).toBe('deselect');
+    expect(removeWall.dependentsToRemove).toEqual(['infinity-door-all-bedrooms']);
+    expect(removeWall.nextSelection).toEqual([]);
   });
 
   it('expands bounded row-major tile runs', () => {
