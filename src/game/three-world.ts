@@ -15,6 +15,7 @@ import {
   ISTARPARK_LASER_HEIGHT_METERS,
   type InspectionLaserAxis,
   type InspectionLaserMeasurement,
+  type InspectionLaserSurfaceHit,
 } from './istarpark-laser-measurement';
 import type {
   ActorState,
@@ -636,6 +637,41 @@ export class ThreeWorldRenderer {
     mesh.rotation.set(0, Math.atan2(direction.x, direction.z), 0);
   }
 
+  setApartmentInspectionLaserPointFrame(
+    object: WorldObject,
+    hit: InspectionLaserSurfaceHit,
+    ghost = false,
+  ): boolean {
+    if (!object.geometry || hit?.valid !== true || !hit.point) {
+      this.hideApartmentInspectionLaserFrame();
+      return false;
+    }
+    const group = this.ensureApartmentInspectionLaserGroup();
+    const cellSize = Math.max(.01, finite(object.geometry.cellSizeMeters, .5));
+    const elevation = finite(object.elevation) + ISTARPARK_LASER_HEIGHT_METERS / cellSize;
+    for (const mesh of [
+      group.userData.glow,
+      group.userData.outline,
+      group.userData.core,
+      group.userData.negative,
+      group.userData.positive,
+      group.userData.distanceLabel,
+    ] as Array<THREE.Object3D | null | undefined>) {
+      if (mesh) mesh.visible = false;
+    }
+    const anchor = group.userData.anchor as THREE.Mesh;
+    const material = anchor.material as THREE.MeshBasicMaterial;
+    anchor.visible = true;
+    material.opacity = ghost ? .46 : .84;
+    anchor.scale.setScalar(ghost ? 1.28 : 1);
+    anchor.position.copy(this.localPoint(object, hit.point, elevation + .015));
+    group.visible = true;
+    this.canvas.dataset.inspectionLaserVisible = 'true';
+    this.canvas.dataset.inspectionLaserPhase = ghost ? 'pick-start-ghost' : 'await-second';
+    delete this.canvas.dataset.inspectionLaserDistanceMm;
+    return true;
+  }
+
   setApartmentInspectionLaserFrame(object: WorldObject, measurement: InspectionLaserMeasurement): boolean {
     const negativePoint = measurement.negativeHit?.point;
     const positivePoint = measurement.positiveHit?.point;
@@ -656,7 +692,12 @@ export class ThreeWorldRenderer {
     this.positionApartmentInspectionLaserBeam(group.userData.core as THREE.Mesh, start, end);
     this.positionApartmentInspectionLaserContact(group.userData.negative as THREE.Mesh, start, direction, cellSize);
     this.positionApartmentInspectionLaserContact(group.userData.positive as THREE.Mesh, end, direction, cellSize);
-    (group.userData.anchor as THREE.Mesh).position.copy(center);
+    const anchor = group.userData.anchor as THREE.Mesh;
+    const anchorMaterial = anchor.material as THREE.MeshBasicMaterial;
+    anchor.visible = true;
+    anchorMaterial.opacity = .84;
+    anchor.scale.setScalar(1);
+    anchor.position.copy(center);
     const label = group.userData.distanceLabel as THREE.Mesh | null;
     if (label) {
       this.updateApartmentInspectionLaserDistanceLabel(label, finite(measurement.distanceMm, start.distanceTo(end) * cellSize * 1000), cellSize);
@@ -668,7 +709,8 @@ export class ThreeWorldRenderer {
     group.visible = true;
     this.canvas.dataset.inspectionLaserVisible = 'true';
     this.canvas.dataset.inspectionLaserDistanceMm = String(Math.round(finite(measurement.distanceMm)));
-    this.canvas.dataset.inspectionLaserAxis = measurement.axis;
+    this.canvas.dataset.inspectionLaserAxis = String(measurement.axis || 'free');
+    this.canvas.dataset.inspectionLaserPhase = measurement.measurementMode === 'point-ray' ? 'point-ray' : 'automatic';
     return true;
   }
 
@@ -676,6 +718,7 @@ export class ThreeWorldRenderer {
     if (this.apartmentInspectionLaserGroup) this.apartmentInspectionLaserGroup.visible = false;
     delete this.canvas.dataset.inspectionLaserVisible;
     delete this.canvas.dataset.inspectionLaserDistanceMm;
+    delete this.canvas.dataset.inspectionLaserPhase;
   }
 
   clearApartmentInspectionLaserFrame(): void {
@@ -689,6 +732,7 @@ export class ThreeWorldRenderer {
     delete this.canvas.dataset.inspectionLaserVisible;
     delete this.canvas.dataset.inspectionLaserDistanceMm;
     delete this.canvas.dataset.inspectionLaserAxis;
+    delete this.canvas.dataset.inspectionLaserPhase;
   }
 
   apartmentInspectionLaserScreenDirection(object: WorldObject | null, axis: InspectionLaserAxis): 'nw-se' | 'ne-sw' {

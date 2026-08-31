@@ -945,7 +945,7 @@ input:focus-visible {
   top: 15px;
   left: 50%;
   z-index: 95;
-  width: min(330px, calc(100% - 390px));
+  width: min(390px, calc(100% - 390px));
   min-width: 260px;
   transform: translateX(-50%);
   padding: 10px 14px 9px;
@@ -979,6 +979,14 @@ input:focus-visible {
 }
 
 .istarpark-laser-hud-head span { color: #f9a8e7; }
+.istarpark-laser-phase {
+  margin-left: auto;
+  padding: 2px 6px;
+  border: 1px solid rgb(192 132 252 / .4);
+  border-radius: 999px;
+  background: rgb(126 34 206 / .16);
+  color: #e9d5ff !important;
+}
 .istarpark-laser-value {
   display: block;
   margin: 4px 0 3px;
@@ -992,6 +1000,39 @@ input:focus-visible {
   min-height: 1.25em;
   color: #b8cbd2;
   font: 700 9px/1.25 Y1000Ui, "Malgun Gothic", sans-serif;
+}
+
+.istarpark-laser-actions {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 7px;
+  pointer-events: auto;
+}
+
+.istarpark-laser-actions button {
+  min-height: 25px;
+  padding: 4px 8px;
+  border: 1px solid rgb(103 232 249 / .28);
+  border-radius: 5px;
+  background: rgb(2 20 31 / .74);
+  color: #b8dfe5;
+  font: 800 9px/1 Y1000Ui, "Malgun Gothic", sans-serif;
+  cursor: pointer;
+}
+
+.istarpark-laser-actions button:hover,
+.istarpark-laser-actions button:focus-visible,
+.istarpark-laser-actions button.is-active {
+  border-color: rgb(192 132 252 / .78);
+  background: rgb(126 34 206 / .22);
+  color: #f3e8ff;
+  outline: none;
+}
+
+.istarpark-laser-actions button:disabled {
+  opacity: .42;
+  cursor: default;
 }
 
 [data-istarpark-laser-active="true"] { cursor: crosshair; }

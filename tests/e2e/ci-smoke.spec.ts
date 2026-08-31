@@ -46,6 +46,25 @@ test('smokes the deployed map, living-room spawn, and B palette', async ({ page 
 
   await page.getByRole('button', { name: '주방 벽/상판·냉장고장', exact: true }).click();
   await expect.poll(async () => page.locator('#option-list .option-card').count()).toBeGreaterThan(0);
+
+  const laserToggle = page.locator('#inspection-laser-toggle');
+  await expect(laserToggle).toBeAttached();
+  await expect(page.locator('#inspection-laser-point-mode')).toBeAttached();
+  if (await laserToggle.isVisible()) {
+    await mapSelect.evaluate((element) => (element as HTMLSelectElement).blur());
+    await page.keyboard.press('KeyJ');
+    await expect(page.locator('#game-stage')).toHaveAttribute('data-istarpark-laser-active', 'true');
+    await expect(page.locator('#inspection-laser-phase')).toHaveText('자동');
+    await page.keyboard.press('KeyJ');
+    await expect(page.locator('#inspection-laser-phase')).toHaveText('시작점');
+    await expect(page.locator('#inspection-laser-point-mode')).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('KeyJ');
+    await expect(page.locator('#inspection-laser-phase')).toHaveText('자동');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#game-stage')).not.toHaveAttribute('data-istarpark-laser-active', 'true');
+    await expect(page.locator('#inspection-laser-hud')).toBeHidden();
+  }
+
   await page.goto('manage/');
   await expect(page.locator('#loadingState')).toBeHidden();
   await expect(page.locator('.map-card')).toHaveCount(4);

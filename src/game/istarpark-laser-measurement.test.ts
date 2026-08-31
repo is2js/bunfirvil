@@ -1,8 +1,13 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   ISTARPARK_LASER_HEIGHT_METERS,
   istarparkLaserObstacles,
+  measureIstarparkLaserDirectionalGap,
   measureIstarparkLaserGap,
+  snapIstarparkLaserPoint,
 } from './istarpark-laser-measurement';
 
 const room = {
@@ -27,13 +32,14 @@ const finishCalibratedRoom = {
 
 const roughRoomCappedByFloorLabel = {
   ...room,
+  floorAnnotationMode: 'explicit-wall-span-dimensions-v3',
   roomZones: [{ id: 'living', boundsMeters: [0, 0, 4, 3] }],
   dimensionAnnotations: [{
     id: 'living-width',
+    roomId: 'living',
     valueMeters: 3.6,
-    // 실제 표기선의 양 끝이 벽 마감면과 완전히 맞지 않아도 러프한 공간 상한으로 사용한다.
-    a: [.15, 1.5],
-    b: [3.85, 1.5],
+    a: [.2, 1.5],
+    b: [3.8, 1.5],
   }],
 };
 
@@ -98,11 +104,105 @@ describe('이스타파크 레이저 실측 계약', () => {
     });
     expect(result).toMatchObject({
       valid: true,
-      rawDistanceMm: 3800,
+      rawDistanceMm: 3600,
       distanceMm: 3600,
-      authoredRoomMaximumApplied: true,
-      authoredRoomMaximumMm: 3600,
-      authoredRoomDimensionId: 'living-width',
+      dimensionAnnotationId: 'living-width',
+      dimensionLimitMm: 3600,
+    });
+  });
+
+  it('2점 실측은 마우스 좌표가 아니라 가리킨 방향에서 처음 만난 면까지 잰다', () => {
+    const props = [{
+      id: 'center-cabinet',
+      assetId: 'cabinet',
+      positionMeters: [2, 1.5],
+      dimensionsMeters: [1, 1, 1],
+    }];
+    const startHit = snapIstarparkLaserPoint({
+      candidatePlanPoint: [0, 1.5],
+      geometry: room,
+      props,
+      maxSnapDistanceMeters: null,
+      requireSurface: true,
+    });
+    const result = measureIstarparkLaserDirectionalGap({
+      startHit,
+      pointerPlanPoint: [3.2, 1.5],
+      geometry: room,
+      props,
+    });
+    expect(result).toMatchObject({
+      valid: true,
+      measurementMode: 'point-ray',
+      distanceMm: 1400,
+      startHit: { obstacleId: 'west' },
+      endHit: { obstacleId: 'center-cabinet', point: [1.5, 1.5] },
+    });
+  });
+
+  it('내부벽 시작점은 커서가 향한 공간 쪽 벽 두께를 제외한다', () => {
+    const splitRoom = {
+      floorPolygon: [[0, 0], [6, 0], [6, 4], [0, 4]],
+      wallSegments: [
+        { id: 'west', a: [0, 0], b: [0, 4], thicknessMeters: .2 },
+        { id: 'east', a: [6, 0], b: [6, 4], thicknessMeters: .2 },
+        { id: 'north', a: [0, 0], b: [6, 0], thicknessMeters: .2 },
+        { id: 'south', a: [0, 4], b: [6, 4], thicknessMeters: .2 },
+        { id: 'bedroom-living-wall', a: [3, 0], b: [3, 4], thicknessMeters: .2 },
+      ],
+    };
+    const startHit = snapIstarparkLaserPoint({
+      candidatePlanPoint: [3, 2],
+      geometry: splitRoom,
+      maxSnapDistanceMeters: null,
+      requireSurface: true,
+    });
+    const left = measureIstarparkLaserDirectionalGap({
+      startHit,
+      pointerPlanPoint: [1, 2],
+      axisLock: 'x',
+      geometry: splitRoom,
+    });
+    const right = measureIstarparkLaserDirectionalGap({
+      startHit,
+      pointerPlanPoint: [5, 2],
+      axisLock: 'x',
+      geometry: splitRoom,
+    });
+    expect(left).toMatchObject({
+      valid: true,
+      distanceMm: 2800,
+      startHit: { point: [2.9, 2], directionalSurface: true },
+      endHit: { point: [.1, 2] },
+    });
+    expect(right).toMatchObject({
+      valid: true,
+      distanceMm: 2800,
+      startHit: { point: [3.1, 2], directionalSurface: true },
+      endHit: { point: [5.9, 2] },
+    });
+  });
+
+  it('축 정렬 2점 실측도 자동 실측의 마감 보정값을 재사용한다', () => {
+    const startHit = snapIstarparkLaserPoint({
+      candidatePlanPoint: [0, 1.5],
+      geometry: finishCalibratedRoom,
+      maxSnapDistanceMeters: null,
+      requireSurface: true,
+    });
+    const result = measureIstarparkLaserDirectionalGap({
+      startHit,
+      pointerPlanPoint: [3, 1.5],
+      axisLock: 'x',
+      geometry: finishCalibratedRoom,
+    });
+    expect(result).toMatchObject({
+      valid: true,
+      rawDistanceMm: 3800,
+      finishCalibrationMm: 200,
+      distanceMm: 3600,
+      startHit: { point: [.2, 1.5] },
+      endHit: { point: [3.8, 1.5] },
     });
   });
 
@@ -116,5 +216,64 @@ describe('이스타파크 레이저 실측 계약', () => {
       { assetId: 'display', mountingKind: 'wall' },
     ];
     expect(istarparkLaserObstacles({ geometry: room, props, assets }).filter((row: { kind: string }) => row.kind === 'furniture')).toHaveLength(0);
+  });
+
+  it('공개 snapshot의 51A·55A·55B·59A에서도 자동 실측과 축 정렬 2점 실측이 같은 내부 치수를 쓴다', () => {
+    const generatedRoot = fileURLToPath(new URL('../../public/generated/', import.meta.url));
+    const current = JSON.parse(readFileSync(join(generatedRoot, 'current.json'), 'utf8'));
+    for (const slug of ['51a', '55a', '55b', '59a']) {
+      const chunksRoot = join(
+        generatedRoot,
+        current.basePath,
+        'maps',
+        `bundang-first-village-${slug}-prototype`,
+        'chunks',
+      );
+      const apartment = readdirSync(chunksRoot)
+        .filter((name) => name.endsWith('.json'))
+        .map((name) => JSON.parse(readFileSync(join(chunksRoot, name), 'utf8')))
+        .flatMap((chunk) => chunk.objects || [])
+        .find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry);
+      expect(apartment, slug).toBeTruthy();
+      const geometry = apartment.geometry;
+      let matched = false;
+      for (const zone of geometry.roomZones || []) {
+        const bounds = zone.boundsMeters || zone.bounds;
+        if (!Array.isArray(bounds) || bounds.length < 4) continue;
+        const anchorPlanPoint: [number, number] = [
+          (Number(bounds[0]) + Number(bounds[2])) / 2,
+          (Number(bounds[1]) + Number(bounds[3])) / 2,
+        ];
+        for (const axis of ['x', 'y'] as const) {
+          const automatic = measureIstarparkLaserGap({
+            anchorPlanPoint,
+            axis,
+            geometry,
+            props: geometry.interiorProps || [],
+          });
+          if (!automatic.valid || !automatic.negativeHit?.point) continue;
+          const startHit = snapIstarparkLaserPoint({
+            candidatePlanPoint: automatic.negativeHit.point,
+            geometry,
+            props: geometry.interiorProps || [],
+            maxSnapDistanceMeters: null,
+            requireSurface: true,
+          });
+          const directional = measureIstarparkLaserDirectionalGap({
+            startHit,
+            pointerPlanPoint: anchorPlanPoint,
+            axisLock: axis,
+            geometry,
+            props: geometry.interiorProps || [],
+          });
+          if (!directional.valid || directional.distanceMm !== automatic.distanceMm) continue;
+          expect(directional.distanceMm, slug).toBeLessThanOrEqual(directional.rawDistanceMm || 0);
+          matched = true;
+          break;
+        }
+        if (matched) break;
+      }
+      expect(matched, slug).toBe(true);
+    }
   });
 });
