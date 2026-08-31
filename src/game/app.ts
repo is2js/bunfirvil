@@ -1,6 +1,5 @@
 import { escapeHtml, formatBytes, resolveProjectUrl, resolveReferencedUrl } from './base';
 import { loadCatalog, mapFromQuery } from './catalog';
-import { BUNDANG_DESIGN_WALL_OPTION_ID } from './bundang-option-layout';
 import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { ManifestEffectPlayer } from './effect-player';
 import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
@@ -45,6 +44,7 @@ import {
   adjustSystemAcSelection,
   calculateOptionPrice,
   compatibleOptions,
+  groupMutuallyExclusiveOptions,
   optionSelectionIntent,
   readSelectedOptions,
   systemAcChoice,
@@ -2224,10 +2224,19 @@ export class ShowcaseApp {
         ? this.selectedOptionIds.includes(option.id)
         : ac.count === systemAcChoices(options, ac.tier)[0]?.count);
     });
+    const optionMarkup = (option: BOptionEntry): string => {
+      const ac = systemAcChoice(option.id);
+      return ac ? this.systemAcCard(ac.tier, options) : this.optionCard(option, options);
+    };
     this.get<HTMLElement>('#option-list').innerHTML = renderedOptions.length
-      ? renderedOptions.map((option) => {
-          const ac = systemAcChoice(option.id);
-          return ac ? this.systemAcCard(ac.tier, options) : this.optionCard(option, options);
+      ? groupMutuallyExclusiveOptions(renderedOptions).map((group) => {
+          const cards = group.options.map(optionMarkup).join('');
+          if (!group.exclusiveGroup) return cards;
+          return `
+            <section class="option-choice-group" data-exclusive-group="${escapeHtml(group.exclusiveGroup)}" aria-label="택1 선택 항목">
+              <div class="option-choice-heading"><b>택1</b><span>한 항목만 선택할 수 있습니다</span></div>
+              <div class="option-choice-items">${cards}</div>
+            </section>`;
         }).join('')
       : '<div class="empty-options"><b>이 세대형의 옵션이 없습니다.</b><span>기본 마감 렌더를 확인해 주세요.</span></div>';
 
@@ -2311,9 +2320,6 @@ export class ShowcaseApp {
       }
       this.selectedOptionIds = intent.nextSelection;
       this.commitSelectedOptions();
-      if (intent.kind === 'select' && intent.option.id === BUNDANG_DESIGN_WALL_OPTION_ID) {
-        this.selectInstalledOptionGroup(BUNDANG_DESIGN_WALL_OPTION_ID);
-      }
     } finally {
       this.optionChangePending = false;
     }
@@ -2342,13 +2348,6 @@ export class ShowcaseApp {
     } finally {
       this.optionChangePending = false;
     }
-  }
-
-  private selectInstalledOptionGroup(optionId: string): void {
-    if (!this.threeRenderer || this.renderer !== this.threeRenderer) return;
-    const prop = this.threeRenderer.getRenderedProps().find((candidate) => candidate.sourceOptionId === optionId);
-    if (!prop?.id) return;
-    this.selectSceneProp(prop, false, `${prop.sourceOptionId === BUNDANG_DESIGN_WALL_OPTION_ID ? '설치된 디자인 월 전체' : '옵션'}를 선택했습니다.`);
   }
 
   private confirmOptionChange({

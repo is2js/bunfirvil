@@ -1698,6 +1698,8 @@ input:focus-visible {
 }
 
 .option-card {
+  flex: 0 0 auto;
+  height: max-content;
   min-height: 81px;
   padding: 7px 35px 7px 7px;
   display: grid;
@@ -1715,11 +1717,26 @@ input:focus-visible {
 .option-card.is-selected { border-color: rgba(225, 185, 99, 0.35); background: linear-gradient(90deg, rgba(225, 185, 99, 0.09), rgba(8, 23, 27, 0.7)); }
 
 .system-ac-card {
-  min-height: 106px;
+  min-height: 118px;
   padding-right: 8px;
   grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-rows: minmax(65px, auto) 30px;
   cursor: default;
 }
+
+.option-choice-group {
+  flex: 0 0 auto;
+  padding: 8px;
+  border: 1px solid rgba(225, 185, 99, .18);
+  border-radius: 9px;
+  background: linear-gradient(145deg, rgba(225, 185, 99, .055), rgba(8, 22, 26, .74));
+  box-shadow: inset 0 1px rgba(255, 255, 255, .025);
+}
+
+.option-choice-heading { margin: 0 2px 7px; display: flex; align-items: center; gap: 7px; }
+.option-choice-heading b { padding: 2px 6px; border: 1px solid rgba(225, 185, 99, .42); border-radius: 10px; color: #f1d897; background: rgba(225, 185, 99, .10); font-size: 8px; }
+.option-choice-heading span { color: #7e938e; font-size: 8px; }
+.option-choice-items { display: flex; flex-direction: column; gap: 7px; }
 
 .system-ac-stepper {
   grid-column: 1 / -1;
@@ -1746,6 +1763,7 @@ input:focus-visible {
 .system-ac-stepper output { display: grid; place-items: center; border-inline: 1px solid rgba(225, 185, 99, .14); color: #f0d18b; font: 800 9px ui-monospace, monospace; }
 
 .option-preview {
+  align-self: stretch;
   min-height: 65px;
   overflow: hidden;
   position: relative;
@@ -1772,7 +1790,7 @@ input:focus-visible {
 .option-preview em { padding: 2px 4px; position: absolute; left: 4px; bottom: 4px; z-index: 2; border-radius: 2px; color: #bdd0cc; background: rgba(0, 0, 0, 0.56); font: normal 650 7px ui-monospace, monospace; letter-spacing: .08em; }
 .option-card.is-selected .option-preview em { color: #f4d891; }
 
-.option-copy { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
+.option-copy { min-width: 0; min-height: 65px; display: flex; flex-direction: column; align-items: flex-start; }
 .option-category { margin-bottom: 2px; color: #64827d; font-size: 8px; font-weight: 750; }
 .option-copy b { max-width: 100%; overflow: hidden; color: #dbe7e4; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .option-copy > small { max-width: 100%; margin: 3px 0 5px; overflow: hidden; color: #6c817e; font-size: 9px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }

@@ -3,7 +3,13 @@ import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { normalizeHotbar } from './catalog';
 import { resolveEffectSource, selectEffectVariant, type EffectManifest } from './effect-player';
 import { readHotbar, reorderHotbar } from './hotbar';
-import { adjustSystemAcSelection, applyOptionToggle, calculateOptionPrice, optionSelectionIntent } from './options';
+import {
+  adjustSystemAcSelection,
+  applyOptionToggle,
+  calculateOptionPrice,
+  groupMutuallyExclusiveOptions,
+  optionSelectionIntent,
+} from './options';
 import type { BOptionEntry } from './types';
 import { canTraverse, crossesApartmentWall, expandTileRuns, livingRoomSpawnCells } from './world';
 import { travelLockedDirection } from './grid';
@@ -273,5 +279,16 @@ describe('game-local state helpers', () => {
     expect(three).toEqual(['system-ac-3-general']);
     expect(adjustSystemAcSelection(packages, three, 'general', -1)).toEqual(['system-ac-2-general']);
     expect(adjustSystemAcSelection(packages, two, 'general', -1)).toEqual([]);
+  });
+
+  it('groups only visible mutually exclusive options as one-choice rows', () => {
+    const choiceOptions: BOptionEntry[] = [
+      { ...options[0], id: 'general', exclusiveGroup: 'system-ac-package' },
+      { ...options[0], id: 'premium', exclusiveGroup: 'system-ac-package' },
+      { ...options[0], id: 'independent' },
+    ];
+    const grouped = groupMutuallyExclusiveOptions(choiceOptions);
+    expect(grouped.map((group) => [group.exclusiveGroup, group.options.map((option) => option.id)]))
+      .toEqual([['system-ac-package', ['general', 'premium']], ['', ['independent']]]);
   });
 });

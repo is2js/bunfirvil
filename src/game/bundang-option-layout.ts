@@ -29,6 +29,7 @@ const ALL_DOORS_OPTION_ID = 'infinity-door-all-bedrooms';
 const DESIGN_WALL_DEPTH_METERS = 0.02;
 const FINISH_CLEARANCE_METERS = 0.002;
 const DEFAULT_INTERIOR_WALL_THICKNESS_METERS = 0.12;
+const INTEGRATED_BIDET_OPTION_ID = 'toilet-integrated-bidet';
 const INFINITY_DOOR_ALLOWED_ROOM_IDS = new Set<string>([
   'bedroom-1',
   'bedroom-2',
@@ -234,6 +235,16 @@ function isLegacyEntryLivingOptionProp(prop: ApartmentInteriorProp): boolean {
     || /-infinity-door-/.test(id);
 }
 
+function alignIntegratedBidetToDefaultFacing(prop: ApartmentInteriorProp): ApartmentInteriorProp {
+  if (prop.assetId !== INTEGRATED_BIDET_OPTION_ID || prop.sourceOptionId === INTEGRATED_BIDET_OPTION_ID) return prop;
+  const yawDeg = Number(prop.yawDeg);
+  return {
+    ...prop,
+    yawDeg: Number.isFinite(yawDeg) ? ((yawDeg + 180) % 360 + 360) % 360 : 180,
+    sourceOptionId: INTEGRATED_BIDET_OPTION_ID,
+  };
+}
+
 export function refineBundangOptionProps(
   geometry: ApartmentGeometry,
   unitTypeId: string,
@@ -244,7 +255,9 @@ export function refineBundangOptionProps(
   const layout = BUNDANG_OPTION_LAYOUTS[unitType];
   if (!layout) return baseProps;
   const selected = new Set(selectedIds);
-  const props = baseProps.filter((prop) => !isLegacyEntryLivingOptionProp(prop));
+  const props = baseProps
+    .filter((prop) => !isLegacyEntryLivingOptionProp(prop))
+    .map(alignIntegratedBidetToDefaultFacing);
   if (selected.has(BUNDANG_DESIGN_WALL_OPTION_ID)) props.push(...designWallProps(geometry, layout));
   if (selected.has(ALL_DOORS_OPTION_ID)) props.push(...infinityDoorProps(geometry, layout, true));
   else if (selected.has(BEDROOM_ONE_DOOR_OPTION_ID)) props.push(...infinityDoorProps(geometry, layout, false));

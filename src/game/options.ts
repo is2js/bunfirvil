@@ -19,6 +19,32 @@ export interface OptionSelectionIntent {
   exclusivesToRemove: string[];
 }
 
+export interface OptionChoiceGroup {
+  exclusiveGroup: string;
+  options: BOptionEntry[];
+}
+
+export function groupMutuallyExclusiveOptions(options: BOptionEntry[]): OptionChoiceGroup[] {
+  const groupCounts = new Map<string, number>();
+  for (const option of options) {
+    const group = String(option.exclusiveGroup || '');
+    if (group) groupCounts.set(group, (groupCounts.get(group) || 0) + 1);
+  }
+  const emitted = new Set<string>();
+  const result: OptionChoiceGroup[] = [];
+  for (const option of options) {
+    const group = String(option.exclusiveGroup || '');
+    if (!group || (groupCounts.get(group) || 0) < 2) {
+      result.push({ exclusiveGroup: '', options: [option] });
+      continue;
+    }
+    if (emitted.has(group)) continue;
+    emitted.add(group);
+    result.push({ exclusiveGroup: group, options: options.filter((candidate) => candidate.exclusiveGroup === group) });
+  }
+  return result;
+}
+
 export function systemAcChoice(optionId: string): SystemAcChoice | null {
   const match = optionId.match(SYSTEM_AC_ID);
   if (!match) return null;

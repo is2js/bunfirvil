@@ -140,6 +140,19 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     expect(bundangEditorSelectionPropIds(props, 'sofa')).toEqual(['sofa']);
   });
 
+  it('비데일체형 양변기의 모델 전면축을 기본 양변기 방향에 맞춰 보정한다', () => {
+    const geometry = { wallSegments: [] } as ApartmentGeometry;
+    for (const yawDeg of [0, 90, 180, 270]) {
+      const [standard, integrated] = optionProps(geometry, '55A', ['toilet-integrated-bidet'], [
+        { id: `standard-${yawDeg}`, assetId: 'toilet-floor-mounted', yawDeg },
+        { id: `integrated-${yawDeg}`, assetId: 'toilet-integrated-bidet', yawDeg },
+      ]);
+      expect(standard.yawDeg).toBe(yawDeg);
+      expect(integrated.yawDeg).toBe((yawDeg + 180) % 360);
+      expect(integrated.sourceOptionId).toBe('toilet-integrated-bidet');
+    }
+  });
+
   it('인피니티 도어 recipe에 손잡이는 없고 진한 4면 외곽선이 있다', () => {
     const door = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'interior-infinity-door-panel');
     expect(door).toBeTruthy();

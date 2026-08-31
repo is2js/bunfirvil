@@ -44,6 +44,7 @@ export interface BOptionEntry {
   requires: string[];
   requiresAny?: string[];
   excludes: string[];
+  exclusiveGroup?: string;
   previewUrl?: string;
   prices?: Record<string, number>;
 }

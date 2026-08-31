@@ -188,6 +188,7 @@ async function normalizeExternalOptions(catalogUrl: string): Promise<BOptionEntr
         requires: Array.isArray(option.requires) ? option.requires.filter((id): id is string => typeof id === 'string') : [],
         requiresAny: Array.isArray(option.requiresAny) ? option.requiresAny.filter((id): id is string => typeof id === 'string') : [],
         excludes,
+        exclusiveGroup: option.exclusiveGroup || undefined,
         previewUrl: option.previewUrl ? new URL(option.previewUrl, resolvedCatalogUrl).toString() : undefined,
         // The currently selected unit price is applied just before display.
         prices: option.prices,
