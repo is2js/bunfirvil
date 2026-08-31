@@ -105,6 +105,8 @@ npm run sync:assets -- --source ../pvp
 
 원본 런타임의 raster `hud_bottom.png`는 출처가 프로젝트 밖으로 연결되어 공개본에서 제외했습니다. 대신 같은 런타임의 슬롯 크기, 간격, 키 표기와 쿨다운 형태를 CSS로 옮기고 서버리스 데모 액션 4개만 남겼습니다.
 
+캐릭터 이름과 인게임 HUD에는 PVP 런타임이 사용하던 [Swei Spring](https://github.com/max32002/swei-spring) 계열 폰트를 현재 화면 글자만 포함한 WOFF2 서브셋으로 사용합니다. 배포본에는 원 저작자가 제공한 [`SIL Open Font License 1.1`](public/licenses/SweiSpring-SIL-OFL-1.1.txt)을 함께 포함합니다.
+
 GitHub Pages에 포함된 파일은 누구나 내려받을 수 있습니다. `operatorOnly`나 `privateMap` 같은 원본 서버 플래그를 보안 경계로 사용하지 않습니다.
 
 ## 배포
