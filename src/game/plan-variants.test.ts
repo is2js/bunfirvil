@@ -148,7 +148,7 @@ describe('RPG apartment plan variants', () => {
       expect(geometry.optionAnchors.kitchen.island.frontFaces, unitTypeId).toBe('toward-kitchen-window-wall');
       if (unitTypeId === '55A') {
         expect(geometry.kitchenFixtures.map((fixture: { id: string }) => fixture.id))
-          .toEqual(['kitchen-window-base-cabinet']);
+          .toEqual(['kitchen-window-base-cabinet', 'kitchen-side-base-cabinet']);
         expect(geometry.solidBlocks.map((block: { id: string }) => block.id))
           .toEqual(['entry-pantry-west-service-block', 'bathroom-1-northeast-service-l']);
       }

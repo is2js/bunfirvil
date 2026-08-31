@@ -1090,6 +1090,10 @@ export class ThreeWorldRenderer {
       const x1 = Math.min(...xs); const x2 = Math.max(...xs);
       const y1 = Math.min(...ys); const y2 = Math.max(...ys);
       const center = this.localPoint(object, [(x1 + x2) / 2, (y1 + y2) / 2]);
+      const fixturePlacement = apartmentPropPlacement(object, {
+        positionMeters: [(x1 + x2) / 2, (y1 + y2) / 2],
+        yawDeg: 0,
+      });
       const totalHeight = Math.max(0.2, finite(fixture.heightMeters, 0.9)) / cellSize;
       const topHeight = Math.max(0.03, finite(fixture.countertopThicknessMeters, 0.06)) / cellSize;
       const body = new THREE.Mesh(
@@ -1097,6 +1101,7 @@ export class ThreeWorldRenderer {
         this.material('#c8c5bf', { roughness: 0.78 }),
       );
       body.position.set(center.x, (totalHeight - topHeight) / 2 + 0.045, center.z);
+      body.rotation.y = fixturePlacement.worldYaw;
       // 외부 지면에는 외벽 그림자만 투영한다. 주방 구조/가벽 그림자는 끈다.
       body.castShadow = false;
       body.receiveShadow = false;
@@ -1106,6 +1111,7 @@ export class ThreeWorldRenderer {
         this.material('#aaa8a4', { roughness: 0.58 }),
       );
       top.position.set(center.x, totalHeight - topHeight / 2 + 0.045, center.z);
+      top.rotation.y = fixturePlacement.worldYaw;
       top.castShadow = false;
       top.receiveShadow = false;
       this.structureRoot.add(top);
