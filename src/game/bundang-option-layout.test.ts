@@ -57,6 +57,10 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
       .toBe('디자인 월(거실/복도면)');
     expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['entry-open-premium-shoe-cabinet']?.label)
       .toBe('오픈형 프리미엄 신발장');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['bedroom-1-built-in-closet-pet']?.previewUrl)
+      .toBe('assets/options/previews/bedroom-1-built-in-closet-pet-v2.png');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['bathroom-combination-ventilator']?.previewUrl)
+      .toBe('assets/options/previews/bathroom-combination-ventilator-v2.png');
   });
 
   it('오픈형 프리미엄 신발장은 55A·55B·59A A형만 현관 입구 방향으로 180도 보정한다', () => {
@@ -149,14 +153,70 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     }
   });
 
-  it('디자인 월 한 조각을 선택하면 설치된 모든 디자인 월 조각을 그룹으로 선택한다', () => {
+  it('디자인 월이나 광폭 강마루 한 조각을 선택하면 설치된 전체 마감이 그룹으로 선택된다', () => {
     const props: ApartmentInteriorProp[] = [
       { id: 'wall-a', assetId: 'living-art-wall-greige-stone', sourceOptionId: 'living-design-wall-panel' },
       { id: 'wall-b', assetId: 'living-art-wall-greige-stone', sourceOptionId: 'living-design-wall-panel' },
+      { id: 'floor-a', assetId: 'wide-plank-floor-finish', sourceOptionId: 'wide-plank-floor-finish' },
+      { id: 'floor-b', assetId: 'wide-plank-floor-finish', sourceOptionId: 'wide-plank-floor-finish' },
       { id: 'sofa', assetId: 'sofa' },
     ];
     expect(bundangEditorSelectionPropIds(props, 'wall-a')).toEqual(['wall-a', 'wall-b']);
+    expect(bundangEditorSelectionPropIds(props, 'floor-a')).toEqual(['floor-a', 'floor-b']);
     expect(bundangEditorSelectionPropIds(props, 'sofa')).toEqual(['sofa']);
+  });
+
+  it('광폭 강마루 runtime 조각에 하나의 옵션 그룹 ID를 부여한다', () => {
+    const props = optionProps({ wallSegments: [] }, '55A', ['wide-plank-floor-finish'], [
+      { id: 'floor-a', assetId: 'wide-plank-floor-finish' },
+      { id: 'floor-b', assetId: 'wide-plank-floor-finish' },
+    ]);
+    expect(props.map((prop) => prop.sourceOptionId)).toEqual(['wide-plank-floor-finish', 'wide-plank-floor-finish']);
+    expect(bundangEditorSelectionPropIds(props, 'floor-b')).toEqual(['floor-a', 'floor-b']);
+  });
+
+  it('침실1 붙박이장과 파우더 수납장을 지정 벽의 내부 실측 폭 전체로 교체한다', async () => {
+    const apartments = await apartmentsByUnit();
+    const expectedClothingCareMirrored: Record<string, boolean> = { '51A': true, '55A': true, '55B': false, '59A': true };
+    for (const [unitType, layout] of Object.entries(BUNDANG_OPTION_LAYOUTS)) {
+      const geometry = apartments.get(unitType)?.geometry;
+      expect(geometry, `${unitType}:geometry`).toBeTruthy();
+      if (!geometry) continue;
+      const room = (roomId: string) => geometry.roomZones?.find((candidate) => candidate.id === roomId)?.boundsMeters as number[];
+      const expectedSpan = (roomId: string, edge: string) => {
+        const [x1, y1, x2, y2] = room(roomId);
+        return (edge === 'east' || edge === 'west' ? y2 - y1 : x2 - x1) - .04;
+      };
+
+      const pet = optionProps(geometry, unitType, ['bedroom-1-built-in-closet-pet'], [
+        { id: `inspection-${unitType}-bedroom-1-wardrobe`, assetId: 'wardrobe-two-door', anchorId: 'options.storage.bedroom-1' },
+      ]).filter((prop) => prop.sourceOptionId === 'bedroom-1-built-in-closet-pet');
+      expect(pet).toHaveLength(1);
+      expect(pet[0].assetId).toBe('bunfirvil-bedroom-1-pet-full-wall');
+      expect((pet[0].dimensionsMeters as number[])[0]).toBeCloseTo(expectedSpan('bedroom-1', layout.bedroomOneStorage.edge));
+
+      const clothingCare = optionProps(geometry, unitType, ['bedroom-1-clothing-care-closet'])
+        .find((prop) => prop.sourceOptionId === 'bedroom-1-clothing-care-closet');
+      expect(clothingCare?.assetId).toBe('bunfirvil-bedroom-1-clothing-care-full-wall');
+      expect(clothingCare?.mirrored).toBe(expectedClothingCareMirrored[unitType]);
+
+      const powder = optionProps(geometry, unitType, ['dress-room-powder-storage'], [
+        { id: `inspection-${unitType}-dress-room-powder-storage`, assetId: 'vanity-dressing-table', anchorId: 'options.dressRoomPowderStorage' },
+      ]).filter((prop) => prop.sourceOptionId === 'dress-room-powder-storage');
+      expect(powder).toHaveLength(1);
+      expect(powder[0].assetId).toBe('bunfirvil-dress-room-powder-storage-full-wall');
+      expect((powder[0].dimensionsMeters as number[])[0]).toBeCloseTo(expectedSpan('dress-room', layout.dressRoomPowderStorage.edge));
+      expect(powder[0].mirrored).toBe(false);
+    }
+  });
+
+  it('복합환풍기를 둥근 로컬 recipe와 가로형 크기로 교체한다', () => {
+    const props = optionProps({ wallSegments: [] }, '55A', ['bathroom-combination-ventilator'], [{
+      id: 'bath-vent', assetId: 'bathroom-combination-ventilator', dimensionsMeters: [.43, .43, .2],
+    }]);
+    expect(props[0].assetId).toBe('bunfirvil-bathroom-combination-ventilator-rounded');
+    expect(props[0].dimensionsMeters).toEqual([.52, .34, .12]);
+    expect(props[0].sourceOptionId).toBe('bathroom-combination-ventilator');
   });
 
   it('비데일체형 양변기의 모델 전면축을 기본 양변기 방향에 맞춰 보정한다', () => {
@@ -177,5 +237,15 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     expect(door).toBeTruthy();
     expect(door?.parts?.some((part) => part.shape === 'cylinder')).toBe(false);
     expect(door?.parts?.filter((part) => part.materialRole === 'door-outline')).toHaveLength(4);
+  });
+
+  it('정밀 수납장과 둥근 복합환풍기 recipe를 로컬 자산으로 제공한다', () => {
+    const clothingCare = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'bunfirvil-bedroom-1-clothing-care-full-wall');
+    const powder = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'bunfirvil-dress-room-powder-storage-full-wall');
+    const ventilator = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'bunfirvil-bathroom-combination-ventilator-rounded');
+    expect(clothingCare?.parts?.some((part) => part.materialRole === 'styler-front')).toBe(true);
+    expect(powder?.parts?.filter((part) => part.materialRole === 'secondary')).toHaveLength(5);
+    expect(powder?.parts?.some((part) => part.materialRole === 'mirror')).toBe(true);
+    expect(ventilator?.parts?.filter((part) => part.shape === 'vertical-cylinder').length).toBeGreaterThanOrEqual(4);
   });
 });

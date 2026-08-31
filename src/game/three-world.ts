@@ -154,6 +154,69 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
     ],
   },
   {
+    assetId: 'bunfirvil-bedroom-1-pet-full-wall', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [3.2, .58, 2.2],
+    parts: [
+      { shape: 'box', scale: [1, .94, 1], offset: [0, -.03, .5], materialRole: 'primary' },
+      ...[-.4, -.2, 0, .2, .4].map((offset): RuntimePart => (
+        { shape: 'box', scale: [.194, .035, .93], offset: [offset, .49, .51], materialRole: 'secondary' }
+      )),
+      ...[-.3, -.1, .1, .3].map((offset): RuntimePart => (
+        { shape: 'box', scale: [.006, .042, .93], offset: [offset, .512, .51], materialRole: 'cabinet-seam' }
+      )),
+      { shape: 'box', scale: [1, 1, .035], offset: [0, 0, .02], materialRole: 'accent' },
+    ],
+  },
+  {
+    assetId: 'bunfirvil-bedroom-1-clothing-care-full-wall', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [3.2, .58, 2.2],
+    parts: [
+      { shape: 'box', scale: [1, .94, 1], offset: [0, -.03, .5], materialRole: 'primary' },
+      ...[-.38, -.20, -.02, .16].map((offset): RuntimePart => (
+        { shape: 'box', scale: [.172, .035, .93], offset: [offset, .49, .51], materialRole: 'secondary' }
+      )),
+      ...[-.29, -.11, .07].map((offset): RuntimePart => (
+        { shape: 'box', scale: [.006, .042, .93], offset: [offset, .512, .51], materialRole: 'cabinet-seam' }
+      )),
+      { shape: 'box', scale: [.255, .055, .95], offset: [.365, .49, .5], materialRole: 'styler-frame' },
+      { shape: 'box', scale: [.215, .038, .89], offset: [.365, .525, .5], materialRole: 'styler-front' },
+      { shape: 'box', scale: [.255, .075, .035], offset: [.365, .54, .035], materialRole: 'styler-frame' },
+    ],
+  },
+  {
+    assetId: 'bunfirvil-dress-room-powder-storage-full-wall', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [2.4, .58, 2.2],
+    parts: [
+      { shape: 'box', scale: [.66, .94, 1], offset: [-.17, -.03, .5], materialRole: 'primary' },
+      ...[-.39, -.17, .05].map((offset): RuntimePart => (
+        { shape: 'box', scale: [.212, .035, .93], offset: [offset, .49, .51], materialRole: 'secondary' }
+      )),
+      ...[-.28, -.06].map((offset): RuntimePart => (
+        { shape: 'box', scale: [.006, .042, .93], offset: [offset, .512, .51], materialRole: 'cabinet-seam' }
+      )),
+      { shape: 'box', scale: [.31, .94, .40], offset: [.335, -.03, .20], materialRole: 'primary' },
+      { shape: 'box', scale: [.30, .04, .18], offset: [.335, .49, .10], materialRole: 'secondary' },
+      { shape: 'box', scale: [.30, .04, .18], offset: [.335, .49, .30], materialRole: 'secondary' },
+      { shape: 'box', scale: [.32, 1, .035], offset: [.335, 0, .415], materialRole: 'accent' },
+      { shape: 'box', scale: [.30, .025, .47], offset: [.335, .48, .73], materialRole: 'mirror' },
+      { shape: 'box', scale: [.32, .035, .49], offset: [.335, .465, .73], materialRole: 'mirror-frame' },
+    ],
+  },
+  {
+    assetId: 'bunfirvil-bathroom-combination-ventilator-rounded', rendererKind: 'procedural', mountingKind: 'ceiling',
+    defaultDimensionsMeters: [.52, .34, .12],
+    parts: [
+      { shape: 'box', scale: [.66, 1, .34], offset: [0, 0, .72], materialRole: 'primary' },
+      { shape: 'vertical-cylinder', scale: [.65, 1, .34], offset: [-.325, 0, .72], materialRole: 'primary' },
+      { shape: 'vertical-cylinder', scale: [.65, 1, .34], offset: [.325, 0, .72], materialRole: 'primary' },
+      { shape: 'box', scale: [.58, .83, .10], offset: [0, 0, .42], materialRole: 'vent-light' },
+      { shape: 'vertical-cylinder', scale: [.54, .83, .10], offset: [-.29, 0, .42], materialRole: 'vent-light' },
+      { shape: 'vertical-cylinder', scale: [.54, .83, .10], offset: [.29, 0, .42], materialRole: 'vent-light' },
+      { shape: 'box', scale: [.47, .67, .11], offset: [-.04, 0, .34], materialRole: 'secondary' },
+      { shape: 'vertical-cylinder', scale: [.22, .30, .13], offset: [.32, 0, .30], materialRole: 'vent-dark' },
+    ],
+  },
+  {
     assetId: 'ceiling-smart-downlight', rendererKind: 'procedural', mountingKind: 'ceiling',
     defaultDimensionsMeters: [0.16, 0.16, 0.06],
     parts: [
@@ -1451,10 +1514,13 @@ export class ThreeWorldRenderer {
     this.canvas.dataset.selectedEditorY = String((-screen.y * .5 + .5) * this.cssHeight);
     this.canvas.dataset.selectedEditorMask = 'rpg-gold';
     this.canvas.dataset.selectedEditorCount = String(selectedObjects.length);
-    if (selectedObjects.length > 1) this.canvas.dataset.selectedEditorGroupId = 'living-design-wall-panel';
+    if (selectedObjects.length > 1) {
+      const selectedProp = this.renderedProps.get(this.editorSelectedPropId);
+      this.canvas.dataset.selectedEditorGroupId = String(selectedProp?.sourceOptionId || 'option-prop-group');
+    }
     for (const selected of selectedObjects) {
       const mask = selected.clone(true);
-      mask.name = selectedObjects.length > 1 ? 'rpg-selected-design-wall-mask' : 'rpg-selected-furniture-mask';
+      mask.name = selectedObjects.length > 1 ? 'rpg-selected-option-group-mask' : 'rpg-selected-furniture-mask';
       mask.scale.multiplyScalar(1.012);
       mask.traverse((object) => {
         const mesh = object as THREE.Mesh;
@@ -1533,6 +1599,16 @@ export class ThreeWorldRenderer {
       const role = String(part.materialRole || 'primary');
       const material = role === 'glass'
         ? this.material('#d9f0ef', { glass: true })
+        : role === 'mirror'
+          ? this.material('#b9c7c8', { roughness: .08, metalness: .68 })
+          : role === 'styler-frame' || role === 'vent-dark'
+            ? this.material('#25282a', { roughness: .52, metalness: .18 })
+            : role === 'styler-front'
+              ? this.material('#f0eee8', { roughness: .26, metalness: .08 })
+              : role === 'vent-light'
+                ? this.material('#fff2c8', { roughness: .18 })
+                : role === 'cabinet-seam' || role === 'mirror-frame'
+                  ? this.material('#8c8981', { roughness: .64, metalness: .14 })
         : asset?.assetId === 'interior-infinity-door-panel' && role === 'door-outline'
           ? this.material('#3b342d', { roughness: 0.72 })
         : this.material(palette[role] || palette.primary, { roughness: prop.materialVariantId === 'charcoal-accent' ? 0.62 : 0.88 });

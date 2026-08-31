@@ -1727,14 +1727,14 @@ input:focus-visible {
 .option-choice-group {
   flex: 0 0 auto;
   padding: 8px;
-  border: 1px solid rgba(225, 185, 99, .34);
+  border: 1px solid rgba(115, 151, 145, .22);
   border-radius: 9px;
-  background: linear-gradient(145deg, rgba(225, 185, 99, .11), rgba(8, 22, 26, .86));
-  box-shadow: inset 3px 0 rgba(225, 185, 99, .28), inset 0 1px rgba(255, 255, 255, .04), 0 5px 14px rgba(0, 0, 0, .18);
+  background: linear-gradient(145deg, rgba(72, 103, 99, .10), rgba(8, 22, 26, .86));
+  box-shadow: inset 3px 0 rgba(92, 128, 122, .18), inset 0 1px rgba(255, 255, 255, .035), 0 5px 14px rgba(0, 0, 0, .18);
 }
 
-.option-choice-heading { margin: 0 2px 8px; padding-bottom: 7px; display: flex; align-items: center; gap: 7px; border-bottom: 1px solid rgba(225, 185, 99, .16); }
-.option-choice-heading b { padding: 2px 6px; border: 1px solid rgba(225, 185, 99, .42); border-radius: 10px; color: #f1d897; background: rgba(225, 185, 99, .10); font-size: 8px; }
+.option-choice-heading { margin: 0 2px 8px; padding-bottom: 7px; display: flex; align-items: center; gap: 7px; border-bottom: 1px solid rgba(115, 151, 145, .15); }
+.option-choice-heading b { padding: 2px 6px; border: 1px solid rgba(115, 151, 145, .31); border-radius: 10px; color: #a8c1bc; background: rgba(72, 103, 99, .09); font-size: 8px; }
 .option-choice-heading span { color: #7e938e; font-size: 8px; }
 .option-choice-items { display: flex; flex-direction: column; gap: 7px; }
 
