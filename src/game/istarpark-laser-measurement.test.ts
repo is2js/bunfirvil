@@ -25,6 +25,18 @@ const finishCalibratedRoom = {
   }],
 };
 
+const roughRoomCappedByFloorLabel = {
+  ...room,
+  roomZones: [{ id: 'living', boundsMeters: [0, 0, 4, 3] }],
+  dimensionAnnotations: [{
+    id: 'living-width',
+    valueMeters: 3.6,
+    // 실제 표기선의 양 끝이 벽 마감면과 완전히 맞지 않아도 러프한 공간 상한으로 사용한다.
+    a: [.15, 1.5],
+    b: [3.85, 1.5],
+  }],
+};
+
 describe('이스타파크 레이저 실측 계약', () => {
   it('130mm 높이에서 양쪽 벽의 순수 폭을 mm로 측정한다', () => {
     const result = measureIstarparkLaserGap({ anchorPlanPoint: [2, 1.5], axis: 'x', geometry: room });
@@ -76,6 +88,22 @@ describe('이스타파크 레이저 실측 계약', () => {
     });
     expect(result).toMatchObject({ valid: true, distanceMm: 1400, label: '1400mm · 가구 ↔ 가구' });
     expect(result.distanceMm).toBeLessThanOrEqual(3600);
+  });
+
+  it('같은 공간·축에서 가장 가까운 마루 실측표기를 레이저 최대값으로 제한한다', () => {
+    const result = measureIstarparkLaserGap({
+      anchorPlanPoint: [2, 1.5],
+      axis: 'x',
+      geometry: roughRoomCappedByFloorLabel,
+    });
+    expect(result).toMatchObject({
+      valid: true,
+      rawDistanceMm: 3800,
+      distanceMm: 3600,
+      authoredRoomMaximumApplied: true,
+      authoredRoomMaximumMm: 3600,
+      authoredRoomDimensionId: 'living-width',
+    });
   });
 
   it('바닥 마감과 130mm보다 높은 벽부착 가전은 장애물에서 제외한다', () => {

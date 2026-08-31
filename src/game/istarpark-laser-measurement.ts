@@ -18,6 +18,10 @@ export interface InspectionLaserMeasurement {
   rawDistanceMm?: number;
   finishCalibrationApplied?: boolean;
   finishCalibrationMm?: number;
+  authoredRoomMaximumApplied?: boolean;
+  authoredRoomMaximumMeters?: number;
+  authoredRoomMaximumMm?: number;
+  authoredRoomDimensionId?: string;
   label?: string;
   negativeHit?: { point: [number, number]; obstacleId: string; kind: string; label: string };
   positiveHit?: { point: [number, number]; obstacleId: string; kind: string; label: string };
@@ -377,6 +381,42 @@ function nearestRawClearance(groups = [], along = 0) {
   return negative && positive ? { negative, positive } : null;
 }
 
+function authoredRoomMaximum(geometry = {}, anchor = [], axis = "x") {
+  const rooms = Array.isArray(geometry.roomZones) ? geometry.roomZones : [];
+  const room = rooms.find((candidate) => istarparkLaserPointInPolygon(anchor, rowPolygon(candidate)));
+  if (!room) return null;
+  const roomId = String(room.id || room.roomId || "");
+  const alongIndex = axis === "y" ? 1 : 0;
+  const crossIndex = alongIndex === 0 ? 1 : 0;
+  return (Array.isArray(geometry.dimensionAnnotations) ? geometry.dimensionAnnotations : [])
+    .flatMap((annotation) => {
+      if (!Array.isArray(annotation?.a) || !Array.isArray(annotation?.b)) return [];
+      const start = point(annotation.a);
+      const end = point(annotation.b);
+      const annotationAxis = Math.abs(end[0] - start[0]) >= Math.abs(end[1] - start[1]) ? "x" : "y";
+      if (annotationAxis !== axis) return [];
+      const midpoint = [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2];
+      const annotationRoomId = String(annotation.roomZoneId || "");
+      const annotationId = String(annotation.id || "");
+      const sameRoom = annotationRoomId
+        ? annotationRoomId === roomId
+        : annotationId === roomId
+          || annotationId.startsWith(`${roomId}-`)
+          || istarparkLaserPointInPolygon(midpoint, rowPolygon(room));
+      if (!sameRoom) return [];
+      const authoredSpan = Math.abs(end[alongIndex] - start[alongIndex]);
+      const valueMeters = finite(annotation.valueMeters, authoredSpan);
+      if (valueMeters <= EPSILON) return [];
+      return [{
+        id: annotationId,
+        roomId,
+        valueMeters,
+        crossDistance: Math.abs(anchor[crossIndex] - midpoint[crossIndex]),
+      }];
+    })
+    .sort((left, right) => left.crossDistance - right.crossDistance || left.valueMeters - right.valueMeters)[0] || null;
+}
+
 function finishCalibrationKey(axis = "x", obstacleId = "", side = "negative") {
   return `${axis}:${String(obstacleId || "")}:${side}`;
 }
@@ -527,9 +567,20 @@ export function measureIstarparkLaserGap({
   const calibratedNegativeCoordinate = rawNegativeCoordinate + negativeShift;
   const calibratedPositiveCoordinate = rawPositiveCoordinate - positiveShift;
   const calibrationValid = calibratedPositiveCoordinate > calibratedNegativeCoordinate + EPSILON;
-  const negativeCoordinate = calibrationValid ? calibratedNegativeCoordinate : rawNegativeCoordinate;
-  const positiveCoordinate = calibrationValid ? calibratedPositiveCoordinate : rawPositiveCoordinate;
+  let negativeCoordinate = calibrationValid ? calibratedNegativeCoordinate : rawNegativeCoordinate;
+  let positiveCoordinate = calibrationValid ? calibratedPositiveCoordinate : rawPositiveCoordinate;
   const rawDistanceMeters = Math.max(0, rawPositiveCoordinate - rawNegativeCoordinate);
+  const calibratedDistanceMeters = Math.max(0, positiveCoordinate - negativeCoordinate);
+  const authoredMaximum = authoredRoomMaximum(geometry, anchor, normalizedAxis);
+  const authoredMaximumApplied = Boolean(
+    authoredMaximum
+      && calibratedDistanceMeters > authoredMaximum.valueMeters + EPSILON,
+  );
+  if (authoredMaximumApplied) {
+    const faceInset = (calibratedDistanceMeters - authoredMaximum.valueMeters) / 2;
+    negativeCoordinate += faceInset;
+    positiveCoordinate -= faceInset;
+  }
   const distanceMeters = Math.max(0, positiveCoordinate - negativeCoordinate);
   const displayAlong = snappedClearance ? (negativeCoordinate + positiveCoordinate) / 2 : along;
   const displayAnchor = contactPoint(normalizedAxis, displayAlong, cross);
@@ -559,8 +610,12 @@ export function measureIstarparkLaserGap({
     finishCalibrationApplied: calibrationValid
       && (Math.abs(negativeShift) > EPSILON || Math.abs(positiveShift) > EPSILON),
     finishCalibrationMm: calibrationValid
-      ? Math.round((rawDistanceMeters - distanceMeters) * 1000)
+      ? Math.round((rawDistanceMeters - calibratedDistanceMeters) * 1000)
       : 0,
+    authoredRoomMaximumApplied: authoredMaximumApplied,
+    authoredRoomMaximumMeters: authoredMaximum?.valueMeters,
+    authoredRoomMaximumMm: authoredMaximum ? Math.round(authoredMaximum.valueMeters * 1000) : undefined,
+    authoredRoomDimensionId: authoredMaximum?.id,
     distanceMeters: Number(distanceMeters.toFixed(6)),
     distanceMm,
     label: `${distanceMm}mm · ${negativeObstacle.label} ↔ ${positiveObstacle.label}`,
