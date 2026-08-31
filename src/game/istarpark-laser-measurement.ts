@@ -888,6 +888,28 @@ function directionalLaserVector(start = [], pointerPlanPoint = [], axisLock = nu
   return [dx / length, dy / length];
 }
 
+export function istarparkLaserAxisTowardPointer({
+  startPlanPoint = [],
+  pointerPlanPoint = [],
+  fallbackAxis = "x",
+  minimumDirectionMeters = 0.01,
+}: {
+  startPlanPoint?: number[] | { x?: number; y?: number };
+  pointerPlanPoint?: number[] | { x?: number; y?: number };
+  fallbackAxis?: InspectionLaserAxis;
+  minimumDirectionMeters?: number;
+} = {}): InspectionLaserAxis {
+  const start = point(startPlanPoint);
+  const pointer = point(pointerPlanPoint);
+  const dx = pointer[0] - start[0];
+  const dy = pointer[1] - start[1];
+  const fallback: InspectionLaserAxis = fallbackAxis === "y" ? "y" : "x";
+  if (Math.hypot(dx, dy) < Math.max(0, finite(minimumDirectionMeters, 0.01)) - EPSILON) {
+    return fallback;
+  }
+  return Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
+}
+
 function directionalLaserCalibrationAxis(rayDirection = [], axisLock = null) {
   if (axisLock === "x" || axisLock === "y") return axisLock;
   const direction = point(rayDirection);

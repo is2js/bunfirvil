@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   ISTARPARK_LASER_HEIGHT_METERS,
+  istarparkLaserAxisTowardPointer,
   istarparkLaserObstacles,
   measureIstarparkLaserDirectionalGap,
   measureIstarparkLaserGap,
@@ -197,6 +198,52 @@ describe('이스타파크 레이저 실측 계약', () => {
       startHit: { point: [3.1, 2], directionalSurface: true },
       endHit: { point: [5.9, 2] },
     });
+  });
+
+  it('51A B형 욕실1 벽에서 L은 침실과 욕실 방향 모두 Y축에 자동으로 붙는다', () => {
+    const generatedRoot = fileURLToPath(new URL('../../public/generated/', import.meta.url));
+    const current = JSON.parse(readFileSync(join(generatedRoot, 'current.json'), 'utf8'));
+    const chunksRoot = join(
+      generatedRoot,
+      current.basePath,
+      'maps',
+      'bundang-first-village-51a-prototype',
+      'chunks',
+    );
+    const apartment = readdirSync(chunksRoot)
+      .filter((name) => name.endsWith('.json'))
+      .map((name) => JSON.parse(readFileSync(join(chunksRoot, name), 'utf8')))
+      .flatMap((chunk) => chunk.objects || [])
+      .find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry);
+    const geometry = apartment.geometry;
+    const props = geometry.interiorProps || [];
+    const startHit = snapIstarparkLaserPoint({
+      candidatePlanPoint: [7.4, 4.8],
+      geometry,
+      props,
+      maxSnapDistanceMeters: null,
+      requireSurface: true,
+    });
+    expect(startHit.obstacleId).toBe('bathroom-1-south');
+
+    for (const expected of [
+      { pointerPlanPoint: [7.4, 7], distanceMm: 3000 },
+      { pointerPlanPoint: [7.4, 3], distanceMm: 1240 },
+    ]) {
+      const axisLock = istarparkLaserAxisTowardPointer({
+        startPlanPoint: startHit.sourcePlanPoint,
+        pointerPlanPoint: expected.pointerPlanPoint,
+        fallbackAxis: 'x',
+      });
+      expect(axisLock).toBe('y');
+      expect(measureIstarparkLaserDirectionalGap({
+        startHit,
+        pointerPlanPoint: expected.pointerPlanPoint,
+        axisLock,
+        geometry,
+        props,
+      })).toMatchObject({ valid: true, axis: 'y', distanceMm: expected.distanceMm });
+    }
   });
 
   it('축 정렬 2점 실측도 자동 실측의 마감 보정값을 재사용한다', () => {

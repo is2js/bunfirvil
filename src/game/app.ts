@@ -13,6 +13,7 @@ import {
   type InteriorPlacementValidation,
 } from './interior-placement';
 import {
+  istarparkLaserAxisTowardPointer,
   measureIstarparkLaserDirectionalGap,
   measureIstarparkLaserGap,
   snapIstarparkLaserPoint,
@@ -209,6 +210,7 @@ export class ShowcaseApp {
     axis: 'x' as InspectionLaserAxis,
     phase: 'hover' as InspectionLaserPhase,
     lineSnap: false,
+    lineSnapManualAxis: false,
     lastScreenPoint: null as { x: number; y: number } | null,
     measurement: null as InspectionLaserMeasurement | null,
     firstPlanPoint: null as NumericPoint | null,
@@ -543,7 +545,7 @@ export class ShowcaseApp {
             <div><span class="help-icon">B</span><b>옵션 프리뷰</b><p>B팔레트 선택은 맵의 미리보기 프롭과 견적에 반영되고 이 브라우저에 저장됩니다.</p></div>
             <div><span class="help-icon">GHOST</span><b>가구 설치·이동</b><p>가구 목록을 누르거나 재배치를 시작하면 반투명 GHOST가 마우스를 따라갑니다. 초록은 설치 가능, 빨강은 벽·문·구조물·가구와 겹친 불가 위치입니다. 좌클릭으로 확정하고 우클릭 또는 Esc로 취소합니다.</p></div>
             <div><span class="help-icon">L</span><b>벽 자석·회전</b><p>GHOST 상태에서 L을 누르면 가까운 벽·코너 자석을 켜거나 끕니다. Shift+휠 또는 R로 90도 회전하며, 빈 맵은 손바닥 드래그로 이동하고 Ctrl+휠로 확대·축소합니다.</p></div>
-            <div><span class="help-icon">J</span><b>레이저 자동·2점 실측</b><p>첫 J는 자동 실측을 켜고, 이후 J마다 자동 ↔ 2점 실측을 전환합니다. 2점 실측은 벽·설비·가구 면에 붙는 시작점 고스트를 클릭한 뒤 원하는 공간 방향을 가리켜 처음 닿는 반대편 마감면까지 잽니다. 내부벽은 커서가 향한 방 쪽 마감면에서 시작하며 L은 직선 자석, Shift+휠은 축 전환, Esc는 종료입니다.</p></div>
+            <div><span class="help-icon">J</span><b>레이저 자동·2점 실측</b><p>첫 J는 자동 실측을 켜고, 이후 J마다 자동 ↔ 2점 실측을 전환합니다. 2점 실측은 벽·설비·가구 면에 붙는 시작점 고스트를 클릭한 뒤 원하는 공간 방향을 가리켜 처음 닿는 반대편 마감면까지 잽니다. 내부벽은 커서가 향한 방 쪽 마감면에서 시작하며 L은 마우스 방향에 가까운 X/Y축 직선 자석, Shift+휠은 수동 축 전환, Esc는 종료입니다.</p></div>
           </div>
           <p class="dialog-note">이 사이트는 시각·성능 검수용입니다. 피해, 명중, MP, 사용자 인증과 공용 저장은 처리하지 않습니다.</p>
         </form>
@@ -906,6 +908,7 @@ export class ShowcaseApp {
     this.inspectionLaser.axis = 'x';
     this.inspectionLaser.phase = 'hover';
     this.inspectionLaser.lineSnap = false;
+    this.inspectionLaser.lineSnapManualAxis = false;
     this.inspectionLaser.lastScreenPoint = null;
     this.inspectionLaser.measurement = null;
     this.inspectionLaser.firstPlanPoint = null;
@@ -922,6 +925,7 @@ export class ShowcaseApp {
     this.inspectionLaser.active = false;
     this.inspectionLaser.phase = 'hover';
     this.inspectionLaser.lineSnap = false;
+    this.inspectionLaser.lineSnapManualAxis = false;
     this.inspectionLaser.lastScreenPoint = null;
     this.inspectionLaser.measurement = null;
     this.inspectionLaser.firstPlanPoint = null;
@@ -977,11 +981,27 @@ export class ShowcaseApp {
   private toggleInspectionLaserLineSnap(): void {
     if (!this.inspectionLaser.active) return;
     this.inspectionLaser.lineSnap = !this.inspectionLaser.lineSnap;
+    this.inspectionLaser.lineSnapManualAxis = false;
     if (this.inspectionLaser.phase === 'hover' || this.inspectionLaser.phase === 'await-second') {
       this.refreshInspectionLaserMeasurement();
     } else {
       this.renderInspectionLaserHud();
     }
+  }
+
+  private resolveInspectionLaserLineSnapAxis(pointerPlanPoint: NumericPoint | null): InspectionLaserAxis | null {
+    if (!this.inspectionLaser.lineSnap) return null;
+    if (this.inspectionLaser.lineSnapManualAxis) return this.inspectionLaser.axis;
+    const startPlanPoint = this.inspectionLaser.firstHit?.sourcePlanPoint
+      || this.inspectionLaser.firstPlanPoint
+      || this.inspectionLaser.firstHit?.point;
+    if (!startPlanPoint || !pointerPlanPoint) return this.inspectionLaser.axis;
+    this.inspectionLaser.axis = istarparkLaserAxisTowardPointer({
+      startPlanPoint,
+      pointerPlanPoint,
+      fallbackAxis: this.inspectionLaser.axis,
+    });
+    return this.inspectionLaser.axis;
   }
 
   private inspectionLaserPlanContext(event: PointerEvent): {
@@ -1024,7 +1044,7 @@ export class ShowcaseApp {
       startHit: this.inspectionLaser.firstHit,
       startPlanPoint: firstPlanPoint,
       pointerPlanPoint: secondPlanPoint,
-      axisLock: this.inspectionLaser.lineSnap ? this.inspectionLaser.axis : null,
+      axisLock: this.resolveInspectionLaserLineSnapAxis(secondPlanPoint),
       geometry: apartment.geometry,
       props: this.threeRenderer.getRenderedProps(),
       assets: this.interiorAssets,
@@ -1205,7 +1225,7 @@ export class ShowcaseApp {
         startHit: this.inspectionLaser.firstHit,
         startPlanPoint: this.inspectionLaser.firstPlanPoint,
         pointerPlanPoint: anchorPlanPoint,
-        axisLock: this.inspectionLaser.lineSnap ? this.inspectionLaser.axis : null,
+        axisLock: this.resolveInspectionLaserLineSnapAxis(anchorPlanPoint),
         geometry: apartment.geometry,
         props,
         assets: this.interiorAssets,
@@ -1245,6 +1265,9 @@ export class ShowcaseApp {
     if (!this.inspectionLaser.wheelLatched && this.inspectionLaser.wheelDelta >= 40) {
       this.inspectionLaser.wheelLatched = true;
       this.inspectionLaser.axis = this.inspectionLaser.axis === 'x' ? 'y' : 'x';
+      if (this.inspectionLaser.lineSnap && this.inspectionLaser.phase !== 'hover') {
+        this.inspectionLaser.lineSnapManualAxis = true;
+      }
       if (this.inspectionLaser.phase === 'hover' || this.inspectionLaser.lineSnap) {
         this.refreshInspectionLaserMeasurement();
       } else {
