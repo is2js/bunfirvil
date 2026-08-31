@@ -30,6 +30,8 @@ const DESIGN_WALL_DEPTH_METERS = 0.02;
 const FINISH_CLEARANCE_METERS = 0.002;
 const DEFAULT_INTERIOR_WALL_THICKNESS_METERS = 0.12;
 const INTEGRATED_BIDET_OPTION_ID = 'toilet-integrated-bidet';
+const OPEN_PREMIUM_SHOE_CABINET_OPTION_ID = 'entry-open-premium-shoe-cabinet';
+const OPEN_PREMIUM_SHOE_CABINET_A_FACING_FIX = new Set<UnitTypeId>(['55A', '55B', '59A']);
 const INFINITY_DOOR_ALLOWED_ROOM_IDS = new Set<string>([
   'bedroom-1',
   'bedroom-2',
@@ -38,6 +40,10 @@ const INFINITY_DOOR_ALLOWED_ROOM_IDS = new Set<string>([
 ]);
 
 export const BUNDANG_OPTION_DISPLAY_OVERRIDES: Readonly<Record<string, Pick<BOptionEntry, 'label' | 'description'>>> = Object.freeze({
+  [OPEN_PREMIUM_SHOE_CABINET_OPTION_ID]: Object.freeze({
+    label: '오픈형 프리미엄 신발장',
+    description: '오픈형 신발장(PET)과 신발살균기·에어브러시·가구 조명·엔지니어드 스톤 구성입니다.',
+  }),
   [BUNDANG_DESIGN_WALL_OPTION_ID]: Object.freeze({
     label: '디자인 월(거실/복도면)',
     description: '거실 3면과 현관에서 거실까지 이어지는 복도 벽면 전체를 동일한 디자인 월 마감으로 감쌉니다.',
@@ -245,11 +251,29 @@ function alignIntegratedBidetToDefaultFacing(prop: ApartmentInteriorProp): Apart
   };
 }
 
+function alignOpenPremiumShoeCabinetToEntry(
+  prop: ApartmentInteriorProp,
+  unitType: UnitTypeId,
+  planVariant: string | undefined,
+): ApartmentInteriorProp {
+  const isPremiumShoeCabinet = prop.sourceOptionId === OPEN_PREMIUM_SHOE_CABINET_OPTION_ID
+    || prop.anchorId === 'options.entryShoeCabinet'
+    || (prop.assetId === 'entry-shoe-cabinet-tall' && /premium-shoe-cabinet/.test(String(prop.id || '')));
+  if (!isPremiumShoeCabinet || planVariant !== 'A' || !OPEN_PREMIUM_SHOE_CABINET_A_FACING_FIX.has(unitType)) return prop;
+  const yawDeg = Number(prop.yawDeg);
+  return {
+    ...prop,
+    yawDeg: Number.isFinite(yawDeg) ? ((yawDeg + 180) % 360 + 360) % 360 : 180,
+    sourceOptionId: OPEN_PREMIUM_SHOE_CABINET_OPTION_ID,
+  };
+}
+
 export function refineBundangOptionProps(
   geometry: ApartmentGeometry,
   unitTypeId: string,
   selectedIds: Iterable<string>,
   baseProps: ApartmentInteriorProp[],
+  planVariant?: string,
 ): ApartmentInteriorProp[] {
   const unitType = String(unitTypeId || '').toUpperCase() as UnitTypeId;
   const layout = BUNDANG_OPTION_LAYOUTS[unitType];
@@ -257,7 +281,8 @@ export function refineBundangOptionProps(
   const selected = new Set(selectedIds);
   const props = baseProps
     .filter((prop) => !isLegacyEntryLivingOptionProp(prop))
-    .map(alignIntegratedBidetToDefaultFacing);
+    .map(alignIntegratedBidetToDefaultFacing)
+    .map((prop) => alignOpenPremiumShoeCabinetToEntry(prop, unitType, planVariant));
   if (selected.has(BUNDANG_DESIGN_WALL_OPTION_ID)) props.push(...designWallProps(geometry, layout));
   if (selected.has(ALL_DOORS_OPTION_ID)) props.push(...infinityDoorProps(geometry, layout, true));
   else if (selected.has(BEDROOM_ONE_DOOR_OPTION_ID)) props.push(...infinityDoorProps(geometry, layout, false));

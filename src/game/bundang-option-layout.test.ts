@@ -46,14 +46,33 @@ function optionProps(
   unitType: string,
   selected: string[],
   baseProps: ApartmentInteriorProp[] = [],
+  planVariant?: string,
 ): ApartmentInteriorProp[] {
-  return refineBundangOptionProps(geometry, unitType, selected, baseProps);
+  return refineBundangOptionProps(geometry, unitType, selected, baseProps, planVariant);
 }
 
 describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
   it('기존 옵션 ID를 유지하면서 표시 이름만 정확히 보정한다', () => {
     expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['living-design-wall-panel']?.label)
       .toBe('디자인 월(거실/복도면)');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['entry-open-premium-shoe-cabinet']?.label)
+      .toBe('오픈형 프리미엄 신발장');
+  });
+
+  it('오픈형 프리미엄 신발장은 55A·55B·59A A형만 현관 입구 방향으로 180도 보정한다', () => {
+    const geometry = { wallSegments: [] } as ApartmentGeometry;
+    const baseProp: ApartmentInteriorProp = {
+      id: 'inspection-unit-premium-shoe-cabinet',
+      assetId: 'entry-shoe-cabinet-tall',
+      anchorId: 'options.entryShoeCabinet',
+      yawDeg: 270,
+    };
+    for (const unitType of ['55A', '55B', '59A']) {
+      expect(optionProps(geometry, unitType, ['entry-open-premium-shoe-cabinet'], [baseProp], 'A')[0]?.yawDeg, `${unitType}:A`)
+        .toBe(90);
+      expect(optionProps(geometry, unitType, ['entry-open-premium-shoe-cabinet'], [baseProp], 'B')[0]?.yawDeg, `${unitType}:B`)
+        .toBe(270);
+    }
   });
 
   it('4개 평형의 지정 벽 조각만 얇은 비충돌 디자인 월로 감싼다', async () => {

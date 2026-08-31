@@ -1302,6 +1302,7 @@ export class ThreeWorldRenderer {
       object.unitTypeId || this.world?.entry.unitType || '',
       this.selectedOptionIds,
       runtimeProps,
+      object.planVariant,
     );
     const sourceOverrides = new Set((this.editorProps || []).map((prop) => String(prop.sourcePropId || '')).filter(Boolean));
     const props = this.editorProps
