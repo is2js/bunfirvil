@@ -123,7 +123,7 @@ const SERVICE_WALL_SHOWER_YAW: Record<string, Record<ApartmentPlanVariant, numbe
 });
 
 const PLAN_B_ISLAND_WINDOW_FACING_UNITS = new Set(['51A', '55A', '59A']);
-const PLAN_B_55A_REMOVED_SOLID_BLOCK_ID = 'entry-pantry-west-service-block';
+const PLAN_B_55A_REMOVED_KITCHEN_FIXTURE_ID = 'kitchen-side-base-cabinet';
 
 /**
  * 샤워부스 recipe에서 유리벽은 local +X에, 샤워기는 local -Y에 있다.
@@ -218,11 +218,11 @@ export function applyPlanVariantInteriorOverrides(
     island.frontFaces = 'toward-kitchen-window-wall';
   }
 
-  // 55A B형에서 현관 팬트리 설비 블록이 주방 하부장 아래 마루까지 돌출되던
-  // 정적 snapshot 아티팩트를 Bunfirvil 변형 계층에서만 제거한다.
-  if (variant === 'B' && unitType === '55A' && Array.isArray(geometry.solidBlocks)) {
-    geometry.solidBlocks = geometry.solidBlocks.filter((value) =>
-      String(record(value)?.id || '') !== PLAN_B_55A_REMOVED_SOLID_BLOCK_ID);
+  // 55A B형에서 창가 하부장과 겹쳐 T자로 튀어나오던 측면 하부장 메시만
+  // Bunfirvil 변형 계층에서 제외한다. 현관 팬트리 설비벽은 원본대로 유지한다.
+  if (variant === 'B' && unitType === '55A' && Array.isArray(geometry.kitchenFixtures)) {
+    geometry.kitchenFixtures = geometry.kitchenFixtures.filter((value) =>
+      String(record(value)?.id || '') !== PLAN_B_55A_REMOVED_KITCHEN_FIXTURE_ID);
   }
 
   // options/runtime.mjs가 준비되기 전 geometry.interiorProps fallback도

@@ -136,8 +136,9 @@ describe('RPG apartment plan variants', () => {
           optionAnchors: {
             kitchen: { island: { yawDeg: 180, frontFaces: 'away-from-living' } },
           },
-          solidBlocks: unitTypeId === '55A'
-            ? [{ id: 'entry-pantry-west-service-block' }, { id: 'bathroom-1-northeast-service-l' }]
+          solidBlocks: [{ id: 'entry-pantry-west-service-block' }, { id: 'bathroom-1-northeast-service-l' }],
+          kitchenFixtures: unitTypeId === '55A'
+            ? [{ id: 'kitchen-window-base-cabinet' }, { id: 'kitchen-side-base-cabinet' }]
             : [],
         },
       };
@@ -146,8 +147,10 @@ describe('RPG apartment plan variants', () => {
       expect(geometry.optionAnchors.kitchen.island.yawDeg, unitTypeId).toBe(0);
       expect(geometry.optionAnchors.kitchen.island.frontFaces, unitTypeId).toBe('toward-kitchen-window-wall');
       if (unitTypeId === '55A') {
+        expect(geometry.kitchenFixtures.map((fixture: { id: string }) => fixture.id))
+          .toEqual(['kitchen-window-base-cabinet']);
         expect(geometry.solidBlocks.map((block: { id: string }) => block.id))
-          .toEqual(['bathroom-1-northeast-service-l']);
+          .toEqual(['entry-pantry-west-service-block', 'bathroom-1-northeast-service-l']);
       }
     }
   });
