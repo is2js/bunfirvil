@@ -564,7 +564,7 @@ export class ThreeWorldRenderer {
     if (mesh.userData.labelText === label) return;
     mesh.userData.labelText = label;
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.font = '600 52px "Noto Sans KR", "Malgun Gothic", sans-serif';
+    context.font = '600 58px "Noto Sans KR", "Malgun Gothic", sans-serif';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.lineJoin = 'round';

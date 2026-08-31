@@ -15,6 +15,16 @@ const room = {
   ],
 };
 
+const finishCalibratedRoom = {
+  ...room,
+  dimensionAnnotations: [{
+    id: 'finished-room-width',
+    valueMeters: 3.6,
+    a: [.2, 1.5],
+    b: [3.8, 1.5],
+  }],
+};
+
 describe('이스타파크 레이저 실측 계약', () => {
   it('130mm 높이에서 양쪽 벽의 순수 폭을 mm로 측정한다', () => {
     const result = measureIstarparkLaserGap({ anchorPlanPoint: [2, 1.5], axis: 'x', geometry: room });
@@ -34,6 +44,38 @@ describe('이스타파크 레이저 실측 계약', () => {
       props: [{ id: 'sofa', assetId: 'sofa', positionMeters: [2, 1.5], dimensionsMeters: [2, 1, .8] }],
     });
     expect(result).toMatchObject({ valid: true, anchorSnapped: true, distanceMm: 900 });
+  });
+
+  it('평면도 마감 치수보다 크게 표시하지 않고 가구가 막은 나머지 순수 폭만 계산한다', () => {
+    const result = measureIstarparkLaserGap({
+      anchorPlanPoint: [2.5, 1.5],
+      axis: 'x',
+      geometry: finishCalibratedRoom,
+      props: [{ id: 'desk', assetId: 'desk', positionMeters: [1, 1.5], dimensionsMeters: [1, .8, .75] }],
+    });
+    expect(result).toMatchObject({
+      valid: true,
+      rawDistanceMm: 2400,
+      distanceMm: 2300,
+      finishCalibrationMm: 100,
+      negativeHit: { kind: 'furniture' },
+      positiveHit: { kind: 'wall' },
+    });
+    expect(result.distanceMm).toBeLessThanOrEqual(3600);
+  });
+
+  it('회전된 가구의 너비·깊이를 레이저 축에 투영해 가구 사이 남은 폭을 계산한다', () => {
+    const result = measureIstarparkLaserGap({
+      anchorPlanPoint: [2, 1.5],
+      axis: 'x',
+      geometry: finishCalibratedRoom,
+      props: [
+        { id: 'left', assetId: 'desk', positionMeters: [.8, 1.5], dimensionsMeters: [.6, 1, .75], yawDeg: 90 },
+        { id: 'right', assetId: 'desk', positionMeters: [3.2, 1.5], dimensionsMeters: [.6, 1, .75], yawDeg: 90 },
+      ],
+    });
+    expect(result).toMatchObject({ valid: true, distanceMm: 1400, label: '1400mm · 가구 ↔ 가구' });
+    expect(result.distanceMm).toBeLessThanOrEqual(3600);
   });
 
   it('바닥 마감과 130mm보다 높은 벽부착 가전은 장애물에서 제외한다', () => {
