@@ -7,6 +7,7 @@ import {
   BUNDANG_OPTION_DISPLAY_OVERRIDES,
   bundangEditorSelectionPropIds,
   bundangPreciseEditorPickOnly,
+  refrigeratorCabinetFacingYaw,
   refineBundangOptionProps,
   replacedBundangOpeningIds,
 } from './bundang-option-layout';
@@ -62,6 +63,54 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
       .toBe('assets/options/previews/bedroom-1-built-in-closet-pet-v2.png');
     expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['bathroom-combination-ventilator']?.previewUrl)
       .toBe('assets/options/previews/bathroom-combination-ventilator-v2.png');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['refrigerator-cabinet-pet-basic']?.previewUrl)
+      .toBe('assets/options/previews/refrigerator-cabinet-pet-basic-v2.png');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['refrigerator-cabinet-bespoke-alt2']?.previewUrl)
+      .toBe('assets/options/previews/refrigerator-cabinet-bespoke-alt2-v2.png');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['refrigerator-cabinet-lg-built-in']?.previewUrl)
+      .toBe('assets/options/previews/refrigerator-cabinet-lg-built-in-v2.png');
+  });
+
+  it('냉장고장 기본형은 빌트인 해제 뒤 복원되고 4평형 A/B 모두 전면이 거실을 향한다', async () => {
+    const apartments = await apartmentsByUnit();
+    for (const [unitType, apartment] of apartments) {
+      const geometry = apartment.geometry;
+      expect(geometry, `${unitType}:geometry`).toBeTruthy();
+      if (!geometry) continue;
+      const kitchen = (geometry.optionAnchors as { kitchen?: { refrigeratorCabinet?: { boundsMeters?: number[] } } } | undefined)?.kitchen;
+      const bounds = kitchen?.refrigeratorCabinet?.boundsMeters || [];
+      expect(bounds, `${unitType}:refrigerator bounds`).toHaveLength(4);
+      const [x1, y1, x2, y2] = bounds;
+      const vertical = y2 - y1 >= x2 - x1;
+      const source: ApartmentInteriorProp = {
+        id: `inspection-${unitType}-refrigerator-cabinet`,
+        assetId: 'refrigerator-cabinet-lg-built-in',
+        positionMeters: [(x1 + x2) / 2, (y1 + y2) / 2],
+        dimensionsMeters: [vertical ? y2 - y1 : x2 - x1, vertical ? x2 - x1 : y2 - y1, 2.2],
+        yawDeg: vertical ? 90 : 0,
+        anchorId: 'kitchen.refrigeratorCabinet',
+        installationRole: 'refrigerator-cabinet',
+      };
+      const livingBounds = (geometry.roomZones || []).find((room) => room.id === 'living')?.boundsMeters as number[];
+      const livingCenter = [(livingBounds[0] + livingBounds[2]) / 2, (livingBounds[1] + livingBounds[3]) / 2];
+      for (const variant of ['A', 'B'] as const) {
+        const builtIn = optionProps(geometry, unitType, [
+          'refrigerator-cabinet-pet-basic',
+          'refrigerator-cabinet-bespoke-alt2',
+        ], [source], variant);
+        expect(builtIn).toHaveLength(1);
+        expect(builtIn[0].assetId, `${unitType}:${variant}:built-in`).toBe('refrigerator-cabinet-bespoke-alt2');
+
+        const restored = optionProps(geometry, unitType, ['refrigerator-cabinet-pet-basic'], [source], variant);
+        expect(restored).toHaveLength(1);
+        expect(restored[0].assetId, `${unitType}:${variant}:restored`).toBe('refrigerator-cabinet-pet-basic');
+        expect(restored[0].sourceOptionId).toBe('refrigerator-cabinet-pet-basic');
+        const yaw = refrigeratorCabinetFacingYaw(geometry, restored[0]);
+        const front = [Math.sin(yaw * Math.PI / 180), Math.cos(yaw * Math.PI / 180)];
+        const towardLiving = [livingCenter[0] - source.positionMeters![0], livingCenter[1] - source.positionMeters![1]];
+        expect(front[0] * towardLiving[0] + front[1] * towardLiving[1], `${unitType}:${variant}:front`).toBeGreaterThan(0);
+      }
+    }
   });
 
   it('오픈형 프리미엄 신발장은 55A·55B·59A A형만 현관 입구 방향으로 180도 보정한다', () => {
@@ -298,5 +347,19 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     expect(storage?.parts?.filter((part) => part.materialRole === 'secondary')).toHaveLength(3);
     expect(ventilator?.parts?.filter((part) => part.shape === 'vertical-cylinder').length).toBeGreaterThanOrEqual(4);
     expect(ventilator?.parts?.some((part) => part.materialRole === 'vent-dark')).toBe(true);
+  });
+
+  it('냉장고 recipe가 삼성 3도어 30도 개방과 LG 4도어·우측 수납 구성을 유지한다', () => {
+    const bespoke = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'refrigerator-cabinet-bespoke-alt2');
+    const bespokeDoors = bespoke?.parts?.filter((part) => String(part.materialRole || '').startsWith('refrigerator-front')) || [];
+    expect(bespokeDoors).toHaveLength(3);
+    const openDoor = bespokeDoors.find((part) => part.materialRole === 'refrigerator-front-open');
+    expect(openDoor?.yawDeg).toBe(30);
+    expect(openDoor?.scale?.[0]).toBeLessThan(Math.min(...bespokeDoors.filter((part) => part !== openDoor).map((part) => part.scale?.[0] || 1)));
+
+    const lg = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'refrigerator-cabinet-lg-built-in');
+    expect(lg?.parts?.filter((part) => part.materialRole === 'refrigerator-front')).toHaveLength(2);
+    expect(lg?.parts?.filter((part) => part.materialRole === 'refrigerator-front-alt')).toHaveLength(3);
+    expect(lg?.parts?.filter((part) => part.materialRole === 'refrigerator-storage-front')).toHaveLength(2);
   });
 });

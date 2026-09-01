@@ -1597,6 +1597,11 @@ export class ShowcaseApp {
     this.interiorRelocationArmed = false;
     this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
     this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
+    const optionId = String(prop.sourceOptionId || '');
+    if (optionId && this.selectedOptionIds.includes(optionId)) {
+      this.selectedStageOptionId = optionId;
+      this.focusOptionInPalette(optionId);
+    }
     this.renderFurniturePalette();
     this.updateFurnitureToolbar();
     const status = this.mount.querySelector<HTMLElement>('#furniture-status');
@@ -1612,9 +1617,11 @@ export class ShowcaseApp {
     const picked = this.scenePropAt(event);
     if (!picked) {
       this.selectedLocalPropId = '';
+      this.selectedStageOptionId = '';
       this.selectedScenePropSnapshot = null;
       this.furnitureContextMenuOpen = false;
       this.threeRenderer?.setEditorSelection('');
+      this.renderOptions();
       this.updateFurnitureToolbar();
       return false;
     }
@@ -2288,6 +2295,26 @@ export class ShowcaseApp {
     this.paintPaletteViewToggle();
   }
 
+  private focusOptionInPalette(optionId: string): void {
+    const option = compatibleOptions(this.catalog.bOptions, this.currentMap.unitType)
+      .find((candidate) => candidate.id === optionId);
+    if (!option) return;
+    this.optionCategory = option.category;
+    this.paletteAppliedOnly = false;
+    this.setPaletteTab('options');
+    this.renderOptions();
+    requestAnimationFrame(() => {
+      const list = this.get<HTMLElement>('#option-list');
+      const card = [...list.querySelectorAll<HTMLElement>('[data-option-card-id]')]
+        .find((candidate) => candidate.dataset.optionCardId === optionId);
+      if (!card) return;
+      const listBounds = list.getBoundingClientRect();
+      const cardBounds = card.getBoundingClientRect();
+      const top = list.scrollTop + cardBounds.top - listBounds.top - (list.clientHeight - cardBounds.height) / 2;
+      list.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
+  }
+
   private commitSelectedOptions(): void {
     if (this.selectedStageOptionId && !this.selectedOptionIds.includes(this.selectedStageOptionId)) {
       this.selectedStageOptionId = '';
@@ -2446,7 +2473,7 @@ export class ShowcaseApp {
       ? `<img src="${escapeHtml(resolveProjectUrl(option.previewUrl))}" alt="" loading="lazy" />`
       : '';
     return `
-      <article class="option-card system-ac-card ${active ? 'is-selected' : ''}" data-system-ac-tier="${tier}">
+      <article class="option-card system-ac-card ${active ? 'is-selected' : ''} ${active?.id === this.selectedStageOptionId ? 'is-world-linked' : ''}" data-system-ac-tier="${tier}" data-option-card-id="${escapeHtml(active?.id || option?.id || '')}">
         <span class="option-preview ${option?.previewUrl ? '' : 'is-fallback'}">${preview}<i>空</i><em>${active ? '적용됨' : '2대부터'}</em></span>
         <span class="option-copy">
           <span class="option-category">시스템에어컨</span>
@@ -2475,7 +2502,7 @@ export class ShowcaseApp {
       ? `<img src="${escapeHtml(resolveProjectUrl(option.previewUrl))}" alt="" loading="lazy" onerror="this.closest('.option-preview')?.classList.add('is-fallback')" />`
       : '';
     return `
-      <label class="option-card ${selected ? 'is-selected' : ''}">
+      <label class="option-card ${selected ? 'is-selected' : ''} ${this.selectedStageOptionId === option.id ? 'is-world-linked' : ''}" data-option-card-id="${escapeHtml(option.id)}">
         <span class="option-preview ${option.previewUrl ? '' : 'is-fallback'}">${preview}<i>${escapeHtml(option.category.slice(0, 1))}</i><em>${selected ? '적용됨' : 'PREVIEW'}</em></span>
         <span class="option-copy">
           <span class="option-category">${escapeHtml(option.category)}</span>

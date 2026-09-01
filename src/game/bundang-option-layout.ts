@@ -53,6 +53,14 @@ const BEDROOM_ONE_PET_CLOSET_OPTION_ID = 'bedroom-1-built-in-closet-pet';
 const BEDROOM_ONE_CLOTHING_CARE_CLOSET_OPTION_ID = 'bedroom-1-clothing-care-closet';
 const DRESS_ROOM_POWDER_STORAGE_OPTION_ID = 'dress-room-powder-storage';
 const BATHROOM_COMBINATION_VENTILATOR_OPTION_ID = 'bathroom-combination-ventilator';
+const REFRIGERATOR_BASIC_OPTION_ID = 'refrigerator-cabinet-pet-basic';
+const REFRIGERATOR_BESPOKE_OPTION_ID = 'refrigerator-cabinet-bespoke-alt2';
+const REFRIGERATOR_LG_OPTION_ID = 'refrigerator-cabinet-lg-built-in';
+const REFRIGERATOR_OPTION_IDS = new Set([
+  REFRIGERATOR_BASIC_OPTION_ID,
+  REFRIGERATOR_BESPOKE_OPTION_ID,
+  REFRIGERATOR_LG_OPTION_ID,
+]);
 const BEDROOM_STORAGE_DEPTH_METERS = 0.58;
 const BEDROOM_STORAGE_HEIGHT_METERS = 2.2;
 const STORAGE_EDGE_CLEARANCE_METERS = 0.02;
@@ -84,6 +92,15 @@ export const BUNDANG_OPTION_DISPLAY_OVERRIDES: Readonly<Record<string, Partial<P
   }),
   [BATHROOM_COMBINATION_VENTILATOR_OPTION_ID]: Object.freeze({
     previewUrl: 'assets/options/previews/bathroom-combination-ventilator-v2.png',
+  }),
+  [REFRIGERATOR_BASIC_OPTION_ID]: Object.freeze({
+    previewUrl: 'assets/options/previews/refrigerator-cabinet-pet-basic-v2.png',
+  }),
+  [REFRIGERATOR_BESPOKE_OPTION_ID]: Object.freeze({
+    previewUrl: 'assets/options/previews/refrigerator-cabinet-bespoke-alt2-v2.png',
+  }),
+  [REFRIGERATOR_LG_OPTION_ID]: Object.freeze({
+    previewUrl: 'assets/options/previews/refrigerator-cabinet-lg-built-in-v2.png',
   }),
 });
 
@@ -516,6 +533,59 @@ function alignOpenPremiumShoeCabinetToEntry(
   };
 }
 
+function selectedRefrigeratorAssetId(selected: ReadonlySet<string>): string {
+  if (selected.has(REFRIGERATOR_LG_OPTION_ID)) return REFRIGERATOR_LG_OPTION_ID;
+  if (selected.has(REFRIGERATOR_BESPOKE_OPTION_ID)) return REFRIGERATOR_BESPOKE_OPTION_ID;
+  if (selected.has(REFRIGERATOR_BASIC_OPTION_ID)) return REFRIGERATOR_BASIC_OPTION_ID;
+  return '';
+}
+
+function isRefrigeratorCabinetProp(prop: ApartmentInteriorProp): boolean {
+  return prop.installationRole === 'refrigerator-cabinet'
+    || prop.anchorId === 'kitchen.refrigeratorCabinet'
+    || REFRIGERATOR_OPTION_IDS.has(String(prop.assetId || ''));
+}
+
+function roomCenter(geometry: ApartmentGeometry, roomId: string): Point | null {
+  const room = (geometry.roomZones || []).find((candidate) => String(candidate.id || '') === roomId);
+  const bounds = Array.isArray(room?.boundsMeters) ? room.boundsMeters.map(Number) : [];
+  if (bounds.length < 4 || !bounds.slice(0, 4).every(Number.isFinite)) return null;
+  return [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
+}
+
+/** 냉장고장의 손잡이·문 전면(+depth)이 거실 쪽을 향하도록 cardinal yaw를 고른다. */
+export function refrigeratorCabinetFacingYaw(
+  geometry: ApartmentGeometry,
+  prop: ApartmentInteriorProp,
+): number {
+  const living = roomCenter(geometry, 'living');
+  const position = Array.isArray(prop.positionMeters) ? prop.positionMeters.map(Number) : [];
+  if (!living || position.length < 2 || !position.slice(0, 2).every(Number.isFinite)) {
+    return normalizedYaw(Number(prop.yawDeg) || 0);
+  }
+  const currentYaw = normalizedYaw(Number(prop.yawDeg) || 0);
+  const widthRunsNorthSouth = Math.round(currentYaw / 90) % 2 === 1;
+  if (widthRunsNorthSouth) return living[0] >= position[0] ? 90 : 270;
+  return living[1] >= position[1] ? 0 : 180;
+}
+
+function refineRefrigeratorCabinetProp(
+  geometry: ApartmentGeometry,
+  selected: ReadonlySet<string>,
+  prop: ApartmentInteriorProp,
+): ApartmentInteriorProp | null {
+  if (!isRefrigeratorCabinetProp(prop)) return prop;
+  const assetId = selectedRefrigeratorAssetId(selected);
+  if (!assetId) return null;
+  return {
+    ...prop,
+    assetId,
+    sourceOptionId: assetId,
+    yawDeg: refrigeratorCabinetFacingYaw(geometry, prop),
+    installationRole: 'refrigerator-cabinet',
+  };
+}
+
 export function refineBundangOptionProps(
   geometry: ApartmentGeometry,
   unitTypeId: string,
@@ -529,6 +599,8 @@ export function refineBundangOptionProps(
   const selected = new Set(selectedIds);
   const props = baseProps
     .filter((prop) => !isLegacyEntryLivingOptionProp(prop) && !isLegacyPrecisionStorageProp(prop))
+    .map((prop) => refineRefrigeratorCabinetProp(geometry, selected, prop))
+    .filter((prop): prop is ApartmentInteriorProp => Boolean(prop))
     .map(refineWidePlankAndVentilatorProp)
     .map(alignIntegratedBidetToDefaultFacing)
     .map((prop) => alignOpenPremiumShoeCabinetToEntry(prop, unitType, planVariant));

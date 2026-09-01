@@ -39,6 +39,7 @@ interface RuntimePart {
   scale?: number[];
   offset?: number[];
   materialRole?: string;
+  yawDeg?: number;
 }
 
 interface RuntimeAsset {
@@ -261,13 +262,13 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
       { shape: 'box', scale: [0.035, 1, 1], offset: [-0.4825, 0, 0.5], materialRole: 'secondary' },
       { shape: 'box', scale: [0.035, 1, 1], offset: [0.4825, 0, 0.5], materialRole: 'secondary' },
       { shape: 'box', scale: [0.93, 1, 0.12], offset: [0, 0, 0.94], materialRole: 'secondary' },
-      { shape: 'box', scale: [0.30, 0.91, 0.78], offset: [-0.315, 0.035, 0.43], materialRole: 'primary' },
-      { shape: 'box', scale: [0.30, 0.91, 0.78], offset: [0, 0.035, 0.43], materialRole: 'primary' },
-      { shape: 'box', scale: [0.18, 0.91, 0.86], offset: [0.255, 0.035, 0.47], materialRole: 'secondary' },
-      { shape: 'box', scale: [0.13, 0.91, 0.38], offset: [0.42, 0.035, 0.22], materialRole: 'primary' },
-      { shape: 'box', scale: [0.13, 0.91, 0.34], offset: [0.42, 0.035, 0.70], materialRole: 'accent' },
-      { shape: 'box', scale: [0.012, 0.94, 0.72], offset: [-0.16, 0.51, 0.43], materialRole: 'accent' },
-      { shape: 'box', scale: [0.012, 0.94, 0.72], offset: [0.155, 0.51, 0.43], materialRole: 'accent' },
+      { shape: 'box', scale: [0.92, 0.06, 0.82], offset: [0, -0.45, 0.47], materialRole: 'accent' },
+      { shape: 'box', scale: [0.18, 0.055, 0.82], offset: [-0.37, 0.52, 0.47], materialRole: 'refrigerator-front-open', yawDeg: 30 },
+      { shape: 'box', scale: [0.34, 0.055, 0.82], offset: [-0.09, 0.50, 0.47], materialRole: 'refrigerator-front' },
+      { shape: 'box', scale: [0.34, 0.055, 0.82], offset: [0.27, 0.50, 0.47], materialRole: 'refrigerator-front-alt' },
+      { shape: 'box', scale: [0.12, 0.035, 0.014], offset: [-0.37, 0.555, 0.46], materialRole: 'refrigerator-handle', yawDeg: 30 },
+      { shape: 'box', scale: [0.23, 0.035, 0.014], offset: [-0.09, 0.535, 0.46], materialRole: 'refrigerator-handle' },
+      { shape: 'box', scale: [0.23, 0.035, 0.014], offset: [0.27, 0.535, 0.46], materialRole: 'refrigerator-handle' },
     ],
   },
   {
@@ -277,12 +278,19 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
       { shape: 'box', scale: [0.035, 1, 1], offset: [-0.4825, 0, 0.5], materialRole: 'secondary' },
       { shape: 'box', scale: [0.035, 1, 1], offset: [0.4825, 0, 0.5], materialRole: 'secondary' },
       { shape: 'box', scale: [0.93, 1, 0.12], offset: [0, 0, 0.94], materialRole: 'secondary' },
-      { shape: 'box', scale: [0.50, 0.91, 0.78], offset: [-0.22, 0.035, 0.43], materialRole: 'primary' },
-      { shape: 'box', scale: [0.29, 0.91, 0.78], offset: [0.20, 0.035, 0.43], materialRole: 'primary' },
-      { shape: 'box', scale: [0.15, 0.91, 0.86], offset: [0.41, 0.035, 0.47], materialRole: 'secondary' },
-      { shape: 'box', scale: [0.018, 0.94, 0.72], offset: [-0.22, 0.51, 0.43], materialRole: 'accent' },
-      { shape: 'box', scale: [0.018, 0.94, 0.72], offset: [0.05, 0.51, 0.43], materialRole: 'accent' },
-      { shape: 'box', scale: [0.018, 0.94, 0.72], offset: [0.34, 0.51, 0.43], materialRole: 'accent' },
+      { shape: 'box', scale: [0.92, 0.06, 0.82], offset: [0, -0.45, 0.47], materialRole: 'accent' },
+      { shape: 'box', scale: [0.29, 0.055, 0.45], offset: [-0.31, 0.50, 0.69], materialRole: 'refrigerator-front-alt' },
+      { shape: 'box', scale: [0.29, 0.055, 0.35], offset: [-0.31, 0.50, 0.275], materialRole: 'refrigerator-front-alt' },
+      { shape: 'box', scale: [0.29, 0.055, 0.45], offset: [0, 0.50, 0.69], materialRole: 'refrigerator-front' },
+      { shape: 'box', scale: [0.29, 0.055, 0.35], offset: [0, 0.50, 0.275], materialRole: 'refrigerator-front' },
+      { shape: 'box', scale: [0.29, 0.055, 0.45], offset: [0.31, 0.50, 0.69], materialRole: 'refrigerator-front-alt' },
+      { shape: 'box', scale: [0.29, 0.055, 0.165], offset: [0.31, 0.50, 0.36], materialRole: 'refrigerator-storage-front' },
+      { shape: 'box', scale: [0.29, 0.055, 0.165], offset: [0.31, 0.50, 0.175], materialRole: 'refrigerator-storage-front' },
+      ...[-0.31, 0].flatMap((offset): RuntimePart[] => ([
+        { shape: 'box', scale: [0.20, 0.035, 0.012], offset: [offset, 0.535, 0.465], materialRole: 'refrigerator-handle' },
+      ])),
+      { shape: 'box', scale: [0.20, 0.035, 0.012], offset: [0.31, 0.535, 0.465], materialRole: 'refrigerator-handle' },
+      { shape: 'box', scale: [0.20, 0.035, 0.012], offset: [0.31, 0.535, 0.275], materialRole: 'refrigerator-handle' },
     ],
   },
 ];
@@ -1623,6 +1631,14 @@ export class ThreeWorldRenderer {
               ? this.material('#f0eee8', { roughness: .26, metalness: .08 })
               : role === 'vent-light'
                 ? this.material('#fff2c8', { roughness: .18 })
+                : role === 'refrigerator-front-open'
+                  ? this.material('#dfd8ce', { roughness: .34, metalness: .04 })
+                  : role === 'refrigerator-front'
+                    ? this.material('#d9ddd8', { roughness: .32, metalness: .05 })
+                    : role === 'refrigerator-front-alt' || role === 'refrigerator-storage-front'
+                      ? this.material('#e8dfd5', { roughness: .36, metalness: .03 })
+                      : role === 'refrigerator-handle'
+                        ? this.material('#585b59', { roughness: .45, metalness: .48 })
                 : role === 'cabinet-seam' || role === 'mirror-frame'
                   ? this.material('#8c8981', { roughness: .64, metalness: .14 })
         : asset?.assetId === 'interior-infinity-door-panel' && role === 'door-outline'
@@ -1639,6 +1655,7 @@ export class ThreeWorldRenderer {
         size[2] * finite(part.offset?.[2], 0.5) / cellSize,
         size[1] * finite(part.offset?.[1]) / cellSize,
       );
+      mesh.rotation.y = -finite(part.yawDeg) * Math.PI / 180;
       mesh.castShadow = false;
       mesh.receiveShadow = false;
       if (wallFinish) mesh.renderOrder = 3.06;
