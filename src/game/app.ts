@@ -7,6 +7,7 @@ import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from
 import { FrameMetrics } from './metrics';
 import { FloorPlanMinimap } from './floorplan-minimap';
 import { interiorSelectionName } from './interior-selection-name';
+import { optionRepresentativeProp } from './option-prop-selection';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import {
   validateInteriorPlacement,
@@ -182,6 +183,7 @@ export class ShowcaseApp {
   private paletteTab: 'options' | 'furniture' = 'options';
   private paletteAppliedOnly = false;
   private optionChangePending = false;
+  private selectedStageOptionId = '';
   private interiorAssets: InteriorAssetEntry[] = [];
   private interiorCatalogUrl = '';
   private localInteriorProps: ApartmentInteriorProp[] = [];
@@ -613,15 +615,21 @@ export class ShowcaseApp {
       this.renderFurniturePalette();
     }, { signal });
     this.get<HTMLElement>('#stage-option-chips').addEventListener('click', (event) => {
-      const target = event.target instanceof Element
+      const removeTarget = event.target instanceof Element
         ? event.target.closest<HTMLButtonElement>('button[data-stage-option-remove]')
         : null;
-      if (!target) return;
+      const selectTarget = event.target instanceof Element
+        ? event.target.closest<HTMLButtonElement>('button[data-stage-option-select]')
+        : null;
       const options = compatibleOptions(this.catalog.bOptions, this.currentMap.unitType).map((option) => ({
         ...option,
         price: option.prices?.[this.currentMap.unitType] ?? option.price,
       }));
-      void this.removeSelectedOptionWithConfirmation(options, target.dataset.stageOptionRemove || '');
+      if (removeTarget) {
+        this.removeStageOptionImmediately(options, removeTarget.dataset.stageOptionRemove || '');
+        return;
+      }
+      if (selectTarget) this.selectStageOptionInWorld(selectTarget.dataset.stageOptionSelect || '');
     }, { signal });
     this.get<HTMLButtonElement>('#stage-option-clear').addEventListener('click', () => {
       void this.clearAllSelectedOptionsWithConfirmation();
@@ -2272,17 +2280,53 @@ export class ShowcaseApp {
     this.get<HTMLButtonElement>('#stage-option-clear').hidden = selectedOptions.length === 0;
     this.get<HTMLElement>('#stage-option-total').innerHTML = `${numberFormat.format(total)}<small>원</small>`;
     this.get<HTMLElement>('#stage-option-chips').innerHTML = selectedOptions.length
-      ? selectedOptions.map((option) => `<button type="button" data-stage-option-remove="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 선택 취소 확인"><b>${escapeHtml(option.label)}</b><em>+${numberFormat.format(option.price)}원</em></button>`).join('')
+      ? selectedOptions.map((option) => `<span class="stage-option-chip ${this.selectedStageOptionId === option.id ? 'is-world-selected' : ''}">
+          <button type="button" class="stage-option-select" data-stage-option-select="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 인게임 구성 선택"><b>${escapeHtml(option.label)}</b><em>+${numberFormat.format(option.price)}원</em></button>
+          <button type="button" class="stage-option-remove" data-stage-option-remove="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 바로 삭제">×</button>
+        </span>`).join('')
       : '<span><b>기본 마감</b><em>+0원</em></span>';
     this.paintPaletteViewToggle();
   }
 
   private commitSelectedOptions(): void {
+    if (this.selectedStageOptionId && !this.selectedOptionIds.includes(this.selectedStageOptionId)) {
+      this.selectedStageOptionId = '';
+      this.selectedLocalPropId = '';
+      this.selectedScenePropSnapshot = null;
+      this.furnitureContextMenuOpen = false;
+      this.threeRenderer?.setEditorSelection('');
+    }
     writeSelectedOptions(this.currentMap.id, this.selectedOptionIds);
     this.canvasRenderer.setSelectedOptions(this.selectedOptionIds);
     this.threeRenderer?.setSelectedOptions(this.selectedOptionIds);
     this.renderOptions();
     this.toast('B옵션 프리뷰를 로컬에 저장했습니다.', 'success');
+  }
+
+  private selectStageOptionInWorld(optionId: string): void {
+    if (!optionId || !this.selectedOptionIds.includes(optionId)) return;
+    this.selectedStageOptionId = optionId;
+    const chips = this.get<HTMLElement>('#stage-option-chips');
+    chips.querySelectorAll<HTMLElement>('.stage-option-chip').forEach((chip) => {
+      const button = chip.querySelector<HTMLButtonElement>('[data-stage-option-select]');
+      chip.classList.toggle('is-world-selected', button?.dataset.stageOptionSelect === optionId);
+    });
+    const props = this.threeRenderer?.getRenderedProps() || [];
+    const prop = optionRepresentativeProp(props, optionId);
+    if (!prop || !this.threeRenderer || this.renderer !== this.threeRenderer) {
+      this.get<HTMLElement>('#furniture-status').textContent = '선택한 옵션은 현재 맵에 표시할 3D 구성요소가 없습니다.';
+      this.toast('현재 맵에 표시할 옵션 구성요소가 없습니다.', 'notice');
+      return;
+    }
+    this.selectSceneProp(prop, false, '좌하단 옵션과 인게임 구성요소를 연동해 선택했습니다.');
+  }
+
+  private removeStageOptionImmediately(options: BOptionEntry[], optionId: string): void {
+    if (this.optionChangePending) return;
+    const intent = optionSelectionIntent(options, this.selectedOptionIds, optionId);
+    if (!intent.option || intent.kind !== 'deselect') return;
+    this.selectedOptionIds = intent.nextSelection;
+    this.commitSelectedOptions();
   }
 
   private async toggleOptionWithConfirmation(options: BOptionEntry[], optionId: string): Promise<void> {

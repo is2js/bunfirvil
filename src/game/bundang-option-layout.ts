@@ -570,7 +570,7 @@ export function bundangEditorSelectionPropIds(
   const selectedId = String(selectedPropId || '');
   const selected = props.find((prop) => String(prop.id || '') === selectedId);
   if (!selected) return [];
-  if (![BUNDANG_DESIGN_WALL_OPTION_ID, WIDE_PLANK_FLOOR_OPTION_ID, DRESS_ROOM_POWDER_STORAGE_OPTION_ID].includes(String(selected.sourceOptionId || ''))) return [selectedId];
+  if (!selected.sourceOptionId) return [selectedId];
   return props
     .filter((prop) => prop.sourceOptionId === selected.sourceOptionId)
     .map((prop) => String(prop.id || ''))

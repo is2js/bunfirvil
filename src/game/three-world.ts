@@ -17,6 +17,7 @@ import {
   refineBundangOptionProps,
   replacedBundangOpeningIds,
 } from './bundang-option-layout';
+import { associateOptionSources } from './option-prop-selection';
 import {
   ISTARPARK_LASER_HEIGHT_METERS,
   type InspectionLaserAxis,
@@ -1381,13 +1382,13 @@ export class ThreeWorldRenderer {
     const runtimeProps = this.optionRuntime
       ? this.optionRuntime.bundangPrototypeOptionProps(geometry, object.unitTypeId || this.world?.entry.unitType || '', this.selectedOptionIds)
       : geometry.interiorProps || [];
-    const baseProps = refineBundangOptionProps(
+    const baseProps = associateOptionSources(refineBundangOptionProps(
       geometry,
       object.unitTypeId || this.world?.entry.unitType || '',
       this.selectedOptionIds,
       runtimeProps,
       object.planVariant,
-    );
+    ), this.selectedOptionIds);
     const sourceOverrides = new Set((this.editorProps || []).map((prop) => String(prop.sourcePropId || '')).filter(Boolean));
     const props = this.editorProps
       ? [...baseProps.filter((prop) => !sourceOverrides.has(String(prop.id || ''))), ...this.editorProps.filter((prop) => prop.localDeleted !== true)]
