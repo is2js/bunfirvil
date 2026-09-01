@@ -175,9 +175,20 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     expect(bundangEditorSelectionPropIds(props, 'floor-b')).toEqual(['floor-a', 'floor-b']);
   });
 
-  it('침실1 붙박이장과 파우더 수납장을 지정 벽의 내부 실측 폭 전체로 교체한다', async () => {
+  it('침실1 붙박이장은 평형·A/B형별 기본 전면 방향을 유지하면서 내부 실측 폭 전체를 채운다', async () => {
     const apartments = await apartmentsByUnit();
-    const expectedClothingCareMirrored: Record<string, boolean> = { '51A': true, '55A': true, '55B': false, '59A': true };
+    const expectedYaw: Record<string, Record<'A' | 'B', number>> = {
+      '51A': { A: 90, B: 270 },
+      '55A': { A: 270, B: 90 },
+      '55B': { A: 0, B: 180 },
+      '59A': { A: 270, B: 270 },
+    };
+    const expectedClothingCareMirrored: Record<string, Record<'A' | 'B', boolean>> = {
+      '51A': { A: true, B: false },
+      '55A': { A: false, B: true },
+      '55B': { A: false, B: true },
+      '59A': { A: false, B: false },
+    };
     for (const [unitType, layout] of Object.entries(BUNDANG_OPTION_LAYOUTS)) {
       const geometry = apartments.get(unitType)?.geometry;
       expect(geometry, `${unitType}:geometry`).toBeTruthy();
@@ -188,25 +199,57 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
         return (edge === 'east' || edge === 'west' ? y2 - y1 : x2 - x1) - .04;
       };
 
-      const pet = optionProps(geometry, unitType, ['bedroom-1-built-in-closet-pet'], [
-        { id: `inspection-${unitType}-bedroom-1-wardrobe`, assetId: 'wardrobe-two-door', anchorId: 'options.storage.bedroom-1' },
-      ]).filter((prop) => prop.sourceOptionId === 'bedroom-1-built-in-closet-pet');
-      expect(pet).toHaveLength(1);
-      expect(pet[0].assetId).toBe('bunfirvil-bedroom-1-pet-full-wall');
-      expect((pet[0].dimensionsMeters as number[])[0]).toBeCloseTo(expectedSpan('bedroom-1', layout.bedroomOneStorage.edge));
+      for (const variant of ['A', 'B'] as const) {
+        const pet = optionProps(geometry, unitType, ['bedroom-1-built-in-closet-pet'], [
+          { id: `inspection-${unitType}-bedroom-1-wardrobe`, assetId: 'wardrobe-two-door', anchorId: 'options.storage.bedroom-1' },
+        ], variant).filter((prop) => prop.sourceOptionId === 'bedroom-1-built-in-closet-pet');
+        expect(pet).toHaveLength(1);
+        expect(pet[0].assetId).toBe('bunfirvil-bedroom-1-pet-full-wall');
+        expect((pet[0].dimensionsMeters as number[])[0]).toBeCloseTo(expectedSpan('bedroom-1', layout.bedroomOneStorage.edge));
+        expect(pet[0].yawDeg, `${unitType}:${variant}:pet yaw`).toBe(expectedYaw[unitType][variant]);
 
-      const clothingCare = optionProps(geometry, unitType, ['bedroom-1-clothing-care-closet'])
-        .find((prop) => prop.sourceOptionId === 'bedroom-1-clothing-care-closet');
-      expect(clothingCare?.assetId).toBe('bunfirvil-bedroom-1-clothing-care-full-wall');
-      expect(clothingCare?.mirrored).toBe(expectedClothingCareMirrored[unitType]);
+        const clothingCare = optionProps(geometry, unitType, ['bedroom-1-clothing-care-closet'], [], variant)
+          .find((prop) => prop.sourceOptionId === 'bedroom-1-clothing-care-closet');
+        expect(clothingCare?.assetId).toBe('bunfirvil-bedroom-1-clothing-care-full-wall');
+        expect(clothingCare?.yawDeg, `${unitType}:${variant}:clothing yaw`).toBe(expectedYaw[unitType][variant]);
+        expect(clothingCare?.mirrored, `${unitType}:${variant}:styler end`).toBe(expectedClothingCareMirrored[unitType][variant]);
+      }
+    }
+  });
 
-      const powder = optionProps(geometry, unitType, ['dress-room-powder-storage'], [
-        { id: `inspection-${unitType}-dress-room-powder-storage`, assetId: 'vanity-dressing-table', anchorId: 'options.dressRoomPowderStorage' },
-      ]).filter((prop) => prop.sourceOptionId === 'dress-room-powder-storage');
-      expect(powder).toHaveLength(1);
-      expect(powder[0].assetId).toBe('bunfirvil-dress-room-powder-storage-full-wall');
-      expect((powder[0].dimensionsMeters as number[])[0]).toBeCloseTo(expectedSpan('dress-room', layout.dressRoomPowderStorage.edge));
-      expect(powder[0].mirrored).toBe(false);
+  it('파우더 화장대와 3칸 수납장을 분리해 평형·A/B형별 위치와 전면을 기본값으로 고정한다', async () => {
+    const apartments = await apartmentsByUnit();
+    const expected: Record<string, Record<'A' | 'B', { vanityYaw: number; storageYaw: number; swapped: boolean }>> = {
+      '51A': { A: { vanityYaw: 270, storageYaw: 90, swapped: false }, B: { vanityYaw: 90, storageYaw: 270, swapped: false } },
+      '55A': { A: { vanityYaw: 90, storageYaw: 270, swapped: false }, B: { vanityYaw: 270, storageYaw: 90, swapped: false } },
+      '55B': { A: { vanityYaw: 0, storageYaw: 180, swapped: true }, B: { vanityYaw: 0, storageYaw: 180, swapped: true } },
+      '59A': { A: { vanityYaw: 90, storageYaw: 270, swapped: false }, B: { vanityYaw: 270, storageYaw: 270, swapped: false } },
+    };
+    for (const [unitType, layout] of Object.entries(BUNDANG_OPTION_LAYOUTS)) {
+      const geometry = apartments.get(unitType)?.geometry;
+      expect(geometry, `${unitType}:geometry`).toBeTruthy();
+      if (!geometry) continue;
+      const bounds = geometry.roomZones?.find((candidate) => candidate.id === 'dress-room')?.boundsMeters as number[];
+      const [x1, y1, x2, y2] = bounds;
+      const vertical = ['east', 'west'].includes(layout.dressRoomPowderStorage.edge);
+      const expectedSpan = (vertical ? y2 - y1 : x2 - x1) - .04;
+      for (const variant of ['A', 'B'] as const) {
+        const props = optionProps(geometry, unitType, ['dress-room-powder-storage'], [{
+          id: `inspection-${unitType}-dress-room-powder-storage`, assetId: 'vanity-dressing-table', anchorId: 'options.dressRoomPowderStorage',
+        }], variant).filter((prop) => prop.sourceOptionId === 'dress-room-powder-storage');
+        expect(props).toHaveLength(2);
+        const vanity = props.find((prop) => prop.assetId === 'bunfirvil-dress-room-powder-vanity');
+        const storage = props.find((prop) => prop.assetId === 'bunfirvil-dress-room-storage-three-bay');
+        expect(vanity?.yawDeg, `${unitType}:${variant}:vanity`).toBe(expected[unitType][variant].vanityYaw);
+        expect(storage?.yawDeg, `${unitType}:${variant}:storage`).toBe(expected[unitType][variant].storageYaw);
+        expect((vanity?.dimensionsMeters as number[])[0] + (storage?.dimensionsMeters as number[])[0]).toBeCloseTo(expectedSpan);
+        const axis = vertical ? 1 : 0;
+        const vanityCoordinate = (vanity?.positionMeters as number[])[axis];
+        const storageCoordinate = (storage?.positionMeters as number[])[axis];
+        expect(vanityCoordinate < storageCoordinate, `${unitType}:${variant}:section order`)
+          .toBe(expected[unitType][variant].swapped);
+        expect(bundangEditorSelectionPropIds(props, String(vanity?.id))).toHaveLength(2);
+      }
     }
   });
 
@@ -216,6 +259,7 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     }]);
     expect(props[0].assetId).toBe('bunfirvil-bathroom-combination-ventilator-rounded');
     expect(props[0].dimensionsMeters).toEqual([.52, .34, .12]);
+    expect(props[0].materialVariantId).toBe('system-ac-light-gray');
     expect(props[0].sourceOptionId).toBe('bathroom-combination-ventilator');
   });
 
@@ -241,11 +285,14 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
 
   it('정밀 수납장과 둥근 복합환풍기 recipe를 로컬 자산으로 제공한다', () => {
     const clothingCare = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'bunfirvil-bedroom-1-clothing-care-full-wall');
-    const powder = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'bunfirvil-dress-room-powder-storage-full-wall');
+    const powder = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'bunfirvil-dress-room-powder-vanity');
+    const storage = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'bunfirvil-dress-room-storage-three-bay');
     const ventilator = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'bunfirvil-bathroom-combination-ventilator-rounded');
     expect(clothingCare?.parts?.some((part) => part.materialRole === 'styler-front')).toBe(true);
-    expect(powder?.parts?.filter((part) => part.materialRole === 'secondary')).toHaveLength(5);
+    expect(powder?.parts?.filter((part) => part.materialRole === 'secondary')).toHaveLength(2);
     expect(powder?.parts?.some((part) => part.materialRole === 'mirror')).toBe(true);
+    expect(storage?.parts?.filter((part) => part.materialRole === 'secondary')).toHaveLength(3);
     expect(ventilator?.parts?.filter((part) => part.shape === 'vertical-cylinder').length).toBeGreaterThanOrEqual(4);
+    expect(ventilator?.parts?.some((part) => part.materialRole === 'vent-dark')).toBe(true);
   });
 });

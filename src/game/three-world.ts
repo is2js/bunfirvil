@@ -184,22 +184,29 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
     ],
   },
   {
-    assetId: 'bunfirvil-dress-room-powder-storage-full-wall', rendererKind: 'procedural', mountingKind: 'floor',
-    defaultDimensionsMeters: [2.4, .58, 2.2],
+    assetId: 'bunfirvil-dress-room-storage-three-bay', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [1.58, .58, 2.2],
     parts: [
-      { shape: 'box', scale: [.66, .94, 1], offset: [-.17, -.03, .5], materialRole: 'primary' },
-      ...[-.39, -.17, .05].map((offset): RuntimePart => (
-        { shape: 'box', scale: [.212, .035, .93], offset: [offset, .49, .51], materialRole: 'secondary' }
+      { shape: 'box', scale: [1, .94, 1], offset: [0, -.03, .5], materialRole: 'primary' },
+      ...[-.33, 0, .33].map((offset): RuntimePart => (
+        { shape: 'box', scale: [.322, .035, .93], offset: [offset, .49, .51], materialRole: 'secondary' }
       )),
-      ...[-.28, -.06].map((offset): RuntimePart => (
+      ...[-.165, .165].map((offset): RuntimePart => (
         { shape: 'box', scale: [.006, .042, .93], offset: [offset, .512, .51], materialRole: 'cabinet-seam' }
       )),
-      { shape: 'box', scale: [.31, .94, .40], offset: [.335, -.03, .20], materialRole: 'primary' },
-      { shape: 'box', scale: [.30, .04, .18], offset: [.335, .49, .10], materialRole: 'secondary' },
-      { shape: 'box', scale: [.30, .04, .18], offset: [.335, .49, .30], materialRole: 'secondary' },
-      { shape: 'box', scale: [.32, 1, .035], offset: [.335, 0, .415], materialRole: 'accent' },
-      { shape: 'box', scale: [.30, .025, .47], offset: [.335, .48, .73], materialRole: 'mirror' },
-      { shape: 'box', scale: [.32, .035, .49], offset: [.335, .465, .73], materialRole: 'mirror-frame' },
+      { shape: 'box', scale: [1, 1, .035], offset: [0, 0, .02], materialRole: 'accent' },
+    ],
+  },
+  {
+    assetId: 'bunfirvil-dress-room-powder-vanity', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [.82, .58, 2.2],
+    parts: [
+      { shape: 'box', scale: [.96, .94, .40], offset: [0, -.03, .20], materialRole: 'primary' },
+      { shape: 'box', scale: [.92, .04, .18], offset: [0, .49, .10], materialRole: 'secondary' },
+      { shape: 'box', scale: [.92, .04, .18], offset: [0, .49, .30], materialRole: 'secondary' },
+      { shape: 'box', scale: [1, 1, .035], offset: [0, 0, .415], materialRole: 'accent' },
+      { shape: 'box', scale: [.90, .025, .47], offset: [0, -.48, .73], materialRole: 'mirror' },
+      { shape: 'box', scale: [.96, .035, .49], offset: [0, -.465, .73], materialRole: 'mirror-frame' },
     ],
   },
   {
@@ -213,7 +220,7 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
       { shape: 'vertical-cylinder', scale: [.54, .83, .10], offset: [-.29, 0, .42], materialRole: 'vent-light' },
       { shape: 'vertical-cylinder', scale: [.54, .83, .10], offset: [.29, 0, .42], materialRole: 'vent-light' },
       { shape: 'box', scale: [.47, .67, .11], offset: [-.04, 0, .34], materialRole: 'secondary' },
-      { shape: 'vertical-cylinder', scale: [.22, .30, .13], offset: [.32, 0, .30], materialRole: 'vent-dark' },
+      { shape: 'vertical-cylinder', scale: [.25, .36, .15], offset: [.31, 0, .29], materialRole: 'vent-dark' },
     ],
   },
   {

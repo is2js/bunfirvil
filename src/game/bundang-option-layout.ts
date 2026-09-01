@@ -7,7 +7,14 @@ type StorageWallEdge = 'north' | 'east' | 'south' | 'west';
 interface StorageWallAnchorV1 {
   roomId: 'bedroom-1' | 'dress-room';
   edge: StorageWallEdge;
-  featureNearestRoomId: 'dress-room' | 'bedroom-2';
+  featureNearestRoomId: 'bedroom-1' | 'dress-room' | 'bedroom-2';
+}
+
+interface OptionVariantFacingRuleV1 {
+  bedroomOneYawOffsetDeg?: 180;
+  powderVanityYawOffsetDeg?: 180;
+  powderStorageYawOffsetDeg?: 180;
+  powderSwapSections?: true;
 }
 
 interface DesignWallRunV1 {
@@ -30,6 +37,7 @@ export interface BundangOptionLayoutV1 {
   infinityDoors: InfinityDoorAnchorV1[];
   bedroomOneStorage: StorageWallAnchorV1;
   dressRoomPowderStorage: StorageWallAnchorV1;
+  variantFacingRules: Record<'A' | 'B', OptionVariantFacingRuleV1>;
 }
 
 export const BUNDANG_DESIGN_WALL_OPTION_ID = 'living-design-wall-panel';
@@ -102,6 +110,10 @@ export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLa
     unitType: '51A',
     bedroomOneStorage: { roomId: 'bedroom-1', edge: 'east', featureNearestRoomId: 'dress-room' },
     dressRoomPowderStorage: { roomId: 'dress-room', edge: 'east', featureNearestRoomId: 'bedroom-2' },
+    variantFacingRules: {
+      A: { powderVanityYawOffsetDeg: 180 },
+      B: { bedroomOneYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
+    },
     designWallRuns: [
       { id: 'living-south', roomZoneId: 'living', segmentIds: ['outer-south-living-before', 'outer-south-living-sill', 'outer-south-living-lintel', 'outer-south-living-after'], interiorNormal: [0, -1] },
       { id: 'living-east', roomZoneId: 'living', segmentIds: ['bedroom-1-west-before', 'bedroom-1-west-lintel', 'bedroom-1-west-after'], interiorNormal: [-1, 0] },
@@ -118,6 +130,10 @@ export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLa
     unitType: '55A',
     bedroomOneStorage: { roomId: 'bedroom-1', edge: 'west', featureNearestRoomId: 'dress-room' },
     dressRoomPowderStorage: { roomId: 'dress-room', edge: 'west', featureNearestRoomId: 'bedroom-2' },
+    variantFacingRules: {
+      A: { bedroomOneYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
+      B: { powderVanityYawOffsetDeg: 180 },
+    },
     designWallRuns: [
       { id: 'living-south', roomZoneId: 'living', segmentIds: ['outer-south-living-before', 'outer-south-living-sill', 'outer-south-living-lintel', 'outer-south-living-after'], interiorNormal: [0, -1] },
       { id: 'living-west', roomZoneId: 'living', segmentIds: ['bedroom-1-east-before', 'bedroom-1-east-after'], interiorNormal: [1, 0] },
@@ -135,6 +151,10 @@ export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLa
     unitType: '55B',
     bedroomOneStorage: { roomId: 'bedroom-1', edge: 'north', featureNearestRoomId: 'dress-room' },
     dressRoomPowderStorage: { roomId: 'dress-room', edge: 'north', featureNearestRoomId: 'bedroom-2' },
+    variantFacingRules: {
+      A: { powderStorageYawOffsetDeg: 180, powderSwapSections: true },
+      B: { bedroomOneYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180, powderSwapSections: true },
+    },
     designWallRuns: [
       { id: 'living-west', roomZoneId: 'living', segmentIds: ['outer-west-living-before', 'outer-west-living-sill', 'outer-west-living-lintel', 'outer-west-living-after'], interiorNormal: [1, 0] },
       { id: 'living-north', roomZoneId: 'living', segmentIds: ['bedroom-1-south'], interiorNormal: [0, 1] },
@@ -152,6 +172,10 @@ export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLa
     unitType: '59A',
     bedroomOneStorage: { roomId: 'bedroom-1', edge: 'west', featureNearestRoomId: 'dress-room' },
     dressRoomPowderStorage: { roomId: 'dress-room', edge: 'west', featureNearestRoomId: 'bedroom-2' },
+    variantFacingRules: {
+      A: { bedroomOneYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
+      B: { bedroomOneYawOffsetDeg: 180, powderVanityYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
+    },
     designWallRuns: [
       { id: 'living-south', roomZoneId: 'living', segmentIds: ['outer-south-living-before', 'outer-south-living-sill', 'outer-south-living-lintel', 'outer-south-living-after'], interiorNormal: [0, -1] },
       { id: 'living-west', roomZoneId: 'living', segmentIds: ['bedroom-1-east-before', 'bedroom-1-east-after'], interiorNormal: [1, 0] },
@@ -220,6 +244,28 @@ function storageWallPlacement(
     yawDeg: vertical ? 90 : 0,
     featureAtPositiveEnd: distanceTo(positiveEnd) <= distanceTo(negativeEnd),
   };
+}
+
+function planVariantKey(planVariant: string | undefined): 'A' | 'B' {
+  return String(planVariant || 'A').toUpperCase() === 'B' ? 'B' : 'A';
+}
+
+function normalizedYaw(yawDeg: number): number {
+  return ((yawDeg % 360) + 360) % 360;
+}
+
+function storageSectionPosition(
+  placement: NonNullable<ReturnType<typeof storageWallPlacement>>,
+  sectionWidth: number,
+  atPositiveEnd: boolean,
+): Point {
+  const distance = placement.width / 2 - sectionWidth / 2;
+  const direction = atPositiveEnd ? 1 : -1;
+  const axis: Point = placement.yawDeg === 90 ? [0, 1] : [1, 0];
+  return [
+    placement.position[0] + axis[0] * distance * direction,
+    placement.position[1] + axis[1] * distance * direction,
+  ];
 }
 
 function wallSpan(segment: Record<string, unknown>): { base: number; height: number } {
@@ -335,10 +381,13 @@ function bedroomOneStorageProps(
   geometry: ApartmentGeometry,
   layout: BundangOptionLayoutV1,
   optionId: typeof BEDROOM_ONE_PET_CLOSET_OPTION_ID | typeof BEDROOM_ONE_CLOTHING_CARE_CLOSET_OPTION_ID,
+  planVariant: string | undefined,
 ): ApartmentInteriorProp[] {
   const placement = storageWallPlacement(geometry, layout.bedroomOneStorage, BEDROOM_STORAGE_DEPTH_METERS);
   if (!placement) return [];
   const clothingCare = optionId === BEDROOM_ONE_CLOTHING_CARE_CLOSET_OPTION_ID;
+  const yawOffset = layout.variantFacingRules[planVariantKey(planVariant)].bedroomOneYawOffsetDeg || 0;
+  const mirroredForFeatureEnd = clothingCare && !placement.featureAtPositiveEnd;
   return [{
     id: `bunfirvil-${layout.unitType.toLowerCase()}-${optionId}-full-wall`,
     assetId: clothingCare
@@ -347,8 +396,9 @@ function bedroomOneStorageProps(
     roomZoneId: 'bedroom-1',
     positionMeters: placement.position,
     dimensionsMeters: [placement.width, BEDROOM_STORAGE_DEPTH_METERS, BEDROOM_STORAGE_HEIGHT_METERS],
-    yawDeg: placement.yawDeg,
-    mirrored: clothingCare && !placement.featureAtPositiveEnd,
+    yawDeg: normalizedYaw(placement.yawDeg + yawOffset),
+    // 180도 전면 보정 시 X축도 함께 뒤집히므로 다시 반사해 드레스룸 쪽 끝 배치를 유지한다.
+    mirrored: yawOffset === 180 ? !mirroredForFeatureEnd : mirroredForFeatureEnd,
     materialVariantId: 'pet-warm-ivory',
     sourceOptionId: optionId,
     anchorId: 'bunfirvil.options.storage.bedroom-1.fullWall',
@@ -361,24 +411,46 @@ function bedroomOneStorageProps(
 function dressRoomPowderStorageProps(
   geometry: ApartmentGeometry,
   layout: BundangOptionLayoutV1,
+  planVariant: string | undefined,
 ): ApartmentInteriorProp[] {
   const placement = storageWallPlacement(geometry, layout.dressRoomPowderStorage, BEDROOM_STORAGE_DEPTH_METERS);
   if (!placement) return [];
-  return [{
-    id: `bunfirvil-${layout.unitType.toLowerCase()}-dress-room-powder-storage-full-wall`,
-    assetId: 'bunfirvil-dress-room-powder-storage-full-wall',
+  const rules = layout.variantFacingRules[planVariantKey(planVariant)];
+  const vanityWidth = placement.width * .34;
+  const storageWidth = placement.width - vanityWidth;
+  const vanityAtPositiveEnd = rules.powderSwapSections
+    ? !placement.featureAtPositiveEnd
+    : placement.featureAtPositiveEnd;
+  const common: ApartmentInteriorProp = {
     roomZoneId: 'dress-room',
-    positionMeters: placement.position,
-    dimensionsMeters: [placement.width, BEDROOM_STORAGE_DEPTH_METERS, BEDROOM_STORAGE_HEIGHT_METERS],
-    yawDeg: placement.yawDeg,
-    mirrored: !placement.featureAtPositiveEnd,
     materialVariantId: 'pet-warm-ivory',
     sourceOptionId: DRESS_ROOM_POWDER_STORAGE_OPTION_ID,
-    anchorId: 'bunfirvil.options.dressRoomPowderStorage.fullWall',
     installationRole: 'dress-room-storage-full-wall',
     collisionMode: 'solid',
     measurementObstacle: true,
-  }];
+  };
+  return [
+    {
+      ...common,
+      id: `bunfirvil-${layout.unitType.toLowerCase()}-dress-room-powder-vanity`,
+      assetId: 'bunfirvil-dress-room-powder-vanity',
+      positionMeters: storageSectionPosition(placement, vanityWidth, vanityAtPositiveEnd),
+      dimensionsMeters: [vanityWidth, BEDROOM_STORAGE_DEPTH_METERS, BEDROOM_STORAGE_HEIGHT_METERS],
+      yawDeg: normalizedYaw(placement.yawDeg + (rules.powderVanityYawOffsetDeg || 0)),
+      mirrored: rules.powderVanityYawOffsetDeg === 180,
+      anchorId: 'bunfirvil.options.dressRoomPowderStorage.vanity',
+    },
+    {
+      ...common,
+      id: `bunfirvil-${layout.unitType.toLowerCase()}-dress-room-storage-three-bay`,
+      assetId: 'bunfirvil-dress-room-storage-three-bay',
+      positionMeters: storageSectionPosition(placement, storageWidth, !vanityAtPositiveEnd),
+      dimensionsMeters: [storageWidth, BEDROOM_STORAGE_DEPTH_METERS, BEDROOM_STORAGE_HEIGHT_METERS],
+      yawDeg: normalizedYaw(placement.yawDeg + (rules.powderStorageYawOffsetDeg || 0)),
+      mirrored: rules.powderStorageYawOffsetDeg === 180,
+      anchorId: 'bunfirvil.options.dressRoomPowderStorage.storage',
+    },
+  ];
 }
 
 function isLegacyPrecisionStorageProp(prop: ApartmentInteriorProp): boolean {
@@ -399,6 +471,7 @@ function refineWidePlankAndVentilatorProp(prop: ApartmentInteriorProp): Apartmen
       ...prop,
       assetId: 'bunfirvil-bathroom-combination-ventilator-rounded',
       dimensionsMeters: [.52, .34, .12],
+      materialVariantId: 'system-ac-light-gray',
       sourceOptionId: BATHROOM_COMBINATION_VENTILATOR_OPTION_ID,
     };
   }
@@ -461,11 +534,11 @@ export function refineBundangOptionProps(
   if (selected.has(ALL_DOORS_OPTION_ID)) props.push(...infinityDoorProps(geometry, layout, true));
   else if (selected.has(BEDROOM_ONE_DOOR_OPTION_ID)) props.push(...infinityDoorProps(geometry, layout, false));
   if (selected.has(BEDROOM_ONE_CLOTHING_CARE_CLOSET_OPTION_ID)) {
-    props.push(...bedroomOneStorageProps(geometry, layout, BEDROOM_ONE_CLOTHING_CARE_CLOSET_OPTION_ID));
+    props.push(...bedroomOneStorageProps(geometry, layout, BEDROOM_ONE_CLOTHING_CARE_CLOSET_OPTION_ID, planVariant));
   } else if (selected.has(BEDROOM_ONE_PET_CLOSET_OPTION_ID)) {
-    props.push(...bedroomOneStorageProps(geometry, layout, BEDROOM_ONE_PET_CLOSET_OPTION_ID));
+    props.push(...bedroomOneStorageProps(geometry, layout, BEDROOM_ONE_PET_CLOSET_OPTION_ID, planVariant));
   }
-  if (selected.has(DRESS_ROOM_POWDER_STORAGE_OPTION_ID)) props.push(...dressRoomPowderStorageProps(geometry, layout));
+  if (selected.has(DRESS_ROOM_POWDER_STORAGE_OPTION_ID)) props.push(...dressRoomPowderStorageProps(geometry, layout, planVariant));
   return props;
 }
 
@@ -490,7 +563,7 @@ export function bundangEditorSelectionPropIds(
   const selectedId = String(selectedPropId || '');
   const selected = props.find((prop) => String(prop.id || '') === selectedId);
   if (!selected) return [];
-  if (![BUNDANG_DESIGN_WALL_OPTION_ID, WIDE_PLANK_FLOOR_OPTION_ID].includes(String(selected.sourceOptionId || ''))) return [selectedId];
+  if (![BUNDANG_DESIGN_WALL_OPTION_ID, WIDE_PLANK_FLOOR_OPTION_ID, DRESS_ROOM_POWDER_STORAGE_OPTION_ID].includes(String(selected.sourceOptionId || ''))) return [selectedId];
   return props
     .filter((prop) => prop.sourceOptionId === selected.sourceOptionId)
     .map((prop) => String(prop.id || ''))
