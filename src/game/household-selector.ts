@@ -64,13 +64,8 @@ export function householdBuildingRows(buildings: BundangBuildingV1[], columnCoun
 
 function buildingPicker(): string {
   return BUNDANG_HOUSEHOLD_CATALOG.buildings.map((building) => {
-    const types = [...new Set(building.lines.map((line) => line.unitType))];
-    const householdCount = building.lines.reduce((sum, line) => sum + line.lastFloor - line.firstFloor + 1, 0);
-    return `<button type="button" class="household-building-choice" data-choose-building="${building.buildingId}">
+    return `<button type="button" class="household-building-choice" data-choose-building="${building.buildingId}" aria-label="${building.buildingId}동 선택" aria-pressed="false">
       <span class="household-building-number"><b>${building.buildingId}</b><small>동</small></span>
-      <span class="household-building-meta">${building.lines.length}개 호라인 · ${householdCount}세대</span>
-      <span class="household-building-types">${types.map((type) => `<i class="unit-${type.toLowerCase()}">${type}</i>`).join('')}</span>
-      <strong>세대 선택</strong>
     </button>`;
   }).join('');
 }
@@ -116,16 +111,26 @@ export function waitForHouseholdSelection(
       </header>
       <main class="household-selector-main">
         <section class="household-selector-intro" id="household-selector-intro">
+          <nav class="household-wizard-progress" aria-label="세대 선택 단계">
+            <span id="household-step-building" class="is-current" aria-current="step"><i>1</i><b>동 선택</b></span>
+            <em aria-hidden="true"></em>
+            <span id="household-step-unit"><i>2</i><b>세대 선택</b></span>
+          </nav>
           <p class="eyebrow">BUNDANG FIRST VILLAGE</p>
           <h1 id="household-selector-title">분당퍼스트빌리지 동 선택</h1>
           <p id="household-selector-description">먼저 확인할 동을 선택해 주세요. 다음 화면에서 해당 동의 세대를 선택할 수 있습니다.</p>
-          <div class="household-legend" aria-label="평형 색상 범례">
+          <div class="household-legend" id="household-selector-legend" aria-label="평형 색상 범례" hidden>
             <span class="unit-51a"><i></i>51A</span><span class="unit-55a"><i></i>55A</span><span class="unit-55b"><i></i>55B</span><span class="unit-59a"><i></i>59A</span><span class="is-pilotis"><i>×</i>필로티</span>
           </div>
         </section>
-        <div id="household-building-picker" class="household-building-picker">${buildingPicker()}</div>
+        <section id="household-building-picker" class="household-building-picker-panel">
+          <div class="household-building-picker">${buildingPicker()}</div>
+        </section>
         <section id="household-building-detail" class="household-building-detail" hidden>
-          <button type="button" id="household-building-back" class="household-building-back">← 동 다시 선택</button>
+          <header class="household-building-detail-head">
+            <button type="button" id="household-building-back" class="household-building-back">← 동 다시 선택</button>
+            <span id="household-selected-building" class="household-selected-building"></span>
+          </header>
           <div id="household-building-rows" class="household-building-rows"></div>
         </section>
       </main>
@@ -141,10 +146,28 @@ export function waitForHouseholdSelection(
     const rows = mount.querySelector<HTMLElement>('#household-building-rows');
     const title = mount.querySelector<HTMLElement>('#household-selector-title');
     const description = mount.querySelector<HTMLElement>('#household-selector-description');
+    const legend = mount.querySelector<HTMLElement>('#household-selector-legend');
+    const buildingStep = mount.querySelector<HTMLElement>('#household-step-building');
+    const unitStep = mount.querySelector<HTMLElement>('#household-step-unit');
+    const selectedBuilding = mount.querySelector<HTMLElement>('#household-selected-building');
     const dock = mount.querySelector<HTMLElement>('#household-selection-dock');
     const summary = mount.querySelector<HTMLElement>('#household-selection-summary');
     const enter = mount.querySelector<HTMLButtonElement>('#household-enter');
-    if (!picker || !detail || !rows || !title || !description || !dock || !summary || !enter) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
+    if (!picker || !detail || !rows || !title || !description || !legend || !buildingStep || !unitStep || !selectedBuilding || !dock || !summary || !enter) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
+    let chosenBuildingId: string | null = null;
+
+    const paintBuildingChoice = (): void => {
+      picker.querySelectorAll<HTMLButtonElement>('[data-choose-building]').forEach((button) => {
+        const active = button.dataset.chooseBuilding === chosenBuildingId;
+        button.classList.toggle('is-selected', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    };
+
+    const animatePanel = (panel: HTMLElement): void => {
+      panel.classList.remove('is-entering');
+      requestAnimationFrame(() => panel.classList.add('is-entering'));
+    };
 
     const paintSelection = (): void => {
       mount.querySelectorAll<HTMLButtonElement>('.household-cell[data-building]').forEach((button) => {
@@ -166,24 +189,43 @@ export function waitForHouseholdSelection(
       picker.hidden = false;
       detail.hidden = true;
       dock.hidden = true;
+      legend.hidden = true;
       title.textContent = '분당퍼스트빌리지 동 선택';
       description.textContent = '먼저 확인할 동을 선택해 주세요. 다음 화면에서 해당 동의 세대를 선택할 수 있습니다.';
+      buildingStep.classList.add('is-current');
+      buildingStep.classList.toggle('is-complete', Boolean(chosenBuildingId));
+      buildingStep.setAttribute('aria-current', 'step');
+      unitStep.classList.remove('is-current');
+      unitStep.removeAttribute('aria-current');
+      paintBuildingChoice();
+      animatePanel(picker);
       enter.disabled = true;
     };
 
     const showBuilding = (buildingId: string, pushHistory: boolean): void => {
       const building = BUNDANG_HOUSEHOLD_CATALOG.buildings.find((entry) => entry.buildingId === buildingId);
       if (!building) return;
+      chosenBuildingId = buildingId;
       selected = null;
       picker.hidden = true;
       detail.hidden = false;
       dock.hidden = false;
+      legend.hidden = false;
       rows.innerHTML = `<section class="household-building-row is-single" style="--building-count:1" aria-label="${building.buildingId}동 세대">${floorRail()}${householdBuildingCard(building)}</section>`;
       title.textContent = `${building.buildingId}동 세대 선택`;
       description.textContent = '층과 호를 선택하면 평형과 향을 확인한 뒤 쇼케이스로 이동할 수 있습니다.';
+      selectedBuilding.textContent = `${building.buildingId}동 선택됨`;
+      buildingStep.classList.remove('is-current');
+      buildingStep.classList.add('is-complete');
+      buildingStep.removeAttribute('aria-current');
+      unitStep.classList.add('is-current');
+      unitStep.setAttribute('aria-current', 'step');
+      paintBuildingChoice();
+      animatePanel(detail);
       summary.textContent = '층·호를 선택해 주세요.';
       enter.disabled = true;
       if (pushHistory) history.pushState({ householdBuilding: buildingId }, '', `#building=${buildingId}`);
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
     };
 
     picker.addEventListener('click', (event) => {

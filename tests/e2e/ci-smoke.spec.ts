@@ -21,6 +21,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await page.goto('./');
   await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
   await expect(page.locator('.household-building-choice')).toHaveCount(12);
+  await expect(page.locator('#household-step-building')).toHaveAttribute('aria-current', 'step');
   await expect.poll(async () => page.locator('.household-building-picker').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(3);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect.poll(async () => page.locator('.household-building-picker').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(4);
@@ -33,9 +34,12 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await page.goto('./');
   await page.locator('[data-choose-building="105"]').click();
   await expect(page.getByRole('heading', { name: '105동 세대 선택' })).toBeVisible();
+  await expect(page.locator('#household-step-unit')).toHaveAttribute('aria-current', 'step');
+  await expect(page.locator('#household-selected-building')).toHaveText('105동 선택됨');
   await expect(page.locator('.household-building-row.is-single .household-building-card')).toHaveCount(1);
   await page.getByRole('button', { name: '동 다시 선택' }).click();
   await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
+  await expect(page.locator('[data-choose-building="105"]')).toHaveClass(/is-selected/);
   await page.locator('[data-choose-building="105"]').click();
   const household = page.locator('.household-cell[data-building="105"][data-floor="25"][data-line="1"]');
   await household.click();
