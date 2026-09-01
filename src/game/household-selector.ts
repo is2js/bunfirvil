@@ -90,6 +90,33 @@ function storageDialogMarkup(): string {
   </dialog>`;
 }
 
+export function householdShellHeader(exportId: string, fallback = false): string {
+  return `<header class="topbar household-topbar">
+    <a class="brand" href="${resolveProjectUrl('')}" aria-label="Bunfirvil 렌더 랩 홈">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span><b>BUNFIRVIL</b><small>RPG RENDERING LAB</small></span>
+    </a>
+    <nav class="topnav" aria-label="주요 메뉴">
+      <a class="is-active" href="${resolveProjectUrl('')}"><span>LIVE</span> 렌더 쇼케이스</a>
+      <a href="${resolveProjectUrl('manage/')}">검수맵 관리</a>
+      <a href="${resolveProjectUrl('building-admin/')}">건축물 관리</a>
+      <a href="${resolveProjectUrl('interior-admin/')}">인테리어 관리</a>
+      <a href="${resolveProjectUrl('guides/')}">가이드</a>
+    </nav>
+    <div class="build-chip" title="현재 정적 자산 스냅샷">
+      <span class="status-dot ${fallback ? 'is-amber' : ''}"></span>
+      <span><small>STATIC BUILD</small><b>${escapeHtml(exportId)}</b></span>
+    </div>
+  </header>
+  <div class="serverless-banner" role="status">
+    <span class="banner-pulse" aria-hidden="true"></span>
+    <b>프론트엔드 로컬 데모</b>
+    <span>서버 판정 없음</span>
+    <i></i>
+    <span>데이터는 이 브라우저에만 저장됩니다.</span>
+  </div>`;
+}
+
 export function waitForHouseholdSelection(
   mount: HTMLElement,
   catalog: ShowcaseCatalog,
@@ -97,28 +124,24 @@ export function waitForHouseholdSelection(
 ): Promise<HouseholdSelectionV1> {
   return new Promise((resolve) => {
     let selected: HouseholdSelectionV1 | null = null;
-    mount.innerHTML = `<div class="household-selector-shell">
-      <header class="household-selector-topbar">
-        <a class="brand" href="${resolveProjectUrl('')}" aria-label="Bunfirvil 세대 선택 홈">
-          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span><b>BUNFIRVIL</b><small>HOUSEHOLD SHOWCASE</small></span>
-        </a>
-        <div>
-          <span class="selector-build-state"><i class="${fallback ? 'is-amber' : ''}"></i>${escapeHtml(catalog.exportId)}</span>
-          <a class="selector-overview-link" href="${resolveProjectUrl('households/')}">전체 동·호 현황</a>
-          <button type="button" id="selector-open-storage">저장 관리</button>
-        </div>
-      </header>
+    mount.innerHTML = `<div class="household-selector-shell app-shell">
+      ${householdShellHeader(catalog.exportId, fallback)}
       <main class="household-selector-main">
         <section class="household-selector-intro" id="household-selector-intro">
-          <nav class="household-wizard-progress" aria-label="세대 선택 단계">
-            <span id="household-step-building" class="is-current" aria-current="step"><i>1</i><b>동 선택</b></span>
-            <em aria-hidden="true"></em>
-            <span id="household-step-unit"><i>2</i><b>세대 선택</b></span>
-          </nav>
-          <p class="eyebrow">BUNDANG FIRST VILLAGE</p>
-          <h1 id="household-selector-title">분당퍼스트빌리지 동 선택</h1>
-          <p id="household-selector-description">먼저 확인할 동을 선택해 주세요. 다음 화면에서 해당 동의 세대를 선택할 수 있습니다.</p>
+          <div class="household-selector-intro-copy">
+            <nav class="household-wizard-progress" aria-label="세대 선택 단계">
+              <span id="household-step-building" class="is-current" aria-current="step"><i>1</i><b>동 선택</b></span>
+              <em aria-hidden="true"></em>
+              <span id="household-step-unit"><i>2</i><b>세대 선택</b></span>
+            </nav>
+            <p class="eyebrow">BUNDANG FIRST VILLAGE</p>
+            <h1 id="household-selector-title">분당퍼스트빌리지 동 선택</h1>
+            <p id="household-selector-description">먼저 확인할 동을 선택해 주세요. 다음 화면에서 해당 동의 세대를 선택할 수 있습니다.</p>
+          </div>
+          <div class="household-selector-tools" aria-label="세대 선택 도구">
+            <a class="selector-overview-link" href="${resolveProjectUrl('households/')}">전체 동·호 현황</a>
+            <button type="button" id="selector-open-storage">저장 관리</button>
+          </div>
           <div class="household-legend" id="household-selector-legend" aria-label="평형 색상 범례" hidden>
             <span class="unit-51a"><i></i>51A</span><span class="unit-55a"><i></i>55A</span><span class="unit-55b"><i></i>55B</span><span class="unit-59a"><i></i>59A</span><span class="is-pilotis"><i>×</i>필로티</span>
           </div>

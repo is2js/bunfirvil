@@ -1,7 +1,7 @@
 import './styles/game.css';
 import { resolveProjectUrl } from './game/base';
 import { BUNDANG_HOUSEHOLD_CATALOG } from './game/household-catalog';
-import { householdBuildingRows } from './game/household-selector';
+import { householdBuildingRows, householdShellHeader } from './game/household-selector';
 
 const mount = document.querySelector<HTMLElement>('#householdOverview');
 
@@ -14,19 +14,18 @@ function columnCount(): number {
 let columns = columnCount();
 let resizeFrame = 0;
 
-mount.innerHTML = `<div class="household-selector-shell household-overview-shell">
-  <header class="household-selector-topbar">
-    <a class="brand" href="${resolveProjectUrl('')}" aria-label="Bunfirvil 세대 선택 홈">
-      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span><b>BUNFIRVIL</b><small>HOUSEHOLD STATUS</small></span>
-    </a>
-    <a class="selector-overview-link is-primary" href="${resolveProjectUrl('')}">세대 선택으로 돌아가기</a>
-  </header>
+mount.innerHTML = `<div class="household-selector-shell household-overview-shell app-shell">
+  ${householdShellHeader('HOUSEHOLD CATALOG V1')}
   <main class="household-selector-main">
     <section class="household-selector-intro">
-      <p class="eyebrow">HOUSEHOLD OVERVIEW</p>
-      <h1>분당퍼스트빌리지 전체 동·호 현황</h1>
-      <p>101~112동의 평형과 필로티를 한 화면에서 확인합니다. 정회원 가입과 동·호별 지표는 추후 이 페이지에 확장할 수 있습니다.</p>
+      <div class="household-selector-intro-copy">
+        <p class="eyebrow">HOUSEHOLD OVERVIEW</p>
+        <h1>분당퍼스트빌리지 전체 동·호 현황</h1>
+        <p>101~112동의 평형과 필로티를 한 화면에서 확인합니다. 정회원 가입과 동·호별 지표는 추후 이 페이지에 확장할 수 있습니다.</p>
+      </div>
+      <div class="household-selector-tools">
+        <a class="selector-overview-link is-primary" href="${resolveProjectUrl('')}">세대 선택으로 돌아가기</a>
+      </div>
       <div class="household-legend" aria-label="평형 색상 범례">
         <span class="unit-51a"><i></i>51A</span><span class="unit-55a"><i></i>55A</span><span class="unit-55b"><i></i>55B</span><span class="unit-59a"><i></i>59A</span><span class="is-pilotis"><i>×</i>필로티</span>
       </div>
