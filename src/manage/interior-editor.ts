@@ -515,11 +515,6 @@ export class InteriorEditor {
       this.deleteSelected();
       return;
     }
-    if (event.key.toLowerCase() === 'r') {
-      event.preventDefault();
-      this.rotate(event.shiftKey ? -90 : 90);
-      return;
-    }
     if (event.key.toLowerCase() === 'x') {
       event.preventDefault();
       this.mirror();

@@ -295,17 +295,27 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
     assetId: 'bunfirvil-secondary-bedroom-desk-module', rendererKind: 'procedural', mountingKind: 'floor',
     defaultDimensionsMeters: [.9, .58, 2.2],
     parts: [
-      { shape: 'box', scale: [1, .16, .68], offset: [0, -.42, .64], materialRole: 'primary' },
+      // 붙박이장과 같은 장 안에 들어간 데스크처럼 보이도록 등판·지붕·양 측판을 잇는다.
+      { shape: 'box', scale: [1, .035, .965], offset: [0, -.482, .5], materialRole: 'primary' },
+      { shape: 'box', scale: [1, 1, .035], offset: [0, 0, .982], materialRole: 'cabinet-roof' },
+      { shape: 'box', scale: [.035, 1, .965], offset: [-.482, 0, .5], materialRole: 'cabinet-side' },
+      { shape: 'box', scale: [.035, 1, .965], offset: [.482, 0, .5], materialRole: 'cabinet-side' },
+      // 상부장은 전체 장 깊이의 약 2/3만 차지한다.
+      { shape: 'box', scale: [1, .667, .285], offset: [0, -.1665, .8425], materialRole: 'upper-cabinet' },
       ...[-.375, -.125, .125, .375].map((offset): RuntimePart => ({
-        shape: 'box', scale: [.242, .045, .265], offset: [offset, .49, .855], materialRole: 'secondary',
+        shape: 'box', scale: [.232, .035, .255], offset: [offset, .178, .8475], materialRole: 'secondary',
       })),
-      { shape: 'box', scale: [.96, .58, .025], offset: [0, .17, .61], materialRole: 'secondary' },
+      ...[-.25, 0, .25].map((offset): RuntimePart => ({
+        shape: 'box', scale: [.006, .04, .255], offset: [offset, .198, .8475], materialRole: 'cabinet-seam',
+      })),
+      // 선반은 등판에서 장 깊이의 약 1/3만 앞으로 나온다.
+      { shape: 'box', scale: [.96, .333, .025], offset: [0, -.3335, .61], materialRole: 'desk-shelf' },
       { shape: 'box', scale: [.96, 1, .035], offset: [0, 0, .345], materialRole: 'accent' },
       { shape: 'box', scale: [.26, .92, .325], offset: [.36, -.03, .165], materialRole: 'primary' },
       ...[.075, .18, .285].map((offsetZ): RuntimePart => ({
         shape: 'box', scale: [.245, .05, .09], offset: [.36, .47, offsetZ], materialRole: 'secondary',
       })),
-      { shape: 'box', scale: [.86, .025, .018], offset: [0, .32, .585], materialRole: 'cabinet-light' },
+      { shape: 'box', scale: [.86, .025, .018], offset: [0, -.15, .585], materialRole: 'cabinet-light' },
       { shape: 'box', scale: [.12, .026, .07], offset: [.22, .51, .39], materialRole: 'outlet' },
     ],
   },
@@ -324,9 +334,6 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
       { shape: 'box', scale: [.33, .54, .018], offset: [-.25, .51, .16], materialRole: 'cabinet-handle' },
       { shape: 'box', scale: [.33, .54, .018], offset: [.25, .51, .16], materialRole: 'cabinet-handle' },
       { shape: 'box', scale: [.45, .82, .035], offset: [.25, -.02, .32], materialRole: 'secondary' },
-      { shape: 'ellipsoid', scale: [.27, .48, .36], offset: [.25, .02, .56], materialRole: 'rice-cooker-body' },
-      { shape: 'ellipsoid', scale: [.25, .39, .12], offset: [.25, .02, .76], materialRole: 'rice-cooker-lid' },
-      { shape: 'vertical-cylinder', scale: [.035, .035, .018], offset: [.25, .39, .56], materialRole: 'rice-cooker-button' },
     ],
   },
   {

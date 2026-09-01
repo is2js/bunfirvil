@@ -93,6 +93,8 @@ const REFRIGERATOR_OPTION_IDS = new Set([
 ]);
 const BEDROOM_STORAGE_DEPTH_METERS = 0.58;
 const BEDROOM_STORAGE_HEIGHT_METERS = 2.2;
+const SECONDARY_CLOSET_DOOR_CLEARANCE_METERS = 0.18;
+const SECONDARY_CLOSET_MAX_WIDTH_METERS = 1.5;
 const STORAGE_EDGE_CLEARANCE_METERS = 0.02;
 const OPEN_PREMIUM_SHOE_CABINET_A_FACING_FIX = new Set<UnitTypeId>(['55A', '55B', '59A']);
 const INFINITY_DOOR_ALLOWED_ROOM_IDS = new Set<string>([
@@ -626,15 +628,21 @@ export function secondaryBedroomStoragePlacement(
   const doorMinX = Math.max(x1, Math.min(openingA[0], openingB[0]));
   const doorMaxX = Math.min(x2, Math.max(openingA[0], openingB[0]));
   const leftStart = x1 + STORAGE_EDGE_CLEARANCE_METERS;
-  const leftEnd = doorMinX - STORAGE_EDGE_CLEARANCE_METERS;
-  const rightStart = doorMaxX + STORAGE_EDGE_CLEARANCE_METERS;
+  const leftEnd = doorMinX - SECONDARY_CLOSET_DOOR_CLEARANCE_METERS;
+  const rightStart = doorMaxX + SECONDARY_CLOSET_DOOR_CLEARANCE_METERS;
   const rightEnd = x2 - STORAGE_EDGE_CLEARANCE_METERS;
   const leftWidth = Math.max(0, leftEnd - leftStart);
   const rightWidth = Math.max(0, rightEnd - rightStart);
   const farSegmentOnRight = rightWidth >= leftWidth;
-  const closetStart = farSegmentOnRight ? rightStart : leftStart;
-  const closetEnd = farSegmentOnRight ? rightEnd : leftEnd;
-  const closetWidth = Math.max(.6, closetEnd - closetStart);
+  const availableClosetStart = farSegmentOnRight ? rightStart : leftStart;
+  const availableClosetEnd = farSegmentOnRight ? rightEnd : leftEnd;
+  const closetWidth = Math.min(
+    SECONDARY_CLOSET_MAX_WIDTH_METERS,
+    Math.max(.6, availableClosetEnd - availableClosetStart),
+  );
+  // 문 반대편 모서리에 고정하고 문틀 쪽에는 실사와 같은 노출 벽을 남긴다.
+  const closetStart = farSegmentOnRight ? availableClosetEnd - closetWidth : availableClosetStart;
+  const closetEnd = farSegmentOnRight ? availableClosetEnd : availableClosetStart + closetWidth;
 
   const deskWidth = Math.min(.9, Math.max(.72, y2 - y1 - .9));
   const fullSideRun = Math.max(1.6, y2 - y1 - STORAGE_EDGE_CLEARANCE_METERS * 2);
@@ -705,6 +713,8 @@ function secondaryBedroomStorageProps(
       positionMeters: placement.deskWall.deskPosition,
       dimensionsMeters: [placement.deskWall.deskWidth, BEDROOM_STORAGE_DEPTH_METERS, BEDROOM_STORAGE_HEIGHT_METERS],
       yawDeg: normalizedYaw(placement.deskWall.yawDeg + yawOffset),
+      // 서랍은 붙박이장 접합측, 외측판은 창가 끝에 오도록 A형 로컬 축을 고정한다.
+      mirrored: placement.deskWall.yawDeg === 90,
       anchorId: `bunfirvil.options.storage.${roomId}.deskWall.windowEnd`,
     },
   ];
@@ -1084,7 +1094,6 @@ function islandApplianceBayProps(
   geometry: ApartmentGeometry,
   unitType: UnitTypeId,
   selected: ReadonlySet<string>,
-  planVariant?: string,
 ): ApartmentInteriorProp[] {
   const islandOptionId = selectedIslandOptionId(selected);
   if (!islandOptionId) return [];
@@ -1117,7 +1126,9 @@ function islandApplianceBayProps(
     center[0] + frontNormal[0] * (depth / 2 + moduleDepth / 2 + .004),
     center[1] + frontNormal[1] * (depth / 2 + moduleDepth / 2 + .004),
   ];
-  const renderedYaw = normalizedYaw(yawDeg + (planVariantKey(planVariant) === 'B' ? 180 : 0));
+  // optionAnchors.kitchen.island.yawDeg는 plan variant 적용 단계에서 이미 최종 전면으로 보정된다.
+  // 여기서 B형을 다시 180도 돌리면 기존 아일랜드 본체와 가전 bay의 문 방향이 갈라진다.
+  const renderedYaw = yawDeg;
   const common: ApartmentInteriorProp = {
     roomZoneId: 'kitchen-dining',
     yawDeg: renderedYaw,
@@ -1205,7 +1216,7 @@ export function refineBundangOptionProps(
   }
   if (airPlannerRoomUnits.length) props.push(...airPlannerRoomUnits);
   props.push(...kitchenCooktopAndHoodProps(geometry, unitType, selected, planVariant));
-  props.push(...islandApplianceBayProps(geometry, unitType, selected, planVariant));
+  props.push(...islandApplianceBayProps(geometry, unitType, selected));
   return props;
 }
 

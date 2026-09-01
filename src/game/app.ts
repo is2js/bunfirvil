@@ -463,8 +463,11 @@ export class ShowcaseApp {
 
               <div class="stage-bottom-left">
                 <div class="stage-tip" aria-label="인게임 단축키">
-                  <span><kbd>WASD</kbd><span>또는</span><kbd>방향키</kbd><b>이동</b></span>
-                  <span>· 빈 화면 드래그 · <kbd>Ctrl+휠</kbd><b>확대·축소</b></span>
+                  <span><span class="shortcut-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>또는</span><kbd>방향키</kbd><b>이동</b></span>
+                  <span class="shortcut-divider">· 빈 화면 드래그 ·</span>
+                  <span><span class="shortcut-keys"><kbd>Ctrl</kbd><i>+</i><kbd>휠</kbd></span><b>확대·축소</b></span>
+                  <span class="shortcut-divider">·</span>
+                  <span><span class="shortcut-keys"><kbd>Shift</kbd><i>+</i><kbd>휠</kbd></span><b>가구 회전</b></span>
                   <button type="button" id="inspection-laser-toggle" class="istarpark-laser-toggle" aria-pressed="false" title="레이저 실측 시작 (J)" hidden>
                     <kbd>J</kbd><b>레이저 실측</b>
                   </button>
@@ -570,7 +573,7 @@ export class ShowcaseApp {
             <div><span class="help-icon">1–6</span><b>스킬 재생</b><p>1번 또는 휠 클릭은 현재 커서 위치로 텔레포트합니다. 2–4번은 전투 모션과 효과를 재생하며 5–6번은 빈 슬롯입니다.</p></div>
             <div><span class="help-icon">B</span><b>옵션 프리뷰</b><p>B팔레트 선택은 맵의 미리보기 프롭과 견적에 반영되고 이 브라우저에 저장됩니다.</p></div>
             <div><span class="help-icon">GHOST</span><b>가구 설치·이동</b><p>가구 목록을 누르거나 재배치를 시작하면 반투명 GHOST가 마우스를 따라갑니다. 초록은 설치 가능, 빨강은 벽·문·구조물·가구와 겹친 불가 위치입니다. 좌클릭으로 확정하고 우클릭 또는 Esc로 취소합니다.</p></div>
-            <div><span class="help-icon">L</span><b>벽 자석·회전</b><p>GHOST 상태에서 L을 누르면 가까운 벽·코너 자석을 켜거나 끕니다. Shift+휠 또는 R로 90도 회전하며, 빈 맵은 손바닥 드래그로 이동하고 Ctrl+휠로 확대·축소합니다.</p></div>
+            <div><span class="help-icon">L</span><b>벽 자석·회전</b><p>GHOST 상태에서 L을 누르면 가까운 벽·코너 자석을 켜거나 끕니다. Shift+휠로 90도 회전하며, 빈 맵은 손바닥 드래그로 이동하고 Ctrl+휠로 확대·축소합니다.</p></div>
             <div><span class="help-icon">J</span><b>레이저 자동·2점 실측</b><p>첫 J는 자동 실측을 켜고, 이후 J마다 자동 ↔ 2점 실측을 전환합니다. 2점 실측은 벽·설비·가구 면에 붙는 시작점 고스트를 클릭한 뒤 원하는 공간 방향을 가리켜 처음 닿는 반대편 마감면까지 잽니다. 내부벽은 커서가 향한 방 쪽 마감면에서 시작하며 L은 마우스 방향에 가까운 X/Y축 직선 자석, Shift+휠은 수동 축 전환, Esc는 종료입니다.</p></div>
           </div>
           <p class="dialog-note">이 사이트는 시각·성능 검수용입니다. 피해, 명중, MP, 사용자 인증과 공용 저장은 처리하지 않습니다.</p>
@@ -725,11 +728,6 @@ export class ShowcaseApp {
           this.toggleFurnitureWallSnap();
           return;
         }
-        if (key === 'r') {
-          event.preventDefault();
-          this.transformInteriorGhost(event.shiftKey ? 'rotate-left' : 'rotate-right');
-          return;
-        }
         if (key === 'escape' || key === 'delete' || key === 'backspace') {
           event.preventDefault();
           this.cancelInteriorGhost('GHOST 배치를 취소했습니다.');
@@ -740,11 +738,6 @@ export class ShowcaseApp {
         if (key === 'l') {
           event.preventDefault();
           this.toggleFurnitureWallSnap();
-          return;
-        }
-        if (key === 'r') {
-          event.preventDefault();
-          this.transformLocalProp(event.shiftKey ? 'rotate-left' : 'rotate-right');
           return;
         }
         if (key === 'delete' || key === 'backspace') {

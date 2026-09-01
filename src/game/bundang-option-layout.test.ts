@@ -15,7 +15,7 @@ import {
   replacedBundangOpeningIds,
   secondaryBedroomStoragePlacement,
 } from './bundang-option-layout';
-import { planVariantDefinition } from './plan-variants';
+import { applyPlanVariantInteriorOverrides, planVariantDefinition } from './plan-variants';
 import { mergeEditorPropsWithBase, mergeRuntimeAssetCatalogs, STRUCTURAL_PROP_ASSETS } from './three-world';
 import type { ApartmentGeometry, ApartmentInteriorProp, ShowcaseCatalog, WorldChunk, WorldManifest, WorldObject } from './types';
 
@@ -476,12 +476,12 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
       desk: [number, number];
       yawA: number;
     }>> = {
-      '51A': [{ roomId: 'bedroom-2', closet: [.975, 6.14, 1.61], wardrobe: [.44, 6.925, 2.11], desk: [.44, 8.43], yawA: 270 }],
-      '55A': [{ roomId: 'bedroom-2', closet: [10.75, 5.74, 1.76], wardrobe: [11.36, 6.50, 2.06], desk: [11.36, 7.98], yawA: 90 }],
-      '55B': [{ roomId: 'bedroom-2', closet: [11.075, 5.84, 2.01], wardrobe: [11.81, 6.75, 2.36], desk: [11.81, 8.38], yawA: 90 }],
+      '51A': [{ roomId: 'bedroom-2', closet: [.895, 6.14, 1.45], wardrobe: [.44, 6.925, 2.11], desk: [.44, 8.43], yawA: 270 }],
+      '55A': [{ roomId: 'bedroom-2', closet: [10.88, 5.74, 1.5], wardrobe: [11.36, 6.50, 2.06], desk: [11.36, 7.98], yawA: 90 }],
+      '55B': [{ roomId: 'bedroom-2', closet: [11.33, 5.84, 1.5], wardrobe: [11.81, 6.75, 2.36], desk: [11.81, 8.38], yawA: 90 }],
       '59A': [
-        { roomId: 'bedroom-2', closet: [9.075, 5.94, 1.51], wardrobe: [9.56, 6.70, 2.06], desk: [9.56, 8.18], yawA: 90 },
-        { roomId: 'bedroom-3', closet: [11.675, 5.94, 1.51], wardrobe: [12.16, 6.70, 2.06], desk: [12.16, 8.18], yawA: 90 },
+        { roomId: 'bedroom-2', closet: [9.155, 5.94, 1.35], wardrobe: [9.56, 6.70, 2.06], desk: [9.56, 8.18], yawA: 90 },
+        { roomId: 'bedroom-3', closet: [11.755, 5.94, 1.35], wardrobe: [12.16, 6.70, 2.06], desk: [12.16, 8.18], yawA: 90 },
       ],
     };
     for (const [unitType, rows] of Object.entries(expected)) {
@@ -523,6 +523,7 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
           const expectedYaw = (row.yawA + (variant === 'B' ? 180 : 0)) % 360;
           expect(wardrobe?.yawDeg).toBe(expectedYaw);
           expect(desk?.yawDeg).toBe(expectedYaw);
+          expect(desk?.mirrored).toBe(row.yawA === 90);
           expect((wardrobe?.dimensionsMeters as number[])[0]).toBeCloseTo(row.wardrobe[2]);
           expect(wardrobe?.positionMeters?.[0]).toBeCloseTo(row.wardrobe[0]);
           expect(wardrobe?.positionMeters?.[1]).toBeCloseTo(row.wardrobe[1]);
@@ -532,6 +533,13 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
         }
       }
     }
+    const assets = new Map(STRUCTURAL_PROP_ASSETS.map((asset) => [asset.assetId, asset]));
+    const deskParts = assets.get('bunfirvil-secondary-bedroom-desk-module')?.parts || [];
+    expect(deskParts.some((part) => part.materialRole === 'cabinet-roof')).toBe(true);
+    expect(deskParts.filter((part) => part.materialRole === 'cabinet-side')).toHaveLength(2);
+    expect(deskParts.find((part) => part.materialRole === 'upper-cabinet')?.scale?.[1]).toBeCloseTo(2 / 3, 2);
+    expect(deskParts.find((part) => part.materialRole === 'desk-shelf')?.scale?.[1]).toBeCloseTo(1 / 3, 2);
+    expect(deskParts.filter((part) => part.materialRole === 'secondary' && part.offset?.[2] === .8475)).toHaveLength(4);
   });
 
   it('아일랜드 오픈 bay는 유지하고 오븐 3종만 즉시 교체·해제한다', async () => {
@@ -564,10 +572,53 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
       }
     }
     const assets = new Map(STRUCTURAL_PROP_ASSETS.map((asset) => [asset.assetId, asset]));
-    expect(assets.get('bunfirvil-island-appliance-open-bay')?.parts?.some((part) => part.materialRole === 'rice-cooker-body')).toBe(true);
+    expect(assets.get('bunfirvil-island-appliance-open-bay')?.parts?.some((part) => String(part.materialRole).startsWith('rice-cooker'))).toBe(false);
+    expect(assets.get('bunfirvil-island-appliance-open-bay')?.parts?.some((part) => part.scale?.[0] === .45 && part.scale?.[2] === .035)).toBe(true);
     expect(assets.get('built-in-oven-navien')?.parts?.filter((part) => part.materialRole === 'oven-dial')).toHaveLength(2);
     expect(assets.get('built-in-oven-samsung')?.parts?.filter((part) => part.materialRole === 'oven-dial')).toHaveLength(0);
     expect(assets.get('built-in-oven-lg')?.parts?.filter((part) => part.materialRole === 'oven-dial')).toHaveLength(1);
+  });
+
+  it('A/B형 모두 아일랜드 본체·고정 슬라이드·오븐이 기존 수납장 전면을 함께 따른다', async () => {
+    const apartments = await apartmentsByUnit();
+    for (const [unitType, sourceApartment] of apartments) {
+      for (const variant of ['A', 'B'] as const) {
+        const apartment = structuredClone(sourceApartment);
+        applyPlanVariantInteriorOverrides(apartment, variant);
+        const geometry = apartment.geometry;
+        expect(geometry, `${unitType}:${variant}:geometry`).toBeTruthy();
+        if (!geometry) continue;
+        const anchors = geometry.optionAnchors as Record<string, any>;
+        const island = anchors.kitchen.island as Record<string, any>;
+        const [x1, y1, x2, y2] = island.baseBoundsMeters.map(Number);
+        const center: [number, number] = [(x1 + x2) / 2, (y1 + y2) / 2];
+        const base: ApartmentInteriorProp = {
+          id: `inspection-${unitType}-kitchen-island`,
+          assetId: 'island-counter-modern',
+          positionMeters: center,
+          dimensionsMeters: [Math.max(x2 - x1, y2 - y1), Math.min(x2 - x1, y2 - y1), .9],
+          yawDeg: Number(island.yawDeg) || 0,
+          installationRole: 'kitchen-island',
+        };
+        const props = optionProps(
+          geometry,
+          unitType,
+          ['island-counter-modern', 'built-in-oven-samsung'],
+          [base],
+          variant,
+        );
+        const bay = props.find((prop) => prop.installationRole === 'kitchen-island-appliance-bay');
+        const oven = props.find((prop) => prop.installationRole === 'kitchen-built-in-oven');
+        expect(bay?.yawDeg, `${unitType}:${variant}:bay yaw`).toBe(base.yawDeg);
+        expect(oven?.yawDeg, `${unitType}:${variant}:oven yaw`).toBe(base.yawDeg);
+        const yaw = Number(base.yawDeg) * Math.PI / 180;
+        const frontNormal: [number, number] = [-Math.sin(yaw), Math.cos(yaw)];
+        const bayPosition = bay?.positionMeters as number[];
+        const frontDistance = (bayPosition[0] - center[0]) * frontNormal[0]
+          + (bayPosition[1] - center[1]) * frontNormal[1];
+        expect(frontDistance, `${unitType}:${variant}:front side`).toBeGreaterThan(0);
+      }
+    }
   });
 
   it('파우더 화장대와 3칸 수납장을 분리해 평형·A/B형별 위치와 전면을 기본값으로 고정한다', async () => {
