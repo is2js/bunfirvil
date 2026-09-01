@@ -51,4 +51,28 @@ describe('local interior layout', () => {
       value: { props: [{ sourcePropId: 'inspection-55B-living-sofa', localOverride: true, localDeleted: true }] },
     });
   });
+
+  it('accepts a source-linked precision recipe override without allowing standalone unknown assets', () => {
+    const linked = {
+      schemaVersion: 1,
+      mapId: 'map-55b',
+      updatedAt: new Date().toISOString(),
+      props: [{
+        id: 'local-override-inspection-55B-refrigerator-cabinet-9',
+        assetId: 'refrigerator-cabinet-bespoke-alt2',
+        positionMeters: [6.2, 6.5],
+        yawDeg: 90,
+        sourcePropId: 'inspection-55B-refrigerator-cabinet',
+        localOverride: true,
+      }],
+    };
+    expect(validateLayout(linked, 'map-55b', new Set())).toMatchObject({
+      ok: true,
+      value: { props: [{ sourcePropId: 'inspection-55B-refrigerator-cabinet', localOverride: true }] },
+    });
+    expect(validateLayout({
+      ...linked,
+      props: [{ ...linked.props[0], sourcePropId: undefined, localOverride: false }],
+    }, 'map-55b', new Set())).toMatchObject({ ok: false });
+  });
 });

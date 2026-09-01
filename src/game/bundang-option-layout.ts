@@ -553,26 +553,34 @@ function roomCenter(geometry: ApartmentGeometry, roomId: string): Point | null {
   return [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
 }
 
-/** 냉장고장의 손잡이·문 전면(+depth)이 거실 쪽을 향하도록 cardinal yaw를 고른다. */
+/** 냉장고장의 손잡이·문 전면(+depth)이 주방 중앙을 향하도록 cardinal yaw를 고른다. */
 export function refrigeratorCabinetFacingYaw(
   geometry: ApartmentGeometry,
   prop: ApartmentInteriorProp,
+  planVariant?: string,
 ): number {
-  const living = roomCenter(geometry, 'living');
+  const kitchen = roomCenter(geometry, 'kitchen-dining') || roomCenter(geometry, 'living');
   const position = Array.isArray(prop.positionMeters) ? prop.positionMeters.map(Number) : [];
-  if (!living || position.length < 2 || !position.slice(0, 2).every(Number.isFinite)) {
+  if (!kitchen || position.length < 2 || !position.slice(0, 2).every(Number.isFinite)) {
     return normalizedYaw(Number(prop.yawDeg) || 0);
   }
   const currentYaw = normalizedYaw(Number(prop.yawDeg) || 0);
   const widthRunsNorthSouth = Math.round(currentYaw / 90) % 2 === 1;
-  if (widthRunsNorthSouth) return living[0] >= position[0] ? 90 : 270;
-  return living[1] >= position[1] ? 0 : 180;
+  // proceduralProp의 전면은 local +depth(+Z)이며 group.rotation.y=-yaw다.
+  // 따라서 세로 장의 +X 전면은 yaw 270, -X 전면은 yaw 90이다.
+  const sourceYaw = widthRunsNorthSouth
+    ? kitchen[0] >= position[0] ? 270 : 90
+    : kitchen[1] >= position[1] ? 0 : 180;
+  // 지원하는 B형은 모두 단일 축 반사를 포함해 좌표계 handedness가 뒤집힌다.
+  // group 회전만으로는 깊이축이 함께 반사되지 않으므로 180도를 보정한다.
+  return normalizedYaw(sourceYaw + (planVariantKey(planVariant) === 'B' ? 180 : 0));
 }
 
 function refineRefrigeratorCabinetProp(
   geometry: ApartmentGeometry,
   selected: ReadonlySet<string>,
   prop: ApartmentInteriorProp,
+  planVariant?: string,
 ): ApartmentInteriorProp | null {
   if (!isRefrigeratorCabinetProp(prop)) return prop;
   const assetId = selectedRefrigeratorAssetId(selected);
@@ -581,7 +589,7 @@ function refineRefrigeratorCabinetProp(
     ...prop,
     assetId,
     sourceOptionId: assetId,
-    yawDeg: refrigeratorCabinetFacingYaw(geometry, prop),
+    yawDeg: refrigeratorCabinetFacingYaw(geometry, prop, planVariant),
     installationRole: 'refrigerator-cabinet',
   };
 }
@@ -599,7 +607,7 @@ export function refineBundangOptionProps(
   const selected = new Set(selectedIds);
   const props = baseProps
     .filter((prop) => !isLegacyEntryLivingOptionProp(prop) && !isLegacyPrecisionStorageProp(prop))
-    .map((prop) => refineRefrigeratorCabinetProp(geometry, selected, prop))
+    .map((prop) => refineRefrigeratorCabinetProp(geometry, selected, prop, planVariant))
     .filter((prop): prop is ApartmentInteriorProp => Boolean(prop))
     .map(refineWidePlankAndVentilatorProp)
     .map(alignIntegratedBidetToDefaultFacing)

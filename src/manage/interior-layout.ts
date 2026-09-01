@@ -63,8 +63,13 @@ export function validateLayout(
     const prop = raw as ApartmentInteriorProp;
     const id = String(prop.id || '');
     const assetId = String(prop.assetId || '');
+    const sourcePropId = typeof prop.sourcePropId === 'string' ? prop.sourcePropId : '';
+    const safeSourceOverride = prop.localOverride === true
+      && /^[a-z0-9][a-z0-9._:-]{0,159}$/i.test(sourcePropId);
     if (!/^local-[a-z0-9-]+$/i.test(id) || seen.has(id)) return { ok: false, error: '소품 id가 올바르지 않거나 중복됩니다.' };
-    if (!allowedAssets.has(assetId)) return { ok: false, error: `허용되지 않은 소품입니다: ${assetId}` };
+    // source-linked override의 asset은 렌더 시 최신 base prop으로 반드시 교체된다.
+    // 따라서 snapshot에 없는 로컬 정밀 recipe도 좌표 override로 안전하게 복원할 수 있다.
+    if (!allowedAssets.has(assetId) && !safeSourceOverride) return { ok: false, error: `허용되지 않은 소품입니다: ${assetId}` };
     if (!Array.isArray(prop.positionMeters) || prop.positionMeters.length < 2 || !finite(prop.positionMeters[0]) || !finite(prop.positionMeters[1])) {
       return { ok: false, error: `${id}의 좌표가 올바르지 않습니다.` };
     }
@@ -79,7 +84,7 @@ export function validateLayout(
       yawDeg: ((Math.round(yaw / 15) * 15) % 360 + 360) % 360,
       mirrored: prop.mirrored === true,
       materialVariantId: typeof prop.materialVariantId === 'string' ? prop.materialVariantId : undefined,
-      sourcePropId: typeof prop.sourcePropId === 'string' ? prop.sourcePropId : undefined,
+      sourcePropId: safeSourceOverride ? sourcePropId : undefined,
       localOverride: prop.localOverride === true,
       localDeleted: prop.localDeleted === true,
     });

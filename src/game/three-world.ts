@@ -295,6 +295,25 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
   },
 ];
 
+/** 카탈로그 메타데이터는 보존하되 Bunfirvil 정밀 recipe가 같은 ID의 fallback을 덮어쓴다. */
+export function mergeRuntimeAssetCatalogs(
+  catalogAssets: RuntimeAsset[],
+  recipeAssets: RuntimeAsset[],
+  structuralAssets: RuntimeAsset[] = STRUCTURAL_PROP_ASSETS,
+): Map<string, RuntimeAsset> {
+  const recipesById = new Map(recipeAssets.map((asset) => [asset.assetId, asset]));
+  const merged = new Map<string, RuntimeAsset>();
+  for (const asset of catalogAssets) {
+    if (!asset.assetId) continue;
+    merged.set(asset.assetId, { ...asset, ...recipesById.get(asset.assetId) });
+  }
+  for (const asset of structuralAssets) {
+    if (!asset.assetId) continue;
+    merged.set(asset.assetId, { ...merged.get(asset.assetId), ...asset });
+  }
+  return merged;
+}
+
 function finite(value: unknown, fallback = 0): number {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
@@ -349,6 +368,44 @@ function disposeTree(group: THREE.Group): void {
     });
     group.remove(child);
   }
+}
+
+/**
+ * 사용자가 옮긴 좌표·회전은 유지하되 옵션이 바뀌면 asset/재질/옵션 소유권은
+ * 같은 sourcePropId의 최신 base prop에서 다시 가져온다.
+ */
+export function mergeEditorPropsWithBase(
+  baseProps: ApartmentInteriorProp[],
+  editorProps: ApartmentInteriorProp[] | null,
+): ApartmentInteriorProp[] {
+  if (!editorProps) return baseProps;
+  const overridesBySource = new Map<string, ApartmentInteriorProp>();
+  const standalone: ApartmentInteriorProp[] = [];
+  for (const prop of editorProps) {
+    const sourcePropId = String(prop.sourcePropId || '');
+    if (sourcePropId) overridesBySource.set(sourcePropId, prop);
+    else if (prop.localDeleted !== true) standalone.push(prop);
+  }
+  const mergedBase = baseProps.flatMap((base): ApartmentInteriorProp[] => {
+    const sourceId = String(base.id || '');
+    const override = sourceId ? overridesBySource.get(sourceId) : undefined;
+    if (!override) return [base];
+    if (override.localDeleted === true) return [];
+    const yawDeg = Number(override.yawDeg);
+    return [{
+      ...base,
+      id: String(override.id || base.id || ''),
+      sourcePropId: sourceId,
+      localOverride: true,
+      localDeleted: false,
+      positionMeters: Array.isArray(override.positionMeters)
+        ? [...override.positionMeters]
+        : [...(base.positionMeters || [])],
+      yawDeg: Number.isFinite(yawDeg) ? yawDeg : base.yawDeg,
+      mirrored: typeof override.mirrored === 'boolean' ? override.mirrored : base.mirrored,
+    }];
+  });
+  return [...mergedBase, ...standalone];
 }
 
 export class ThreeWorldRenderer {
@@ -992,14 +1049,11 @@ export class ThreeWorldRenderer {
       fetchJson<RuntimeMaterialManifest>(resolveProjectUrl(this.renderAssets.materialManifestUrl)),
       import(/* @vite-ignore */ resolveProjectUrl(this.renderAssets.optionModuleUrl)) as Promise<OptionRuntimeModule>,
     ]);
-    const recipesById = new Map((recipes.assets || []).map((asset) => [asset.assetId, asset]));
-    for (const asset of catalog.assets || []) {
-      if (!asset.assetId) continue;
-      this.assets.set(asset.assetId, { ...asset, ...recipesById.get(asset.assetId) });
-    }
-    for (const asset of STRUCTURAL_PROP_ASSETS) {
-      if (!this.assets.has(asset.assetId)) this.assets.set(asset.assetId, asset);
-    }
+    this.assets.clear();
+    for (const [assetId, asset] of mergeRuntimeAssetCatalogs(
+      catalog.assets || [],
+      recipes.assets || [],
+    )) this.assets.set(assetId, asset);
     this.canvas.dataset.interiorAssetCount = String(this.assets.size);
     this.canvas.dataset.recipePartCount = String(
       [...this.assets.values()].reduce((sum, asset) => sum + (asset.parts?.length || 0), 0),
@@ -1397,10 +1451,19 @@ export class ThreeWorldRenderer {
       runtimeProps,
       object.planVariant,
     ), this.selectedOptionIds);
-    const sourceOverrides = new Set((this.editorProps || []).map((prop) => String(prop.sourcePropId || '')).filter(Boolean));
-    const props = this.editorProps
-      ? [...baseProps.filter((prop) => !sourceOverrides.has(String(prop.id || ''))), ...this.editorProps.filter((prop) => prop.localDeleted !== true)]
-      : baseProps;
+    const props = mergeEditorPropsWithBase(baseProps, this.editorProps);
+    const refrigerator = props.find((prop) => prop.installationRole === 'refrigerator-cabinet');
+    if (refrigerator) {
+      this.canvas.dataset.refrigeratorAssetId = String(refrigerator.assetId || '');
+      this.canvas.dataset.refrigeratorYawDeg = String(refrigerator.yawDeg ?? '');
+      this.canvas.dataset.refrigeratorPlanVariant = String(object.planVariant || 'A');
+      this.canvas.dataset.refrigeratorFacingTarget = 'kitchen-dining';
+    } else {
+      delete this.canvas.dataset.refrigeratorAssetId;
+      delete this.canvas.dataset.refrigeratorYawDeg;
+      delete this.canvas.dataset.refrigeratorPlanVariant;
+      delete this.canvas.dataset.refrigeratorFacingTarget;
+    }
     for (const prop of props) if (prop.id) this.renderedProps.set(String(prop.id), { ...prop, positionMeters: [...(prop.positionMeters || [])] });
     this.canvas.dataset.apartmentPropCount = String(props.length);
     const audit = auditApartmentPropPlacements(object, props);

@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { apartmentPropPlacement } from './apartment-transform';
+import { apartmentPropPlacement, apartmentUnitWorldPoint } from './apartment-transform';
 import {
   BUNDANG_OPTION_LAYOUTS,
   BUNDANG_OPTION_DISPLAY_OVERRIDES,
@@ -12,7 +12,7 @@ import {
   replacedBundangOpeningIds,
 } from './bundang-option-layout';
 import { planVariantDefinition } from './plan-variants';
-import { STRUCTURAL_PROP_ASSETS } from './three-world';
+import { mergeEditorPropsWithBase, mergeRuntimeAssetCatalogs, STRUCTURAL_PROP_ASSETS } from './three-world';
 import type { ApartmentGeometry, ApartmentInteriorProp, ShowcaseCatalog, WorldChunk, WorldManifest, WorldObject } from './types';
 
 async function apartmentsByUnit(): Promise<Map<string, WorldObject>> {
@@ -71,8 +71,14 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
       .toBe('assets/options/previews/refrigerator-cabinet-lg-built-in-v2.png');
   });
 
-  it('냉장고장 기본형은 빌트인 해제 뒤 복원되고 4평형 A/B 모두 전면이 거실을 향한다', async () => {
+  it('냉장고장 기본형은 빌트인 해제 뒤 복원되고 4평형 A/B 모두 전면이 주방 중앙을 향한다', async () => {
     const apartments = await apartmentsByUnit();
+    const expectedYawByUnit: Record<string, { A: number; B: number }> = {
+      '51A': { A: 270, B: 90 },
+      '55A': { A: 90, B: 270 },
+      '55B': { A: 90, B: 270 },
+      '59A': { A: 90, B: 270 },
+    };
     for (const [unitType, apartment] of apartments) {
       const geometry = apartment.geometry;
       expect(geometry, `${unitType}:geometry`).toBeTruthy();
@@ -91,8 +97,11 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
         anchorId: 'kitchen.refrigeratorCabinet',
         installationRole: 'refrigerator-cabinet',
       };
-      const livingBounds = (geometry.roomZones || []).find((room) => room.id === 'living')?.boundsMeters as number[];
-      const livingCenter = [(livingBounds[0] + livingBounds[2]) / 2, (livingBounds[1] + livingBounds[3]) / 2];
+      const kitchenBounds = (geometry.roomZones || []).find((room) => room.id === 'kitchen-dining')?.boundsMeters as number[];
+      const kitchenCenter: [number, number] = [
+        (kitchenBounds[0] + kitchenBounds[2]) / 2,
+        (kitchenBounds[1] + kitchenBounds[3]) / 2,
+      ];
       for (const variant of ['A', 'B'] as const) {
         const builtIn = optionProps(geometry, unitType, [
           'refrigerator-cabinet-pet-basic',
@@ -105,12 +114,72 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
         expect(restored).toHaveLength(1);
         expect(restored[0].assetId, `${unitType}:${variant}:restored`).toBe('refrigerator-cabinet-pet-basic');
         expect(restored[0].sourceOptionId).toBe('refrigerator-cabinet-pet-basic');
-        const yaw = refrigeratorCabinetFacingYaw(geometry, restored[0]);
-        const front = [Math.sin(yaw * Math.PI / 180), Math.cos(yaw * Math.PI / 180)];
-        const towardLiving = [livingCenter[0] - source.positionMeters![0], livingCenter[1] - source.positionMeters![1]];
-        expect(front[0] * towardLiving[0] + front[1] * towardLiving[1], `${unitType}:${variant}:front`).toBeGreaterThan(0);
+        const yaw = refrigeratorCabinetFacingYaw(geometry, restored[0], variant);
+        expect(restored[0].yawDeg).toBe(yaw);
+        expect(yaw, `${unitType}:${variant}:yaw`).toBe(expectedYawByUnit[unitType][variant]);
+        const transformedApartment: WorldObject = {
+          ...apartment,
+          transform: { ...planVariantDefinition(unitType, variant).transform },
+        };
+        const placement = apartmentPropPlacement(transformedApartment, restored[0]);
+        const kitchenWorld = apartmentUnitWorldPoint(transformedApartment, kitchenCenter);
+        const front = [Math.sin(placement.worldYaw), Math.cos(placement.worldYaw)];
+        const towardKitchen = [kitchenWorld.x - placement.center.x, kitchenWorld.y - placement.center.y];
+        expect(front[0] * towardKitchen[0] + front[1] * towardKitchen[1], `${unitType}:${variant}:front`).toBeGreaterThan(0);
       }
     }
+  });
+
+  it('동일 asset ID의 카탈로그 fallback보다 Bunfirvil 냉장고 정밀 recipe를 우선한다', () => {
+    const merged = mergeRuntimeAssetCatalogs([
+      { assetId: 'refrigerator-cabinet-bespoke-alt2', rendererKind: 'procedural' },
+      { assetId: 'refrigerator-cabinet-lg-built-in', rendererKind: 'procedural' },
+    ], []);
+    expect(merged.get('refrigerator-cabinet-bespoke-alt2')?.parts?.filter((part) => (
+      String(part.materialRole || '').startsWith('refrigerator-front')
+    ))).toHaveLength(3);
+    expect(merged.get('refrigerator-cabinet-lg-built-in')?.parts?.filter((part) => (
+      part.materialRole === 'refrigerator-storage-front'
+    ))).toHaveLength(2);
+  });
+
+  it('이동한 냉장고 override의 좌표는 보존하고 옵션 asset은 실시간 교체한다', () => {
+    const sourceId = 'inspection-55A-refrigerator-cabinet';
+    const override: ApartmentInteriorProp = {
+      id: 'local-override-inspection-55A-refrigerator-cabinet-1',
+      sourcePropId: sourceId,
+      localOverride: true,
+      assetId: 'refrigerator-cabinet-pet-basic',
+      sourceOptionId: 'refrigerator-cabinet-pet-basic',
+      positionMeters: [6.2, 3.4],
+      yawDeg: 123,
+      mirrored: true,
+    };
+    const samsungBase: ApartmentInteriorProp = {
+      id: sourceId,
+      assetId: 'refrigerator-cabinet-bespoke-alt2',
+      sourceOptionId: 'refrigerator-cabinet-bespoke-alt2',
+      positionMeters: [6.49, 3.35],
+      yawDeg: 90,
+      materialVariantId: 'pet-warm-ivory',
+      installationRole: 'refrigerator-cabinet',
+    };
+    const [samsung] = mergeEditorPropsWithBase([samsungBase], [override]);
+    expect(samsung.assetId).toBe('refrigerator-cabinet-bespoke-alt2');
+    expect(samsung.sourceOptionId).toBe('refrigerator-cabinet-bespoke-alt2');
+    expect(samsung.positionMeters).toEqual([6.2, 3.4]);
+    expect(samsung.yawDeg).toBe(123);
+    expect(samsung.mirrored).toBe(true);
+    expect(samsung.materialVariantId).toBe('pet-warm-ivory');
+
+    const basicBase = {
+      ...samsungBase,
+      assetId: 'refrigerator-cabinet-pet-basic',
+      sourceOptionId: 'refrigerator-cabinet-pet-basic',
+    };
+    expect(mergeEditorPropsWithBase([basicBase], [override])[0].assetId)
+      .toBe('refrigerator-cabinet-pet-basic');
+    expect(mergeEditorPropsWithBase([], [override])).toEqual([]);
   });
 
   it('오픈형 프리미엄 신발장은 55A·55B·59A A형만 현관 입구 방향으로 180도 보정한다', () => {
