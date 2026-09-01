@@ -10,7 +10,18 @@ describe('interior selection name', () => {
         price: 1, description: '', compatibleUnitTypes: ['55A'], requires: [], excludes: [],
       }],
       [{ assetId: 'living-art-wall-greige-stone', displayNameKo: '아트월 · 웜그레이지 스톤' }],
-    )).toBe('디자인 월(거실/복도면)');
+    )).toBe('디자인 월(거실/복도면) · 아트월 · 웜그레이지 스톤');
+  });
+
+  it('sourceOptionId가 없어도 옵션 자체 assetId면 팔레트 이름을 표시한다', () => {
+    expect(interiorSelectionName(
+      { assetId: 'dishwasher-built-in-die6pt' },
+      [{
+        id: 'dishwasher-built-in-die6pt', label: 'LG 빌트인 식기세척기', category: '빌트인 가전',
+        price: 1, description: '', compatibleUnitTypes: ['55A'], requires: [], excludes: [],
+      }],
+      [],
+    )).toBe('LG 빌트인 식기세척기');
   });
 
   it('일반 인테리어는 한글 자산명을 표시하고 영문 ID를 노출하지 않는다', () => {

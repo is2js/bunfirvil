@@ -5,6 +5,7 @@ import { apartmentPropPlacement, apartmentUnitWorldPoint } from './apartment-tra
 import {
   BUNDANG_OPTION_LAYOUTS,
   BUNDANG_OPTION_DISPLAY_OVERRIDES,
+  BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES,
   bundangEditorSelectionPropIds,
   bundangPreciseEditorPickOnly,
   refrigeratorCabinetFacingYaw,
@@ -63,12 +64,28 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
       .toBe('assets/options/previews/bedroom-1-built-in-closet-pet-v2.png');
     expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['bathroom-combination-ventilator']?.previewUrl)
       .toBe('assets/options/previews/bathroom-combination-ventilator-v2.png');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['air-planner-ceiling-vent']).toMatchObject({
+      label: '실별 환기·공기청정 시스템',
+      previewUrl: 'assets/options/previews/air-planner-ceiling-vent-v2.png',
+    });
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['smart-lighting-package']?.label)
+      .toBe('스마트홈 연계 조명 시스템');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['closet-breeze-dehumidifier']?.label)
+      .toBe('빌트인 드레스룸 제습기');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['lg-styler-sc5mbr53']?.label)
+      .toBe('의류관리기');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['bedroom-1-clothing-care-closet']?.label)
+      .toBe('침실1 와이드 붙박이장 의류관리기형');
     expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['refrigerator-cabinet-pet-basic']?.previewUrl)
       .toBe('assets/options/previews/refrigerator-cabinet-pet-basic-v2.png');
     expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['refrigerator-cabinet-bespoke-alt2']?.previewUrl)
       .toBe('assets/options/previews/refrigerator-cabinet-bespoke-alt2-v2.png');
     expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['refrigerator-cabinet-lg-built-in']?.previewUrl)
       .toBe('assets/options/previews/refrigerator-cabinet-lg-built-in-v2.png');
+    expect(BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES['air-planner-ceiling-vent']?.[0])
+      .toMatchObject({ label: '조명특화 연동 -15만원', prices: { '55A': 4_830_000 } });
+    expect(BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES['closet-breeze-dehumidifier']?.[0])
+      .toMatchObject({ label: '붙박이장 연계형 +30만원', prices: { '55A': 1_800_000 } });
   });
 
   it('냉장고장 기본형은 빌트인 해제 뒤 복원되고 4평형 A/B 모두 전면이 주방 중앙을 향한다', async () => {
@@ -383,6 +400,27 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     expect(props[0].dimensionsMeters).toEqual([.52, .34, .12]);
     expect(props[0].materialVariantId).toBe('system-ac-light-gray');
     expect(props[0].sourceOptionId).toBe('bathroom-combination-ventilator');
+  });
+
+  it('실별 환기·공기청정 본체를 천장 높이에 맞는 2구 덕트 recipe로 교체한다', () => {
+    const props = optionProps({ wallSegments: [] }, '55A', ['air-planner-ceiling-vent'], [{
+      id: 'air-planner', assetId: 'air-planner-ceiling-vent', dimensionsMeters: [.35, .35, .08],
+      mountHeightMeters: 2.18,
+    }]);
+    expect(props[0]).toMatchObject({
+      assetId: 'air-planner-ceiling-vent',
+      dimensionsMeters: [.72, .58, .28],
+      materialVariantId: 'system-ac-light-gray',
+      installationRole: 'ceiling-appliance',
+      sourceOptionId: 'air-planner-ceiling-vent',
+    });
+    expect(props[0].mountHeightMeters).toBeUndefined();
+
+    const appliance = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'air-planner-ceiling-vent');
+    expect(appliance?.mountingKind).toBe('ceiling');
+    expect(appliance?.parts?.filter((part) => part.materialRole === 'air-duct')).toHaveLength(2);
+    expect(appliance?.parts?.filter((part) => part.materialRole === 'air-duct-rim')).toHaveLength(2);
+    expect(appliance?.parts?.some((part) => part.materialRole === 'airflow-accent')).toBe(true);
   });
 
   it('비데일체형 양변기의 모델 전면축을 기본 양변기 방향에 맞춰 보정한다', () => {

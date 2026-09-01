@@ -6,8 +6,9 @@ import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
 import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from './grid';
 import { FrameMetrics } from './metrics';
 import { FloorPlanMinimap } from './floorplan-minimap';
+import { highlightedMessageParts } from './highlighted-message';
 import { interiorSelectionName } from './interior-selection-name';
-import { optionRepresentativeProp } from './option-prop-selection';
+import { optionPropsForSelection, optionSourceIdForProp } from './option-prop-selection';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import {
   validateInteriorPlacement,
@@ -1347,6 +1348,7 @@ export class ShowcaseApp {
     const list = this.mount.querySelector<HTMLElement>('#furniture-list');
     if (!list) return;
     const query = this.mount.querySelector<HTMLInputElement>('#furniture-search')?.value.trim().toLowerCase() || '';
+    const selectedSceneAssetId = String(this.selectedSceneProp()?.assetId || '');
     if (this.paletteAppliedOnly) {
       const matches = [...this.localInteriorProps].reverse().flatMap((prop) => {
         if (prop.localDeleted === true) return [];
@@ -1360,7 +1362,7 @@ export class ShowcaseApp {
           ? `<img src="${escapeHtml(resolveReferencedUrl(asset.previewUrl, this.interiorCatalogUrl))}" alt="" loading="lazy" />`
           : `<i>${escapeHtml(asset.displayNameKo.slice(0, 1))}</i>`;
         const yaw = ((Math.round(finiteNumber(prop.yawDeg)) % 360) + 360) % 360;
-        return `<button type="button" class="furniture-card furniture-card--placed ${selected ? 'is-selected' : ''}" data-furniture-prop-id="${escapeHtml(String(prop.id || ''))}">
+        return `<button type="button" class="furniture-card furniture-card--placed ${selected ? 'is-selected is-world-linked' : ''}" data-furniture-prop-id="${escapeHtml(String(prop.id || ''))}">
           <span>${preview}</span><b>${escapeHtml(asset.displayNameKo)}</b><small>배치 ${matches.length - index} · ${yaw}°</small></button>`;
       }).join('') || '<p class="empty-options">배치된 가구·가전이 없습니다.</p>';
     } else {
@@ -1368,10 +1370,11 @@ export class ShowcaseApp {
         || `${asset.displayNameKo} ${asset.assetId} ${asset.category}`.toLowerCase().includes(query));
       list.innerHTML = matches.map((asset) => {
         const selected = asset.assetId === this.pendingInteriorAssetId;
+        const worldLinked = !this.selectedStageOptionId && asset.assetId === selectedSceneAssetId;
         const preview = asset.previewUrl
           ? `<img src="${escapeHtml(resolveReferencedUrl(asset.previewUrl, this.interiorCatalogUrl))}" alt="" loading="lazy" />`
           : `<i>${escapeHtml(asset.displayNameKo.slice(0, 1))}</i>`;
-        return `<button type="button" class="furniture-card ${selected ? 'is-active' : ''}" data-furniture-asset="${escapeHtml(asset.assetId)}">
+        return `<button type="button" class="furniture-card ${selected ? 'is-active' : ''} ${worldLinked ? 'is-world-linked' : ''}" data-furniture-asset="${escapeHtml(asset.assetId)}">
           <span>${preview}</span><b>${escapeHtml(asset.displayNameKo)}</b><small>${escapeHtml(asset.category)}</small></button>`;
       }).join('') || '<p class="empty-options">검색 결과가 없습니다.</p>';
     }
@@ -1597,10 +1600,14 @@ export class ShowcaseApp {
     this.interiorRelocationArmed = false;
     this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
     this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
-    const optionId = String(prop.sourceOptionId || '');
+    const optionId = optionSourceIdForProp(prop, this.selectedOptionIds);
     if (optionId && this.selectedOptionIds.includes(optionId)) {
       this.selectedStageOptionId = optionId;
       this.focusOptionInPalette(optionId);
+    } else {
+      this.selectedStageOptionId = '';
+      this.renderOptions();
+      this.focusFurnitureInPalette(prop);
     }
     this.renderFurniturePalette();
     this.updateFurnitureToolbar();
@@ -2315,6 +2322,25 @@ export class ShowcaseApp {
     });
   }
 
+  private focusFurnitureInPalette(prop: ApartmentInteriorProp): void {
+    const assetId = String(prop.assetId || '');
+    if (!assetId || !this.interiorAssets.some((asset) => asset.assetId === assetId)) {
+      this.renderFurniturePalette();
+      return;
+    }
+    this.paletteAppliedOnly = false;
+    const search = this.mount.querySelector<HTMLInputElement>('#furniture-search');
+    if (search) search.value = '';
+    this.setPaletteTab('furniture');
+    requestAnimationFrame(() => {
+      const list = this.get<HTMLElement>('#furniture-list');
+      const card = [...list.querySelectorAll<HTMLElement>('[data-furniture-asset]')]
+        .find((candidate) => candidate.dataset.furnitureAsset === assetId);
+      if (!card) return;
+      card.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+    });
+  }
+
   private commitSelectedOptions(): void {
     if (this.selectedStageOptionId && !this.selectedOptionIds.includes(this.selectedStageOptionId)) {
       this.selectedStageOptionId = '';
@@ -2339,13 +2365,15 @@ export class ShowcaseApp {
       chip.classList.toggle('is-world-selected', button?.dataset.stageOptionSelect === optionId);
     });
     const props = this.threeRenderer?.getRenderedProps() || [];
-    const prop = optionRepresentativeProp(props, optionId);
+    const optionProps = optionPropsForSelection(props, optionId);
+    const prop = optionProps[0];
     if (!prop || !this.threeRenderer || this.renderer !== this.threeRenderer) {
+      this.focusOptionInPalette(optionId);
       this.get<HTMLElement>('#furniture-status').textContent = '선택한 옵션은 현재 맵에 표시할 3D 구성요소가 없습니다.';
       this.toast('현재 맵에 표시할 옵션 구성요소가 없습니다.', 'notice');
       return;
     }
-    this.selectSceneProp(prop, false, '좌하단 옵션과 인게임 구성요소를 연동해 선택했습니다.');
+    this.selectSceneProp(prop, false, `좌하단 옵션과 인게임 구성요소 ${optionProps.length}개를 연동해 선택했습니다.`);
   }
 
   private removeStageOptionImmediately(options: BOptionEntry[], optionId: string): void {
@@ -2375,6 +2403,7 @@ export class ShowcaseApp {
         const accepted = await this.confirmOptionChange({
           title: '선행 옵션이 필요합니다',
           message: `${intent.option.label}을(를) 선택하려면 ${labels}이(가) 필요합니다. 필요한 옵션을 함께 선택할까요?`,
+          highlightText: labels,
           confirmLabel: '함께 선택',
         });
         if (!accepted) {
@@ -2448,12 +2477,22 @@ export class ShowcaseApp {
   private confirmOptionChange({
     title,
     message,
+    highlightText,
     confirmLabel,
-  }: { title: string; message: string; confirmLabel: string }): Promise<boolean> {
+  }: { title: string; message: string; highlightText?: string; confirmLabel: string }): Promise<boolean> {
     const dialog = this.get<HTMLDialogElement>('#option-confirm-dialog');
     if (dialog.open) dialog.close('cancel');
     this.get<HTMLElement>('#option-confirm-title').textContent = title;
-    this.get<HTMLElement>('#option-confirm-message').textContent = message;
+    const messageElement = this.get<HTMLElement>('#option-confirm-message');
+    const parts = highlightedMessageParts(message, highlightText);
+    messageElement.replaceChildren(document.createTextNode(parts.before));
+    if (parts.highlight) {
+      const highlight = document.createElement('span');
+      highlight.className = 'option-confirm-highlight';
+      highlight.textContent = parts.highlight;
+      messageElement.append(highlight);
+    }
+    if (parts.after) messageElement.append(document.createTextNode(parts.after));
     this.get<HTMLButtonElement>('#option-confirm-accept').textContent = confirmLabel;
     dialog.returnValue = 'cancel';
     return new Promise((resolve) => {

@@ -227,6 +227,25 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
     ],
   },
   {
+    assetId: 'air-planner-ceiling-vent', rendererKind: 'procedural', mountingKind: 'ceiling',
+    defaultDimensionsMeters: [.72, .58, .28],
+    parts: [
+      // 밝은 시스템에어컨 계열의 본체와 천장 고정판.
+      { shape: 'box', scale: [.92, .78, .64], offset: [0, -.04, .34], materialRole: 'primary' },
+      { shape: 'box', scale: [.76, .64, .08], offset: [0, -.02, .96], materialRole: 'secondary' },
+      { shape: 'box', scale: [.78, .60, .08], offset: [0, .05, .06], materialRole: 'secondary' },
+      // 참고 사진처럼 뒷면에서 평행하게 나오는 두 개의 원형 환기 덕트.
+      ...[-.23, .23].flatMap((offsetX): RuntimePart[] => ([
+        { shape: 'cylinder', scale: [.20, .58, .52], offset: [offsetX, -.52, .63], materialRole: 'air-duct' },
+        { shape: 'cylinder', scale: [.24, .10, .62], offset: [offsetX, -.81, .63], materialRole: 'air-duct-rim' },
+        { shape: 'cylinder', scale: [.15, .025, .39], offset: [offsetX, -.87, .63], materialRole: 'vent-dark' },
+      ])),
+      { shape: 'box', scale: [.30, .025, .026], offset: [-.13, .30, .035], materialRole: 'airflow-accent' },
+      { shape: 'box', scale: [.025, .22, .026], offset: [.03, .205, .035], materialRole: 'airflow-accent' },
+      { shape: 'box', scale: [.23, .025, .026], offset: [.15, .10, .035], materialRole: 'airflow-accent' },
+    ],
+  },
+  {
     assetId: 'ceiling-smart-downlight', rendererKind: 'procedural', mountingKind: 'ceiling',
     defaultDimensionsMeters: [0.16, 0.16, 0.06],
     parts: [
@@ -1688,6 +1707,12 @@ export class ThreeWorldRenderer {
         ? this.material('#d9f0ef', { glass: true })
         : role === 'mirror'
           ? this.material('#b9c7c8', { roughness: .08, metalness: .68 })
+          : role === 'airflow-accent'
+            ? this.material('#e36b36', { roughness: .38, metalness: .04 })
+            : role === 'air-duct'
+              ? this.material('#d9dde0', { roughness: .56, metalness: .08 })
+              : role === 'air-duct-rim'
+                ? this.material('#f1f3f4', { roughness: .34, metalness: .06 })
           : role === 'styler-frame' || role === 'vent-dark'
             ? this.material('#25282a', { roughness: .52, metalness: .18 })
             : role === 'styler-front'

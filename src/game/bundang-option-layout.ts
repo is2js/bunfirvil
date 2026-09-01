@@ -53,6 +53,12 @@ const BEDROOM_ONE_PET_CLOSET_OPTION_ID = 'bedroom-1-built-in-closet-pet';
 const BEDROOM_ONE_CLOTHING_CARE_CLOSET_OPTION_ID = 'bedroom-1-clothing-care-closet';
 const DRESS_ROOM_POWDER_STORAGE_OPTION_ID = 'dress-room-powder-storage';
 const BATHROOM_COMBINATION_VENTILATOR_OPTION_ID = 'bathroom-combination-ventilator';
+const SMART_LIGHTING_OPTION_ID = 'smart-lighting-package';
+const AIR_PLANNER_OPTION_ID = 'air-planner-ceiling-vent';
+const CLOSET_BREEZE_OPTION_ID = 'closet-breeze-dehumidifier';
+const CLOTHING_CARE_APPLIANCE_OPTION_ID = 'lg-styler-sc5mbr53';
+const SILENT_RANGE_HOOD_OPTION_ID = 'silent-range-hood';
+const BUILT_IN_DISHWASHER_OPTION_ID = 'dishwasher-built-in-die6pt';
 const REFRIGERATOR_BASIC_OPTION_ID = 'refrigerator-cabinet-pet-basic';
 const REFRIGERATOR_BESPOKE_OPTION_ID = 'refrigerator-cabinet-bespoke-alt2';
 const REFRIGERATOR_LG_OPTION_ID = 'refrigerator-cabinet-lg-built-in';
@@ -82,16 +88,47 @@ export const BUNDANG_OPTION_DISPLAY_OVERRIDES: Readonly<Record<string, Partial<P
     description: '거실 3면과 현관에서 거실까지 이어지는 복도 벽면 전체를 동일한 디자인 월 마감으로 감쌉니다.',
   }),
   [BEDROOM_ONE_PET_CLOSET_OPTION_ID]: Object.freeze({
+    label: '침실1 와이드 붙박이장',
+    description: '붙박이장(PET) 구성입니다.',
     previewUrl: 'assets/options/previews/bedroom-1-built-in-closet-pet-v2.png',
   }),
   [BEDROOM_ONE_CLOTHING_CARE_CLOSET_OPTION_ID]: Object.freeze({
+    label: '침실1 와이드 붙박이장 의류관리기형',
+    description: '붙박이장(PET)과 의류관리기장(PET) 구성입니다.',
     previewUrl: 'assets/options/previews/bedroom-1-clothing-care-closet-v2.png',
   }),
   [DRESS_ROOM_POWDER_STORAGE_OPTION_ID]: Object.freeze({
+    label: '침실1 파우더 결합형 드레스룸 붙박이장',
+    description: '화장대(PET)·엔지니어드 스톤(래디언스-골든쇼어)·콘센트·다운라이트·붙박이장(PET)·디자인 월 구성입니다.',
     previewUrl: 'assets/options/previews/dress-room-powder-storage-v2.png',
   }),
   [BATHROOM_COMBINATION_VENTILATOR_OPTION_ID]: Object.freeze({
     previewUrl: 'assets/options/previews/bathroom-combination-ventilator-v2.png',
+  }),
+  [AIR_PLANNER_OPTION_ID]: Object.freeze({
+    label: '실별 환기·공기청정 시스템',
+    description: 'D-에어플래너와 침실 스마트 디스플레이 스위치 구성입니다. 스마트홈 연계 조명 시스템 선택 시 D-에어플래너 구성으로 적용됩니다.',
+    previewUrl: 'assets/options/previews/air-planner-ceiling-vent-v2.png',
+  }),
+  [SMART_LIGHTING_OPTION_ID]: Object.freeze({
+    label: '스마트홈 연계 조명 시스템',
+    description: '거실·주방·복도 다운라이트 특화와 거실·침실 디밍, 간접조명, 스마트 디스플레이 스위치 구성입니다.',
+  }),
+  [CLOSET_BREEZE_OPTION_ID]: Object.freeze({
+    label: '빌트인 드레스룸 제습기',
+    description: 'D-클로젯 브리즈 구성입니다. 파우더 결합형 드레스룸 붙박이장 선택 여부에 따라 단독형 또는 붙박이장 연계형으로 적용됩니다.',
+  }),
+  [CLOTHING_CARE_APPLIANCE_OPTION_ID]: Object.freeze({
+    label: '의류관리기',
+    description: 'LG 스타일러 5벌(SC5MBR53) 구성입니다. 침실1 와이드 붙박이장 의류관리기형 선택 시 구매할 수 있습니다.',
+  }),
+  [SILENT_RANGE_HOOD_OPTION_ID]: Object.freeze({
+    label: '주방 저소음 렌지후드',
+    description: 'D-사일런트 후드 구성입니다.',
+  }),
+  [BUILT_IN_DISHWASHER_OPTION_ID]: Object.freeze({
+    label: '빌트인 식기세척기',
+    description: 'LG 디오스 14인용(DIE6PT)과 콘센트 구성입니다.',
   }),
   [REFRIGERATOR_BASIC_OPTION_ID]: Object.freeze({
     previewUrl: 'assets/options/previews/refrigerator-cabinet-pet-basic-v2.png',
@@ -105,6 +142,16 @@ export const BUNDANG_OPTION_DISPLAY_OVERRIDES: Readonly<Record<string, Partial<P
 });
 
 export const BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES: Readonly<Record<string, NonNullable<BOptionEntry['priceVariants']>>> = {
+  [AIR_PLANNER_OPTION_ID]: [{
+    whenSelectedAny: [SMART_LIGHTING_OPTION_ID],
+    prices: { '51A': 4_830_000, '55A': 4_830_000, '55B': 4_830_000, '59A': 4_830_000 },
+    label: '조명특화 연동 -15만원',
+  }],
+  [CLOSET_BREEZE_OPTION_ID]: [{
+    whenSelectedAny: [DRESS_ROOM_POWDER_STORAGE_OPTION_ID],
+    prices: { '51A': 1_800_000, '55A': 1_800_000, '55B': 1_800_000, '59A': 1_800_000 },
+    label: '붙박이장 연계형 +30만원',
+  }],
   'island-counter-modern': [{
     whenSelectedAny: ['kitchen-wall-countertop-radianz-golden-shore'],
     prices: { '51A': 1_410_000, '55A': 1_410_000, '55B': 1_430_000, '59A': 1_410_000 },
@@ -492,6 +539,17 @@ function refineWidePlankAndVentilatorProp(prop: ApartmentInteriorProp): Apartmen
       dimensionsMeters: [.52, .34, .12],
       materialVariantId: 'system-ac-light-gray',
       sourceOptionId: BATHROOM_COMBINATION_VENTILATOR_OPTION_ID,
+    };
+  }
+  if (prop.assetId === AIR_PLANNER_OPTION_ID) {
+    return {
+      ...prop,
+      dimensionsMeters: [.72, .58, .28],
+      materialVariantId: 'system-ac-light-gray',
+      // 천장 높이에서 본체 높이를 뺀 ThreeWorldRenderer의 ceiling fallback을 쓴다.
+      mountHeightMeters: undefined,
+      installationRole: 'ceiling-appliance',
+      sourceOptionId: AIR_PLANNER_OPTION_ID,
     };
   }
   return prop;

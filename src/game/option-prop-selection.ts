@@ -1,6 +1,7 @@
 import type { ApartmentInteriorProp } from './types';
 
 const OPTION_PROP_HINTS: Readonly<Record<string, string[]>> = Object.freeze({
+  'entry-open-premium-shoe-cabinet': ['premium-shoe-cabinet', 'entry-shoe-cabinet-tall'],
   'entry-pantry-system-shelf': ['entry-pantry-system-shelf', 'entrypantrysystemshelf'],
   'smart-lighting-package': ['smart-downlight', 'smartlighting'],
   'kitchen-wall-countertop-radianz-golden-shore': ['countertop-radianz', 'backsplash-radianz', 'golden-shore-engineered-stone'],
@@ -58,6 +59,15 @@ export function optionRepresentativeProp(
   props: ApartmentInteriorProp[],
   optionId: string,
 ): ApartmentInteriorProp | undefined {
-  return props.find((prop) => prop.sourceOptionId === optionId)
-    || props.find((prop) => prop.assetId === optionId);
+  return optionPropsForSelection(props, optionId)[0];
+}
+
+/** 좌하단 옵션 하나가 소유한 모든 인게임 구성요소를 같은 순서로 돌려준다. */
+export function optionPropsForSelection(
+  props: ApartmentInteriorProp[],
+  optionId: string,
+): ApartmentInteriorProp[] {
+  const sourceMatches = props.filter((prop) => prop.sourceOptionId === optionId);
+  if (sourceMatches.length) return sourceMatches;
+  return props.filter((prop) => prop.assetId === optionId);
 }

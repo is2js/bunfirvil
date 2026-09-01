@@ -22,12 +22,19 @@ export function interiorSelectionName(
   assets: InteriorNameAsset[],
 ): string {
   const optionId = String(prop.sourceOptionId || '');
-  const option = optionId ? options.find((candidate) => candidate.id === optionId) : undefined;
-  if (option?.label) return option.label;
-
   const assetId = String(prop.assetId || '');
+  const option = (optionId ? options.find((candidate) => candidate.id === optionId) : undefined)
+    || options.find((candidate) => candidate.id === assetId);
   const asset = assets.find((candidate) => candidate.assetId === assetId);
-  if (asset?.displayNameKo) return asset.displayNameKo;
+  const mappedAssetName = KOREAN_ASSET_NAMES[assetId];
+  const componentName = asset?.displayNameKo || mappedAssetName || '';
+  if (option?.label) {
+    const hasDistinctComponent = Boolean(componentName)
+      && assetId !== option.id
+      && componentName !== option.label;
+    return hasDistinctComponent ? `${option.label} · ${componentName}` : option.label;
+  }
+  if (componentName) return componentName;
 
   for (const value of [prop.displayNameKo, prop.labelKo]) {
     if (typeof value === 'string' && value.trim()) return value.trim();
@@ -35,5 +42,5 @@ export function interiorSelectionName(
   for (const value of [prop.displayName, prop.label]) {
     if (typeof value === 'string' && /[가-힣]/.test(value)) return value.trim();
   }
-  return KOREAN_ASSET_NAMES[assetId] || '인테리어 구성요소';
+  return '인테리어 구성요소';
 }

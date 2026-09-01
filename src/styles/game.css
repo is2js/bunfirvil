@@ -1541,6 +1541,7 @@ input:focus-visible {
 .furniture-card { min-width: 0; padding: 5px; display: grid; grid-template-columns: 42px 1fr; grid-template-rows: 1fr 1fr; column-gap: 6px; border: 1px solid rgba(143, 185, 179, .09); color: #c7d3cf; background: rgba(6, 18, 20, .75); text-align: left; }
 .furniture-card:hover, .furniture-card.is-active, .furniture-card.is-selected { border-color: rgba(225, 185, 99, .42); background: rgba(225, 185, 99, .08); }
 .furniture-card.is-selected { box-shadow: inset 0 0 0 1px rgba(255, 224, 147, .2), 0 0 12px rgba(225, 185, 99, .08); }
+.furniture-card.is-world-linked { border-color: rgba(93, 216, 192, .74); background: rgba(67, 183, 161, .13); box-shadow: inset 3px 0 rgba(119, 239, 215, .72), 0 0 14px rgba(56, 181, 157, .1); }
 .furniture-card > span { width: 42px; height: 42px; grid-row: 1 / 3; display: grid; place-items: center; overflow: hidden; border-radius: 2px; background: #151b1b; }
 .furniture-card img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .furniture-card i { color: #bca96f; font: 800 15px Georgia, serif; }
@@ -1925,6 +1926,7 @@ input:focus-visible {
 .option-confirm-dialog form { padding: 28px; }
 .option-confirm-dialog h2 { margin: 4px 0 12px; font-size: 21px; }
 .option-confirm-message { margin: 0; color: #b8c8c5; font-size: 13px; line-height: 1.72; }
+.option-confirm-highlight { color: #fbbf24; font-weight: 850; }
 .option-confirm-actions { margin-top: 24px; display: flex; justify-content: flex-end; gap: 8px; }
 .option-confirm-actions button {
   min-width: 92px;
