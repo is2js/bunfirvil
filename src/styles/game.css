@@ -1718,6 +1718,25 @@ input:focus-visible {
 .option-card.is-selected { border-color: rgba(225, 185, 99, 0.35); background: linear-gradient(90deg, rgba(225, 185, 99, 0.09), rgba(8, 23, 27, 0.7)); }
 .option-card.is-world-linked { border-color: rgba(93, 216, 192, .74); background: linear-gradient(90deg, rgba(67, 183, 161, .15), rgba(8, 23, 27, .76)); box-shadow: inset 3px 0 rgba(119, 239, 215, .72), 0 0 14px rgba(56, 181, 157, .1); }
 
+.option-default-card { cursor: default; }
+.option-default-card:hover { border-color: rgba(139, 183, 176, .16); background: rgba(6, 18, 22, .62); transform: none; }
+.option-default-card.is-default-active { border-color: rgba(112, 166, 157, .34); background: linear-gradient(90deg, rgba(88, 143, 133, .10), rgba(8, 23, 27, .7)); }
+.default-option-state {
+  min-width: 32px;
+  padding: 3px 5px;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  border: 1px solid rgba(121, 162, 155, .22);
+  border-radius: 9px;
+  color: #8ba49f;
+  background: rgba(4, 14, 17, .62);
+  font-size: 7px;
+  text-align: center;
+  transform: translateY(-50%);
+}
+.option-default-card.is-default-active .default-option-state { color: #b9d5cf; border-color: rgba(110, 178, 165, .38); }
+
 .system-ac-card {
   min-height: 118px;
   padding-right: 8px;

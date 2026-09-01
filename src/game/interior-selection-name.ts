@@ -13,6 +13,8 @@ const KOREAN_ASSET_NAMES: Readonly<Record<string, string>> = Object.freeze({
   'bunfirvil-dress-room-powder-vanity': '드레스룸 파우더 화장대',
   'bunfirvil-dress-room-storage-three-bay': '드레스룸 파우더 결합형 수납장',
   'bunfirvil-bathroom-combination-ventilator-rounded': '욕실 복합환풍기',
+  'bunfirvil-default-navien-magic-gas-cooktop-3': '나비엔 매직 3구 가스쿡탑',
+  'bunfirvil-default-kitchen-range-hood': '기본 주방 렌지후드',
 });
 
 /** 선택 이름은 내부 영문 ID가 아니라 옵션 팔레트와 동일한 이름을 우선한다. */

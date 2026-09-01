@@ -58,6 +58,14 @@ const AIR_PLANNER_OPTION_ID = 'air-planner-ceiling-vent';
 const CLOSET_BREEZE_OPTION_ID = 'closet-breeze-dehumidifier';
 const CLOTHING_CARE_APPLIANCE_OPTION_ID = 'lg-styler-sc5mbr53';
 const SILENT_RANGE_HOOD_OPTION_ID = 'silent-range-hood';
+export const DEFAULT_GAS_COOKTOP_ASSET_ID = 'bunfirvil-default-navien-magic-gas-cooktop-3';
+export const DEFAULT_RANGE_HOOD_ASSET_ID = 'bunfirvil-default-kitchen-range-hood';
+export const COOKTOP_OPTION_IDS = Object.freeze([
+  'electric-cooktop-erh-3903',
+  'induction-cooktop-bei3asb4bi',
+  'induction-cooktop-nz63b5056ak',
+] as const);
+const COOKTOP_OPTION_ID_SET = new Set<string>(COOKTOP_OPTION_IDS);
 const BUILT_IN_DISHWASHER_OPTION_ID = 'dishwasher-built-in-die6pt';
 const REFRIGERATOR_BASIC_OPTION_ID = 'refrigerator-cabinet-pet-basic';
 const REFRIGERATOR_BESPOKE_OPTION_ID = 'refrigerator-cabinet-bespoke-alt2';
@@ -125,6 +133,21 @@ export const BUNDANG_OPTION_DISPLAY_OVERRIDES: Readonly<Record<string, Partial<P
   [SILENT_RANGE_HOOD_OPTION_ID]: Object.freeze({
     label: '주방 저소음 렌지후드',
     description: 'D-사일런트 후드 구성입니다.',
+  }),
+  'electric-cooktop-erh-3903': Object.freeze({
+    label: '나비엔 매직 인덕션 2구+하이라이트1구(ERH-3903)',
+    description: '기본 제공 3구 가스쿡탑을 2구 인덕션+1구 하이라이트 하이브리드 쿡탑으로 교체합니다.',
+    previewUrl: 'assets/options/previews/electric-cooktop-erh-3903-v2.png',
+  }),
+  'induction-cooktop-bei3asb4bi': Object.freeze({
+    label: 'LG 인덕션 3구(BEI3ASB4BI)',
+    description: '기본 제공 3구 가스쿡탑을 LG 빌트인 인덕션 3구로 교체합니다.',
+    previewUrl: 'assets/options/previews/induction-cooktop-bei3asb4bi-v2.png',
+  }),
+  'induction-cooktop-nz63b5056ak': Object.freeze({
+    label: '삼성 인덕션 3구(NZ63B5056AK)',
+    description: '기본 제공 3구 가스쿡탑을 삼성 플렉스존 인덕션 3구로 교체합니다.',
+    previewUrl: 'assets/options/previews/induction-cooktop-nz63b5056ak-v2.png',
   }),
   [BUILT_IN_DISHWASHER_OPTION_ID]: Object.freeze({
     label: '빌트인 식기세척기',
@@ -579,6 +602,96 @@ function isLegacyAirPlannerUnitProp(prop: ApartmentInteriorProp): boolean {
   return prop.assetId === AIR_PLANNER_OPTION_ID || prop.anchorId === 'appliances.airPlanner';
 }
 
+function kitchenAnchor(geometry: ApartmentGeometry, id: 'cooktop' | 'hood'): Record<string, unknown> | null {
+  const optionAnchors = record(geometry.optionAnchors);
+  const kitchen = record(optionAnchors?.kitchen);
+  return record(kitchen?.[id]);
+}
+
+function selectedCooktopAssetId(selected: ReadonlySet<string>): string {
+  return COOKTOP_OPTION_IDS.find((assetId) => selected.has(assetId)) || DEFAULT_GAS_COOKTOP_ASSET_ID;
+}
+
+function isKitchenCooktopProp(prop: ApartmentInteriorProp): boolean {
+  return prop.installationRole === 'kitchen-cooktop'
+    || prop.anchorId === 'kitchen.cooktop'
+    || COOKTOP_OPTION_ID_SET.has(String(prop.assetId || ''))
+    || prop.assetId === DEFAULT_GAS_COOKTOP_ASSET_ID;
+}
+
+function isKitchenRangeHoodProp(prop: ApartmentInteriorProp): boolean {
+  return prop.installationRole === 'kitchen-range-hood'
+    || prop.anchorId === 'kitchen.hood'
+    || prop.assetId === SILENT_RANGE_HOOD_OPTION_ID
+    || prop.assetId === DEFAULT_RANGE_HOOD_ASSET_ID;
+}
+
+export function isBundangManagedKitchenApplianceProp(prop: ApartmentInteriorProp): boolean {
+  return isKitchenCooktopProp(prop) || isKitchenRangeHoodProp(prop);
+}
+
+function kitchenCooktopAndHoodProps(
+  geometry: ApartmentGeometry,
+  unitType: UnitTypeId,
+  selected: ReadonlySet<string>,
+  planVariant?: string,
+): ApartmentInteriorProp[] {
+  const cooktop = kitchenAnchor(geometry, 'cooktop');
+  const hood = kitchenAnchor(geometry, 'hood');
+  const cooktopPosition = point(cooktop?.positionMeters);
+  const hoodPosition = point(hood?.positionMeters);
+  const cooktopAssetId = selectedCooktopAssetId(selected);
+  const cooktopSourceOptionId = COOKTOP_OPTION_ID_SET.has(cooktopAssetId) ? cooktopAssetId : undefined;
+  const cooktopDimensions: Record<string, [number, number, number]> = {
+    [DEFAULT_GAS_COOKTOP_ASSET_ID]: [.59, .51, .055],
+    'electric-cooktop-erh-3903': [.59, .52, .06],
+    'induction-cooktop-bei3asb4bi': [.58, .52, .059],
+    'induction-cooktop-nz63b5056ak': [.60, .52, .048],
+  };
+  const hoodYaw = Number(hood?.yawDeg);
+  const variantYawOffset = planVariantKey(planVariant) === 'B' ? 180 : 0;
+  const cooktopYaw = (Number.isFinite(hoodYaw) ? hoodYaw : Number(cooktop?.yawDeg) || 0) + variantYawOffset;
+  const result: ApartmentInteriorProp[] = [];
+  if (cooktopPosition) {
+    result.push({
+      id: `inspection-${unitType}-kitchen-cooktop`,
+      assetId: cooktopAssetId,
+      roomZoneId: 'kitchen-dining',
+      positionMeters: cooktopPosition,
+      dimensionsMeters: cooktopDimensions[cooktopAssetId],
+      yawDeg: normalizedYaw(cooktopYaw),
+      mountHeightMeters: .93,
+      materialVariantId: cooktopAssetId === DEFAULT_GAS_COOKTOP_ASSET_ID ? 'brushed-chrome' : 'charcoal-accent',
+      sourceOptionId: cooktopSourceOptionId,
+      anchorId: 'kitchen.cooktop',
+      installationRole: 'kitchen-cooktop',
+      collisionMode: 'visual-only',
+      measurementObstacle: false,
+      displayNameKo: cooktopSourceOptionId ? undefined : '나비엔 매직 3구 가스쿡탑',
+    });
+  }
+  if (hoodPosition) {
+    const silent = selected.has(SILENT_RANGE_HOOD_OPTION_ID);
+    result.push({
+      id: `inspection-${unitType}-kitchen-range-hood`,
+      assetId: silent ? SILENT_RANGE_HOOD_OPTION_ID : DEFAULT_RANGE_HOOD_ASSET_ID,
+      roomZoneId: 'kitchen-dining',
+      positionMeters: hoodPosition,
+      dimensionsMeters: silent ? [.9, .5, .42] : [.75, .46, .34],
+      yawDeg: normalizedYaw((Number(hood?.yawDeg) || 0) + variantYawOffset),
+      mountHeightMeters: 1.48,
+      materialVariantId: 'pet-warm-ivory',
+      sourceOptionId: silent ? SILENT_RANGE_HOOD_OPTION_ID : undefined,
+      anchorId: 'kitchen.hood',
+      installationRole: 'kitchen-range-hood',
+      collisionMode: 'visual-only',
+      measurementObstacle: false,
+      displayNameKo: silent ? undefined : '기본 주방 렌지후드',
+    });
+  }
+  return result;
+}
+
 function refineWidePlankAndVentilatorProp(prop: ApartmentInteriorProp): ApartmentInteriorProp {
   if (prop.assetId === WIDE_PLANK_FLOOR_OPTION_ID) {
     return { ...prop, sourceOptionId: WIDE_PLANK_FLOOR_OPTION_ID };
@@ -720,7 +833,9 @@ export function refineBundangOptionProps(
   const props = baseProps
     .filter((prop) => !isLegacyEntryLivingOptionProp(prop)
       && !isLegacyPrecisionStorageProp(prop)
-      && (!airPlannerRoomUnits.length || !isLegacyAirPlannerUnitProp(prop)))
+      && (!airPlannerRoomUnits.length || !isLegacyAirPlannerUnitProp(prop))
+      && !isKitchenCooktopProp(prop)
+      && !isKitchenRangeHoodProp(prop))
     .map((prop) => refineRefrigeratorCabinetProp(geometry, selected, prop, planVariant))
     .filter((prop): prop is ApartmentInteriorProp => Boolean(prop))
     .map(refineWidePlankAndVentilatorProp)
@@ -736,6 +851,7 @@ export function refineBundangOptionProps(
   }
   if (selected.has(DRESS_ROOM_POWDER_STORAGE_OPTION_ID)) props.push(...dressRoomPowderStorageProps(geometry, layout, planVariant));
   if (airPlannerRoomUnits.length) props.push(...airPlannerRoomUnits);
+  props.push(...kitchenCooktopAndHoodProps(geometry, unitType, selected, planVariant));
   return props;
 }
 

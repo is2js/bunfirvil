@@ -14,6 +14,7 @@ import { castsExteriorStructureShadow } from './structure-shadow';
 import {
   bundangEditorSelectionPropIds,
   bundangPreciseEditorPickOnly,
+  isBundangManagedKitchenApplianceProp,
   refineBundangOptionProps,
   replacedBundangOpeningIds,
 } from './bundang-option-layout';
@@ -102,6 +103,7 @@ const DEFAULT_VARIANTS: Record<string, Record<string, string>> = {
   'system-ac-light-gray': { primary: '#d8dadd', secondary: '#eef0f2', accent: '#aeb3b9' },
   'system-ac-premium-light-gray': { primary: '#e4e6e8', secondary: '#f5f6f7', accent: '#b8bdc3' },
   'clear-glass-chrome': { primary: '#c9cece', secondary: '#d9f0ef', accent: '#6f797a' },
+  'black-ceramic-glass': { primary: '#111416', secondary: '#5d6264', accent: '#050607' },
 };
 
 // 원본 three-pbr-renderer의 구조 결합형 procedural recipes. 독립 카탈로그 행이
@@ -264,6 +266,82 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
       { shape: 'box', scale: [0.68, 0.055, 0.035], offset: [0, 0.55, 0.16], materialRole: 'secondary' },
     ],
   })),
+  {
+    assetId: 'bunfirvil-default-navien-magic-gas-cooktop-3', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultMountHeightMeters: .93, defaultDimensionsMeters: [.59, .51, .055],
+    parts: [
+      { shape: 'box', scale: [1, 1, .34], offset: [0, 0, .18], materialRole: 'gas-cooktop-body' },
+      ...([[-.26, -.22, .24], [-.26, .20, .20], [.22, -.02, .29]] as Array<[number, number, number]>).flatMap(([x, z, size]): RuntimePart[] => ([
+        { shape: 'vertical-cylinder', scale: [size, size, .20], offset: [x, z, .48], materialRole: 'gas-burner-rim' },
+        { shape: 'vertical-cylinder', scale: [size * .62, size * .62, .26], offset: [x, z, .58], materialRole: 'gas-burner' },
+        { shape: 'box', scale: [size * 1.55, .035, .17], offset: [x, z, .73], materialRole: 'gas-grate' },
+        { shape: 'box', scale: [size * 1.55, .035, .17], offset: [x, z, .73], materialRole: 'gas-grate', yawDeg: 90 },
+      ])),
+      ...[.10, .21, .32, .43].map((x): RuntimePart => ({
+        shape: 'vertical-cylinder', scale: [.068, .068, .28], offset: [x, .38, .54], materialRole: 'gas-control-knob',
+      })),
+    ],
+  },
+  {
+    assetId: 'electric-cooktop-erh-3903', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultMountHeightMeters: .93, defaultDimensionsMeters: [.59, .52, .06],
+    parts: [
+      { shape: 'box', scale: [1, 1, .32], offset: [0, 0, .17], materialRole: 'cooktop-glass' },
+      { shape: 'torus', scale: [.30, .30, .045], offset: [-.25, -.20, .50], materialRole: 'cooktop-zone-ring' },
+      { shape: 'torus', scale: [.27, .27, .045], offset: [-.25, .18, .50], materialRole: 'cooktop-zone-ring' },
+      { shape: 'torus', scale: [.34, .34, .055], offset: [.23, -.06, .52], materialRole: 'cooktop-radiant-ring' },
+      { shape: 'torus', scale: [.23, .23, .045], offset: [.23, -.06, .55], materialRole: 'cooktop-radiant-ring' },
+      ...[.18, .24, .30, .36, .42].map((x): RuntimePart => ({ shape: 'box', scale: [.018, .028, .075], offset: [x, .39, .52], materialRole: 'cooktop-control-led' })),
+    ],
+  },
+  {
+    assetId: 'induction-cooktop-bei3asb4bi', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultMountHeightMeters: .93, defaultDimensionsMeters: [.58, .52, .059],
+    parts: [
+      { shape: 'box', scale: [1, 1, .32], offset: [0, 0, .17], materialRole: 'cooktop-glass' },
+      { shape: 'box', scale: [.31, .014, .035], offset: [-.24, -.22, .49], materialRole: 'cooktop-zone-ring' },
+      { shape: 'box', scale: [.31, .014, .035], offset: [-.24, .17, .49], materialRole: 'cooktop-zone-ring' },
+      { shape: 'torus', scale: [.37, .37, .038], offset: [.23, -.03, .50], materialRole: 'cooktop-zone-ring' },
+      { shape: 'box', scale: [.46, .012, .032], offset: [0, .39, .50], materialRole: 'cooktop-control-line' },
+      ...[-.18, -.09, 0, .09, .18].map((x): RuntimePart => ({ shape: 'vertical-cylinder', scale: [.018, .018, .07], offset: [x, .39, .52], materialRole: 'cooktop-control-mark' })),
+    ],
+  },
+  {
+    assetId: 'induction-cooktop-nz63b5056ak', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultMountHeightMeters: .93, defaultDimensionsMeters: [.60, .52, .048],
+    parts: [
+      { shape: 'box', scale: [1, 1, .34], offset: [0, 0, .18], materialRole: 'cooktop-glass' },
+      { shape: 'box', scale: [.34, .014, .04], offset: [-.24, -.21, .51], materialRole: 'cooktop-zone-ring' },
+      { shape: 'box', scale: [.34, .014, .04], offset: [-.24, .17, .51], materialRole: 'cooktop-zone-ring' },
+      { shape: 'box', scale: [.012, .37, .04], offset: [-.41, -.02, .51], materialRole: 'cooktop-zone-ring' },
+      { shape: 'box', scale: [.012, .37, .04], offset: [-.07, -.02, .51], materialRole: 'cooktop-zone-ring' },
+      { shape: 'torus', scale: [.39, .39, .045], offset: [.24, -.02, .53], materialRole: 'cooktop-zone-ring' },
+      { shape: 'box', scale: [.42, .012, .038], offset: [0, .39, .52], materialRole: 'cooktop-control-line' },
+      ...[-.13, -.04, .05, .14].map((x): RuntimePart => ({ shape: 'box', scale: [.022, .026, .08], offset: [x, .39, .56], materialRole: 'cooktop-control-led' })),
+    ],
+  },
+  {
+    assetId: 'bunfirvil-default-kitchen-range-hood', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultMountHeightMeters: 1.48, defaultDimensionsMeters: [.75, .46, .34],
+    parts: [
+      { shape: 'box', scale: [1, .92, .32], offset: [0, -.03, .17], materialRole: 'hood-body' },
+      { shape: 'box', scale: [.88, .72, .08], offset: [0, .06, .035], materialRole: 'hood-filter' },
+      { shape: 'box', scale: [.76, .22, .60], offset: [0, -.31, .67], materialRole: 'hood-body' },
+      ...[-.11, 0, .11].map((x): RuntimePart => ({ shape: 'vertical-cylinder', scale: [.026, .026, .045], offset: [x, .43, .09], materialRole: 'hood-control' })),
+    ],
+  },
+  {
+    assetId: 'silent-range-hood', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultMountHeightMeters: 1.48, defaultDimensionsMeters: [.90, .50, .42],
+    parts: [
+      { shape: 'box', scale: [1, .96, .28], offset: [0, -.01, .15], materialRole: 'hood-body' },
+      { shape: 'box', scale: [.42, .72, .075], offset: [-.24, .07, .035], materialRole: 'hood-filter' },
+      { shape: 'box', scale: [.42, .72, .075], offset: [.24, .07, .035], materialRole: 'hood-filter' },
+      { shape: 'box', scale: [.78, .23, .62], offset: [0, -.34, .66], materialRole: 'hood-body' },
+      { shape: 'box', scale: [.20, .045, .12], offset: [.22, .48, .23], materialRole: 'hood-display' },
+      ...[.15, .20, .25, .30].map((x): RuntimePart => ({ shape: 'vertical-cylinder', scale: [.018, .018, .045], offset: [x, .49, .23], materialRole: 'hood-display-led' })),
+    ],
+  },
   {
     assetId: 'refrigerator-cabinet-pet-basic', rendererKind: 'procedural', mountingKind: 'floor',
     defaultDimensionsMeters: [1.35, 0.72, 2.2],
@@ -1470,7 +1548,12 @@ export class ThreeWorldRenderer {
       runtimeProps,
       object.planVariant,
     ), this.selectedOptionIds);
-    const props = mergeEditorPropsWithBase(baseProps, this.editorProps);
+    const editorProps = this.editorProps?.flatMap((prop): ApartmentInteriorProp[] => {
+      if (!isBundangManagedKitchenApplianceProp(prop)) return [prop];
+      // 기본 제공·옵션 교체형 주방 기구는 팔레트 독립 복제/삭제로 잔존하지 않게 한다.
+      return prop.sourcePropId ? [{ ...prop, localDeleted: false }] : [];
+    }) || null;
+    const props = mergeEditorPropsWithBase(baseProps, editorProps);
     const airPlannerRoomUnits = props.filter((prop) => prop.assetId === 'air-planner-ceiling-vent'
       && String(prop.anchorId || '').startsWith('bunfirvil.options.airPlannerRoom.'));
     this.canvas.dataset.airPlannerRoomUnitCount = String(airPlannerRoomUnits.length);
@@ -1489,6 +1572,22 @@ export class ThreeWorldRenderer {
       delete this.canvas.dataset.refrigeratorYawDeg;
       delete this.canvas.dataset.refrigeratorPlanVariant;
       delete this.canvas.dataset.refrigeratorFacingTarget;
+    }
+    const cooktop = props.find((prop) => prop.installationRole === 'kitchen-cooktop');
+    const rangeHood = props.find((prop) => prop.installationRole === 'kitchen-range-hood');
+    if (cooktop) {
+      this.canvas.dataset.kitchenCooktopAssetId = String(cooktop.assetId || '');
+      this.canvas.dataset.kitchenCooktopYawDeg = String(cooktop.yawDeg ?? '');
+    } else {
+      delete this.canvas.dataset.kitchenCooktopAssetId;
+      delete this.canvas.dataset.kitchenCooktopYawDeg;
+    }
+    if (rangeHood) {
+      this.canvas.dataset.kitchenRangeHoodAssetId = String(rangeHood.assetId || '');
+      this.canvas.dataset.kitchenRangeHoodYawDeg = String(rangeHood.yawDeg ?? '');
+    } else {
+      delete this.canvas.dataset.kitchenRangeHoodAssetId;
+      delete this.canvas.dataset.kitchenRangeHoodYawDeg;
     }
     for (const prop of props) if (prop.id) this.renderedProps.set(String(prop.id), { ...prop, positionMeters: [...(prop.positionMeters || [])] });
     this.canvas.dataset.apartmentPropCount = String(props.length);
@@ -1702,6 +1801,9 @@ export class ThreeWorldRenderer {
       } else if (shape === 'ellipsoid') {
         geometry = new THREE.SphereGeometry(0.5, 20, 12);
         geometry.scale(width, height, depth);
+      } else if (shape === 'torus') {
+        geometry = new THREE.TorusGeometry(Math.max(.012, Math.min(width, depth) * .45), Math.max(.004, height * .5), 8, 32);
+        geometry.rotateX(Math.PI / 2);
       } else if (shape === 'rounded-l-shelf') {
         geometry = this.roundedShelf(width, depth, height);
       } else {
@@ -1720,6 +1822,24 @@ export class ThreeWorldRenderer {
               ? this.material('#d9dde0', { roughness: .56, metalness: .08 })
               : role === 'air-duct-rim'
                 ? this.material('#f1f3f4', { roughness: .34, metalness: .06 })
+          : role === 'cooktop-glass'
+            ? this.material('#07090a', { roughness: .16, metalness: .18 })
+            : role === 'cooktop-zone-ring' || role === 'cooktop-control-line' || role === 'cooktop-control-mark'
+              ? this.material('#8d9497', { roughness: .34, metalness: .42 })
+              : role === 'cooktop-radiant-ring' || role === 'cooktop-control-led' || role === 'hood-display-led'
+                ? this.material('#d34a31', { roughness: .24, metalness: .06 })
+                : role === 'gas-cooktop-body' || role === 'gas-burner-rim' || role === 'gas-control-knob'
+                  ? this.material('#bcc1c2', { roughness: .34, metalness: .72 })
+                  : role === 'gas-burner' || role === 'gas-grate'
+                    ? this.material('#17191a', { roughness: .58, metalness: .44 })
+                    : role === 'hood-body'
+                      ? this.material('#d6d8d7', { roughness: .42, metalness: .36 })
+                      : role === 'hood-filter'
+                        ? this.material('#777d7e', { roughness: .66, metalness: .48 })
+                        : role === 'hood-display'
+                          ? this.material('#121719', { roughness: .24, metalness: .28 })
+                          : role === 'hood-control'
+                            ? this.material('#5f6565', { roughness: .48, metalness: .42 })
           : role === 'styler-frame' || role === 'vent-dark'
             ? this.material('#25282a', { roughness: .52, metalness: .18 })
             : role === 'styler-front'

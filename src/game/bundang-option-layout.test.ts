@@ -82,6 +82,18 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
       .toBe('assets/options/previews/refrigerator-cabinet-bespoke-alt2-v2.png');
     expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['refrigerator-cabinet-lg-built-in']?.previewUrl)
       .toBe('assets/options/previews/refrigerator-cabinet-lg-built-in-v2.png');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['electric-cooktop-erh-3903']).toMatchObject({
+      label: '나비엔 매직 인덕션 2구+하이라이트1구(ERH-3903)',
+      previewUrl: 'assets/options/previews/electric-cooktop-erh-3903-v2.png',
+    });
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['induction-cooktop-bei3asb4bi']).toMatchObject({
+      label: 'LG 인덕션 3구(BEI3ASB4BI)',
+      previewUrl: 'assets/options/previews/induction-cooktop-bei3asb4bi-v2.png',
+    });
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['induction-cooktop-nz63b5056ak']).toMatchObject({
+      label: '삼성 인덕션 3구(NZ63B5056AK)',
+      previewUrl: 'assets/options/previews/induction-cooktop-nz63b5056ak-v2.png',
+    });
     expect(BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES['air-planner-ceiling-vent']?.[0])
       .toMatchObject({ label: '조명특화 연동 -15만원', prices: { '55A': 4_830_000 } });
     expect(BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES['closet-breeze-dehumidifier']?.[0])
@@ -123,11 +135,12 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
         const builtIn = optionProps(geometry, unitType, [
           'refrigerator-cabinet-pet-basic',
           'refrigerator-cabinet-bespoke-alt2',
-        ], [source], variant);
+        ], [source], variant).filter((prop) => prop.installationRole === 'refrigerator-cabinet');
         expect(builtIn).toHaveLength(1);
         expect(builtIn[0].assetId, `${unitType}:${variant}:built-in`).toBe('refrigerator-cabinet-bespoke-alt2');
 
-        const restored = optionProps(geometry, unitType, ['refrigerator-cabinet-pet-basic'], [source], variant);
+        const restored = optionProps(geometry, unitType, ['refrigerator-cabinet-pet-basic'], [source], variant)
+          .filter((prop) => prop.installationRole === 'refrigerator-cabinet');
         expect(restored).toHaveLength(1);
         expect(restored[0].assetId, `${unitType}:${variant}:restored`).toBe('refrigerator-cabinet-pet-basic');
         expect(restored[0].sourceOptionId).toBe('refrigerator-cabinet-pet-basic');
@@ -143,6 +156,73 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
         const front = [Math.sin(placement.worldYaw), Math.cos(placement.worldYaw)];
         const towardKitchen = [kitchenWorld.x - placement.center.x, kitchenWorld.y - placement.center.y];
         expect(front[0] * towardKitchen[0] + front[1] * towardKitchen[1], `${unitType}:${variant}:front`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('4평형 A/B에서 기본 쿡탑·후드를 항상 1개 유지하고 옵션을 같은 앵커에서 즉시 교체한다', async () => {
+    const apartments = await apartmentsByUnit();
+    const authoredYaw: Record<string, number> = { '51A': 0, '55A': 0, '55B': 180, '59A': 0 };
+    const cooktopOptions = [
+      'electric-cooktop-erh-3903',
+      'induction-cooktop-bei3asb4bi',
+      'induction-cooktop-nz63b5056ak',
+    ];
+    for (const [unitType, apartment] of apartments) {
+      const geometry = apartment.geometry;
+      expect(geometry, `${unitType}:geometry`).toBeTruthy();
+      if (!geometry) continue;
+      const kitchen = (geometry.optionAnchors as { kitchen?: {
+        cooktop?: { positionMeters?: number[] };
+        hood?: { positionMeters?: number[] };
+      } } | undefined)?.kitchen;
+      for (const variant of ['A', 'B'] as const) {
+        const expectedYaw = (authoredYaw[unitType] + (variant === 'B' ? 180 : 0)) % 360;
+        const staleRuntimeProps: ApartmentInteriorProp[] = [
+          {
+            id: `inspection-${unitType}-kitchen-cooktop`, assetId: 'induction-cooktop-nz63b5056ak',
+            anchorId: 'kitchen.cooktop', installationRole: 'kitchen-cooktop', positionMeters: [0, 0],
+          },
+          {
+            id: `inspection-${unitType}-kitchen-range-hood`, assetId: 'silent-range-hood',
+            anchorId: 'kitchen.hood', installationRole: 'kitchen-range-hood', positionMeters: [0, 0],
+          },
+        ];
+        const defaults = optionProps(geometry, unitType, [], staleRuntimeProps, variant);
+        const defaultCooktops = defaults.filter((prop) => prop.installationRole === 'kitchen-cooktop');
+        const defaultHoods = defaults.filter((prop) => prop.installationRole === 'kitchen-range-hood');
+        expect(defaultCooktops, `${unitType}:${variant}:default-cooktop`).toHaveLength(1);
+        expect(defaultHoods, `${unitType}:${variant}:default-hood`).toHaveLength(1);
+        expect(defaultCooktops[0]).toMatchObject({
+          id: `inspection-${unitType}-kitchen-cooktop`,
+          assetId: 'bunfirvil-default-navien-magic-gas-cooktop-3',
+          anchorId: 'kitchen.cooktop',
+          positionMeters: kitchen?.cooktop?.positionMeters,
+          yawDeg: expectedYaw,
+        });
+        expect(defaultHoods[0]).toMatchObject({
+          id: `inspection-${unitType}-kitchen-range-hood`,
+          assetId: 'bunfirvil-default-kitchen-range-hood',
+          anchorId: 'kitchen.hood',
+          positionMeters: kitchen?.hood?.positionMeters,
+          yawDeg: expectedYaw,
+        });
+        for (const optionId of cooktopOptions) {
+          const props = optionProps(geometry, unitType, [optionId], staleRuntimeProps, variant);
+          const cooktops = props.filter((prop) => prop.installationRole === 'kitchen-cooktop');
+          expect(cooktops, `${unitType}:${variant}:${optionId}`).toHaveLength(1);
+          expect(cooktops[0]).toMatchObject({
+            id: `inspection-${unitType}-kitchen-cooktop`, assetId: optionId, sourceOptionId: optionId,
+            anchorId: 'kitchen.cooktop', yawDeg: expectedYaw,
+          });
+        }
+        const silent = optionProps(geometry, unitType, ['silent-range-hood'], staleRuntimeProps, variant)
+          .filter((prop) => prop.installationRole === 'kitchen-range-hood');
+        expect(silent).toHaveLength(1);
+        expect(silent[0]).toMatchObject({
+          id: `inspection-${unitType}-kitchen-range-hood`, assetId: 'silent-range-hood',
+          sourceOptionId: 'silent-range-hood', anchorId: 'kitchen.hood', yawDeg: expectedYaw,
+        });
       }
     }
   });
@@ -532,5 +612,25 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     expect(lg?.parts?.filter((part) => part.materialRole === 'refrigerator-front')).toHaveLength(2);
     expect(lg?.parts?.filter((part) => part.materialRole === 'refrigerator-front-alt')).toHaveLength(3);
     expect(lg?.parts?.filter((part) => part.materialRole === 'refrigerator-storage-front')).toHaveLength(2);
+  });
+
+  it('기본 가스쿡탑·3종 전기쿡탑과 기본/D-사일런트 후드를 서로 다른 정밀 recipe로 제공한다', () => {
+    const assets = new Map(STRUCTURAL_PROP_ASSETS.map((asset) => [asset.assetId, asset]));
+    const gas = assets.get('bunfirvil-default-navien-magic-gas-cooktop-3');
+    expect(gas?.parts?.filter((part) => part.materialRole === 'gas-burner')).toHaveLength(3);
+    expect(gas?.parts?.filter((part) => part.materialRole === 'gas-control-knob')).toHaveLength(4);
+
+    const erh = assets.get('electric-cooktop-erh-3903');
+    expect(erh?.parts?.filter((part) => part.materialRole === 'cooktop-radiant-ring').length).toBeGreaterThanOrEqual(2);
+    const lg = assets.get('induction-cooktop-bei3asb4bi');
+    expect(lg?.parts?.filter((part) => part.materialRole === 'cooktop-control-led')).toHaveLength(0);
+    const samsung = assets.get('induction-cooktop-nz63b5056ak');
+    expect(samsung?.parts?.filter((part) => part.materialRole === 'cooktop-control-led')).toHaveLength(4);
+
+    const basicHood = assets.get('bunfirvil-default-kitchen-range-hood');
+    const silentHood = assets.get('silent-range-hood');
+    expect(basicHood?.parts?.filter((part) => part.materialRole === 'hood-filter')).toHaveLength(1);
+    expect(silentHood?.parts?.filter((part) => part.materialRole === 'hood-filter')).toHaveLength(2);
+    expect(silentHood?.parts?.some((part) => part.materialRole === 'hood-display')).toBe(true);
   });
 });

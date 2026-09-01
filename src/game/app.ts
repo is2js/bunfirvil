@@ -10,6 +10,7 @@ import { highlightedMessageParts } from './highlighted-message';
 import { interiorSelectionName } from './interior-selection-name';
 import { optionPropsForSelection, optionSourceIdForProp } from './option-prop-selection';
 import { centeredScrollTop } from './palette-scroll';
+import { COOKTOP_OPTION_IDS } from './bundang-option-layout';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import { stageOptionChipActionFromPath } from './stage-option-chip-action';
 import {
@@ -302,8 +303,13 @@ export class ShowcaseApp {
       const response = await fetch(this.interiorCatalogUrl);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json() as { assets?: InteriorAssetEntry[] };
+      const optionManagedKitchenAssets = new Set<string>([...COOKTOP_OPTION_IDS, 'silent-range-hood']);
       this.interiorAssets = (payload.assets || []).filter((asset) =>
-        asset.assetId && asset.displayNameKo && asset.category !== 'notice' && asset.mountingKind !== 'room-finish');
+        asset.assetId
+        && asset.displayNameKo
+        && asset.category !== 'notice'
+        && asset.mountingKind !== 'room-finish'
+        && !optionManagedKitchenAssets.has(asset.assetId));
       this.renderFurniturePalette();
     } catch (error) {
       console.warn('[bunfirvil] furniture palette unavailable.', error);
@@ -2261,7 +2267,10 @@ export class ShowcaseApp {
     };
     this.get<HTMLElement>('#option-list').innerHTML = renderedOptions.length
       ? groupMutuallyExclusiveOptions(renderedOptions).map((group) => {
-          const cards = group.options.map(optionMarkup).join('');
+          const baseline = !this.paletteAppliedOnly && COOKTOP_OPTION_IDS.some((id) => group.options.some((option) => option.id === id))
+            ? this.defaultCooktopCard()
+            : '';
+          const cards = `${baseline}${group.options.map(optionMarkup).join('')}`;
           if (!group.exclusiveGroup) return cards;
           return `
             <section class="option-choice-group" data-exclusive-group="${escapeHtml(group.exclusiveGroup)}" aria-label="택1 선택 항목">
@@ -2565,6 +2574,22 @@ export class ShowcaseApp {
         <span class="check-ui" aria-hidden="true"></span>
       </label>
     `;
+  }
+
+  private defaultCooktopCard(): string {
+    const active = !COOKTOP_OPTION_IDS.some((id) => this.selectedOptionIds.includes(id));
+    const previewUrl = resolveProjectUrl('assets/options/previews/cooktop-gas-3burner-default-v2.png');
+    return `
+      <article class="option-card option-default-card ${active ? 'is-default-active' : ''}" aria-label="미선택 시 기본 제공 나비엔 매직 3구 가스쿡탑">
+        <span class="option-preview"><img src="${escapeHtml(previewUrl)}" alt="" loading="lazy" /><em>${active ? '기본 설치' : '대체됨'}</em></span>
+        <span class="option-copy">
+          <span class="option-category">기본 제공 · 미선택 시</span>
+          <b>나비엔 매직 3구 가스쿡탑</b>
+          <small>유상 전기쿡탑을 선택하지 않으면 주방 상판에 기본 설치됩니다.</small>
+          <strong>+ 0원</strong>
+        </span>
+        <span class="default-option-state" aria-hidden="true">${active ? '기본' : 'ALT 선택'}</span>
+      </article>`;
   }
 
   private moveActiveActor(time: number): void {

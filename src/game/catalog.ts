@@ -3,6 +3,7 @@ import type { BOptionEntry, ShowcaseCatalog, StaticMapEntry } from './types';
 import {
   BUNDANG_OPTION_DISPLAY_OVERRIDES,
   BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES,
+  COOKTOP_OPTION_IDS,
 } from './bundang-option-layout';
 
 const MAP_IDS = [
@@ -206,10 +207,16 @@ async function normalizeExternalOptions(catalogUrl: string): Promise<BOptionEntr
 }
 
 function applyBOptionDisplayOverrides(options: BOptionEntry[]): BOptionEntry[] {
+  const cooktopOrder = new Map<string, number>(COOKTOP_OPTION_IDS.map((id, index) => [id, index]));
   return options.map((option) => {
     const override = BUNDANG_OPTION_DISPLAY_OVERRIDES[option.id];
     const priceVariants = BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES[option.id] || option.priceVariants;
     return override || priceVariants ? { ...option, ...override, priceVariants } : option;
+  }).sort((left, right) => {
+    const leftOrder = cooktopOrder.get(left.id);
+    const rightOrder = cooktopOrder.get(right.id);
+    if (leftOrder === undefined || rightOrder === undefined) return 0;
+    return leftOrder - rightOrder;
   });
 }
 
