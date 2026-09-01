@@ -1,5 +1,7 @@
 import { escapeHtml, formatBytes, resolveProjectUrl, resolveReferencedUrl } from './base';
 import { loadCatalog, mapFromQuery } from './catalog';
+import { hasValidMapQuery } from './household-catalog';
+import { waitForHouseholdSelection } from './household-selector';
 import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { ManifestEffectPlayer } from './effect-player';
 import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
@@ -61,6 +63,7 @@ import {
   writeSelectedOptions,
 } from './options';
 import { ActorView } from './sprite';
+import { resetAllBunfirvilLocalData, resetCurrentMapOptionsAndLayout } from '../shared/storage';
 import type { ThreeWorldRenderer as ThreeWorldRendererInstance } from './three-world';
 import type {
   ActorState,
@@ -249,6 +252,13 @@ export class ShowcaseApp {
   async start(): Promise<void> {
     const { catalog, fallback } = await loadCatalog();
     this.catalog = catalog;
+    if (!hasValidMapQuery(catalog.maps, window.location.search)) {
+      const selection = await waitForHouseholdSelection(this.mount, catalog, fallback);
+      const url = new URL(resolveProjectUrl(''));
+      url.searchParams.set('map', selection.mapId);
+      url.searchParams.set('variant', selection.planVariant);
+      history.replaceState(null, '', url);
+    }
     this.currentMap = mapFromQuery(catalog, window.location.search);
     this.planVariant = planVariantFromQuery(window.location.search);
     const requestedActor = new URLSearchParams(window.location.search).get('actor');
@@ -391,6 +401,7 @@ export class ShowcaseApp {
                 </div>
               </div>
               <div class="deck-actions">
+                <button type="button" id="choose-household" class="deck-text-button" title="동·층·호 다시 선택">세대 다시 선택</button>
                 <button type="button" id="reset-position" class="icon-button" title="스폰 위치로 돌아가기" aria-label="스폰 위치로 돌아가기">↺</button>
                 <button type="button" id="open-help" class="icon-button" title="조작 도움말" aria-label="조작 도움말">?</button>
               </div>
@@ -497,6 +508,7 @@ export class ShowcaseApp {
                 <h2><span>B</span> 옵션 팔레트</h2>
               </div>
               <div class="option-head-actions">
+                <button type="button" id="open-storage-manager" class="option-storage-button">저장 관리</button>
                 <a class="option-guide-link" href="${resolveProjectUrl('guides/?guide=b-option')}">옵션 가이드</a>
                 <span class="option-count" id="option-count">0</span>
               </div>
@@ -577,6 +589,31 @@ export class ShowcaseApp {
             <div><span class="help-icon">J</span><b>레이저 자동·2점 실측</b><p>첫 J는 자동 실측을 켜고, 이후 J마다 자동 ↔ 2점 실측을 전환합니다. 2점 실측은 벽·설비·가구 면에 붙는 시작점 고스트를 클릭한 뒤 원하는 공간 방향을 가리켜 처음 닿는 반대편 마감면까지 잽니다. 내부벽은 커서가 향한 방 쪽 마감면에서 시작하며 L은 마우스 방향에 가까운 X/Y축 직선 자석, Shift+휠은 수동 축 전환, Esc는 종료입니다.</p></div>
           </div>
           <p class="dialog-note">이 사이트는 시각·성능 검수용입니다. 피해, 명중, MP, 사용자 인증과 공용 저장은 처리하지 않습니다.</p>
+        </form>
+      </dialog>
+
+      <dialog id="storage-dialog" class="storage-dialog">
+        <form method="dialog">
+          <button class="dialog-close" value="close" aria-label="닫기">×</button>
+          <p class="eyebrow">LOCAL STORAGE</p>
+          <h2>저장 관리</h2>
+          <p class="storage-dialog-lead">옵션과 가구 배치는 서버가 아닌 현재 브라우저에만 저장됩니다.</p>
+          <dl class="storage-key-list">
+            <div><dt>옵션·검수</dt><dd>평형별 · A/B 공통</dd></div>
+            <div><dt>가구 배치</dt><dd>평형별 · A/B 공통</dd></div>
+            <div><dt>건축 검수</dt><dd>평형·A/B별</dd></div>
+            <div><dt>핫바</dt><dd>전체 맵 공통</dd></div>
+          </dl>
+          <div class="storage-current-scope">
+            <span>현재 초기화 범위</span>
+            <b id="storage-current-map">${escapeHtml(this.currentMap.unitType)} · A/B 공통</b>
+            <small>선택 옵션과 가구 배치만 초기화하며 검수 상태·메모, 건축 기록과 핫바는 유지합니다.</small>
+          </div>
+          <div class="storage-dialog-actions">
+            <button type="button" id="reset-current-storage">현재 평형 옵션·가구 초기화</button>
+            <button type="button" id="reset-all-storage" class="is-danger">Bunfirvil 전체 로컬 데이터 초기화</button>
+          </div>
+          <a class="storage-guide-link" href="${resolveProjectUrl('guides/?guide=local-storage')}">로컬 저장·초기화 가이드 보기 →</a>
         </form>
       </dialog>
     `;
@@ -694,6 +731,28 @@ export class ShowcaseApp {
     }, { signal });
     const dialog = this.get<HTMLDialogElement>('#help-dialog');
     this.get<HTMLButtonElement>('#open-help').addEventListener('click', () => dialog.showModal(), { signal });
+    this.get<HTMLButtonElement>('#choose-household').addEventListener('click', () => {
+      window.location.assign(resolveProjectUrl(''));
+    }, { signal });
+    const storageDialog = this.get<HTMLDialogElement>('#storage-dialog');
+    this.get<HTMLButtonElement>('#open-storage-manager').addEventListener('click', () => storageDialog.showModal(), { signal });
+    storageDialog.addEventListener('click', (event) => {
+      if (event.target === storageDialog) storageDialog.close();
+    }, { signal });
+    this.get<HTMLButtonElement>('#reset-current-storage').addEventListener('click', () => {
+      const unitType = this.currentMap.unitType;
+      if (!window.confirm(`${unitType} 평형의 A/B형과 같은 평형 세대에 공통 저장된 옵션·가구 배치를 초기화할까요? 검수 상태·메모, 건축 기록과 핫바는 유지됩니다.`)) return;
+      resetCurrentMapOptionsAndLayout(this.currentMap.id);
+      storageDialog.close();
+      void this.selectMap(this.currentMap.id, false).then(() => {
+        this.toast(`${unitType} 옵션·가구 배치를 기본값으로 초기화했습니다.`, 'success');
+      });
+    }, { signal });
+    this.get<HTMLButtonElement>('#reset-all-storage').addEventListener('click', () => {
+      if (!window.confirm('Bunfirvil의 모든 평형 옵션·가구, 검수 메모, 건축 기록과 핫바를 초기화할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+      resetAllBunfirvilLocalData();
+      window.location.assign(resolveProjectUrl(''));
+    }, { signal });
     const optionDialog = this.get<HTMLDialogElement>('#option-confirm-dialog');
     optionDialog.addEventListener('cancel', () => { optionDialog.returnValue = 'cancel'; }, { signal });
     optionDialog.addEventListener('click', (event) => {
@@ -1972,6 +2031,8 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#map-revision').textContent = map.revision;
     this.paintPlanVariant(planDefinition);
     this.get<HTMLElement>('#option-unit').textContent = map.unitType;
+    const storageMap = this.mount.querySelector<HTMLElement>('#storage-current-map');
+    if (storageMap) storageMap.textContent = `${map.unitType} · A/B 공통`;
     this.get<HTMLElement>('#metric-chunks').textContent = `${world.loadedChunkCount}/${world.requestedChunkCount}`;
     this.get<HTMLElement>('#metric-renderer').textContent = rendererLabel;
     this.minimap.setWorld(world, planDefinition.variant);

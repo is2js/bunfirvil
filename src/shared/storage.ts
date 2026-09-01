@@ -8,6 +8,8 @@ import {
 } from "./contracts";
 
 export const REVIEW_KEY_PREFIX = "bunfirvil:review:v1:";
+export const LAYOUT_KEY_PREFIX = "bunfirvil:layout:v1:";
+export const BUILDING_ADMIN_KEY_PREFIX = "bunfirvil:building-admin:v1:";
 export const HOTBAR_KEY = "bunfirvil:hotbar:v1";
 const STATUSES = new Set<ReviewStatus>(["unreviewed", "pass", "needs-work"]);
 
@@ -33,6 +35,64 @@ export function loadReview(mapId: MapId): LocalReviewV1 {
 
 export function saveReview(review: LocalReviewV1): void {
   localStorage.setItem(`${REVIEW_KEY_PREFIX}${review.mapId}`, JSON.stringify(review));
+}
+
+export interface StorageResetResult {
+  removedKeys: string[];
+  updatedKeys: string[];
+}
+
+export function resetCurrentMapOptionsAndLayout(
+  mapId: string,
+  storage: Storage = localStorage,
+  now = new Date(),
+): StorageResetResult {
+  const reviewKey = `${REVIEW_KEY_PREFIX}${mapId}`;
+  const layoutKey = `${LAYOUT_KEY_PREFIX}${mapId}`;
+  const removedKeys: string[] = [];
+  const updatedKeys: string[] = [];
+  const rawReview = storage.getItem(reviewKey);
+  if (rawReview) {
+    try {
+      const review = JSON.parse(rawReview) as Record<string, unknown>;
+      if (review && typeof review === "object" && !Array.isArray(review)) {
+        storage.setItem(reviewKey, JSON.stringify({
+          ...review,
+          selectedOptionIds: [],
+          updatedAt: now.toISOString(),
+        }));
+        updatedKeys.push(reviewKey);
+      } else {
+        storage.removeItem(reviewKey);
+        removedKeys.push(reviewKey);
+      }
+    } catch {
+      storage.removeItem(reviewKey);
+      removedKeys.push(reviewKey);
+    }
+  }
+  if (storage.getItem(layoutKey) !== null) {
+    storage.removeItem(layoutKey);
+    removedKeys.push(layoutKey);
+  }
+  return { removedKeys, updatedKeys };
+}
+
+export function isBunfirvilStorageKey(key: string): boolean {
+  return key === HOTBAR_KEY
+    || key.startsWith(REVIEW_KEY_PREFIX)
+    || key.startsWith(LAYOUT_KEY_PREFIX)
+    || key.startsWith(BUILDING_ADMIN_KEY_PREFIX);
+}
+
+export function resetAllBunfirvilLocalData(storage: Storage = localStorage): StorageResetResult {
+  const targets: string[] = [];
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index);
+    if (key && isBunfirvilStorageKey(key)) targets.push(key);
+  }
+  targets.forEach((key) => storage.removeItem(key));
+  return { removedKeys: targets, updatedKeys: [] };
 }
 
 export function validateReview(

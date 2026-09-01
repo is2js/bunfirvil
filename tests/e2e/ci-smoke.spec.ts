@@ -7,7 +7,7 @@ const MAPS = [
   ['bundang-first-village-59a-prototype', '59A'],
 ] as const;
 
-test('smokes the deployed map, living-room spawn, and B palette', async ({ page }) => {
+test('smokes household selection, deployed maps, living-room spawn, and B palette', async ({ page }) => {
   const forbiddenRequests: string[] = [];
   const consoleErrors: string[] = [];
   page.on('request', (request) => {
@@ -17,7 +17,21 @@ test('smokes the deployed map, living-room spawn, and B palette', async ({ page 
   page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
   page.on('pageerror', (error) => consoleErrors.push(error.message));
 
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
+  await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 세대 선택' })).toBeVisible();
+  await expect(page.locator('.household-building-row').first().locator('.household-building-card')).toHaveCount(4);
+  await page.setViewportSize({ width: 900, height: 900 });
+  await expect(page.locator('.household-building-row').first().locator('.household-building-card')).toHaveCount(5);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(page.locator('.household-building-row').first().locator('.household-building-card')).toHaveCount(6);
+  const household = page.locator('.household-cell[data-building="105"][data-floor="25"][data-line="1"]');
+  await household.click();
+  await expect(household).toHaveClass(/is-selected/);
+  await expect(page.locator('#household-selection-summary')).toContainText('105동 2501호 · 51A · A형 · 남동향');
+  await page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' }).click();
+  await expect(page).toHaveURL(/map=bundang-first-village-51a-prototype/);
+  await expect(page).toHaveURL(/variant=A/);
   await expect(page.locator('#stage-loader')).toHaveClass(/is-hidden/, { timeout: 30_000 });
   const mapSelect = page.getByLabel('검수맵 선택');
   for (const [mapId, unitType] of MAPS) {
