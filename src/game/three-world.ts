@@ -1204,7 +1204,12 @@ export class ThreeWorldRenderer {
       const blockGeometry = new THREE.ExtrudeGeometry(shape, { depth: height, steps: 1, bevelEnabled: false });
       blockGeometry.rotateX(Math.PI / 2);
       blockGeometry.translate(0, height, 0);
-      const mesh = new THREE.Mesh(blockGeometry, this.material('#c9c3bb', { roughness: 0.92 }));
+      const blockRole = `${block.structuralRole || ''} ${block.role || ''} ${block.kind || ''}`.toLowerCase();
+      const serviceWall = blockRole.includes('service');
+      const mesh = new THREE.Mesh(blockGeometry, this.material(serviceWall ? '#b8b0a7' : '#c9c3bb', {
+        roughness: serviceWall ? 0.94 : 0.92,
+        mapId: serviceWall ? String(geometry.materials?.plaster || 'bundang-55b-warm-gray-wall-v1') : undefined,
+      }));
       mesh.castShadow = false;
       mesh.receiveShadow = false;
       this.structureRoot.add(mesh);

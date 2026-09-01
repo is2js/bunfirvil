@@ -111,7 +111,8 @@ export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLa
     bedroomOneStorage: { roomId: 'bedroom-1', edge: 'east', featureNearestRoomId: 'dress-room' },
     dressRoomPowderStorage: { roomId: 'dress-room', edge: 'east', featureNearestRoomId: 'bedroom-2' },
     variantFacingRules: {
-      A: { powderVanityYawOffsetDeg: 180 },
+      // A형은 동측 벽 기준 yaw 자체가 거울을 벽으로 향하게 하므로 추가 180도 보정을 하지 않는다.
+      A: {},
       B: { bedroomOneYawOffsetDeg: 180, powderVanityYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
     },
     designWallRuns: [
@@ -132,7 +133,8 @@ export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLa
     dressRoomPowderStorage: { roomId: 'dress-room', edge: 'west', featureNearestRoomId: 'bedroom-2' },
     variantFacingRules: {
       A: { bedroomOneYawOffsetDeg: 180, powderVanityYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
-      B: { powderVanityYawOffsetDeg: 180 },
+      // B형 평면 변환이 전면을 함께 반전하므로 화장대에는 중복 180도 보정을 적용하지 않는다.
+      B: {},
     },
     designWallRuns: [
       { id: 'living-south', roomZoneId: 'living', segmentIds: ['outer-south-living-before', 'outer-south-living-sill', 'outer-south-living-lintel', 'outer-south-living-after'], interiorNormal: [0, -1] },

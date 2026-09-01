@@ -6,6 +6,7 @@ import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
 import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from './grid';
 import { FrameMetrics } from './metrics';
 import { FloorPlanMinimap } from './floorplan-minimap';
+import { interiorSelectionName } from './interior-selection-name';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import {
   validateInteriorPlacement,
@@ -1466,12 +1467,11 @@ export class ShowcaseApp {
     stage.classList.toggle('is-furniture-ghost-valid', valid);
     stage.classList.toggle('is-furniture-ghost-invalid', !valid);
     stage.dataset.furnitureGhostState = valid ? 'valid' : 'invalid';
-    const asset = this.interiorAssets.find((candidate) => candidate.assetId === prop.assetId);
-    const name = asset?.displayNameKo || String(prop.assetId || '가구');
+    const name = interiorSelectionName(prop, this.catalog.bOptions, this.interiorAssets);
     const wallSnap = this.furnitureWallSnapEnabled ? ' · 벽 자석 ON' : '';
     this.get<HTMLElement>('#furniture-status').textContent = valid
-      ? `${name} GHOST · 설치 가능${wallSnap} · 좌클릭 확정 · 우클릭/Esc 취소`
-      : `${name} GHOST · 배치 불가: ${this.interiorGhostValidation.errors[0]?.message || '위치를 옮겨주세요.'}${wallSnap}`;
+      ? `${name} 배치 미리보기 · 설치 가능${wallSnap} · 좌클릭 확정 · 우클릭/Esc 취소`
+      : `${name} 배치 미리보기 · 배치 불가: ${this.interiorGhostValidation.errors[0]?.message || '위치를 옮겨주세요.'}${wallSnap}`;
   }
 
   private confirmInteriorGhost(): boolean {
@@ -1592,7 +1592,7 @@ export class ShowcaseApp {
     this.renderFurniturePalette();
     this.updateFurnitureToolbar();
     const status = this.mount.querySelector<HTMLElement>('#furniture-status');
-    if (status) status.textContent = message;
+    if (status) status.textContent = `${interiorSelectionName(prop, this.catalog.bOptions, this.interiorAssets)} · ${message}`;
   }
 
   private handleFurnitureSelectionPointerDown(event: PointerEvent): boolean {
@@ -1855,8 +1855,7 @@ export class ShowcaseApp {
     toolbar.classList.toggle('is-wall-snap', this.furnitureWallSnapEnabled);
     stage.classList.add('has-furniture-selection');
     stage.classList.toggle('has-furniture-context-menu', actionsVisible);
-    const asset = this.interiorAssets.find((candidate) => candidate.assetId === prop.assetId);
-    const name = asset?.displayNameKo || String(prop.assetId || '선택 가구');
+    const name = interiorSelectionName(prop, this.catalog.bOptions, this.interiorAssets);
     this.get<HTMLElement>('#furniture-selection-name').textContent = name;
     stage.dataset.selectedFurnitureName = name;
     stage.dataset.selectedFurnitureMode = actionsVisible ? 'menu' : 'name';
