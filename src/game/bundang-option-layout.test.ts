@@ -542,7 +542,7 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     expect(deskParts.filter((part) => part.materialRole === 'secondary' && part.offset?.[2] === .8475)).toHaveLength(4);
   });
 
-  it('아일랜드 오픈 bay는 유지하고 오븐 3종만 즉시 교체·해제한다', async () => {
+  it('기본형·식탁일체형 본체를 오븐 자리·빈 슬라이드·하단 2칸이 연결된 일체형으로 교체한다', async () => {
     const apartments = await apartmentsByUnit();
     for (const [unitType, apartment] of apartments) {
       const geometry = apartment.geometry;
@@ -554,26 +554,57 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
         anchorId: 'kitchen.island.builtInOven',
         installationRole: 'kitchen-built-in-appliance',
       };
+      const legacyIsland: ApartmentInteriorProp = {
+        id: `inspection-${unitType}-kitchen-island`,
+        assetId: 'island-counter-modern',
+        anchorId: 'kitchen.island.baseBoundsMeters',
+        installationRole: 'kitchen-island',
+      };
       for (const variant of ['A', 'B'] as const) {
-        const empty = optionProps(geometry, unitType, ['island-counter-modern'], [legacyOven], variant);
-        expect(empty.filter((prop) => prop.installationRole === 'kitchen-island-appliance-bay')).toHaveLength(1);
-        expect(empty.filter((prop) => prop.installationRole === 'kitchen-built-in-oven')).toHaveLength(0);
-        for (const ovenOptionId of ['built-in-oven-navien', 'built-in-oven-samsung', 'built-in-oven-lg']) {
-          const props = optionProps(geometry, unitType, ['island-counter-modern', ovenOptionId], [legacyOven], variant);
-          const bays = props.filter((prop) => prop.installationRole === 'kitchen-island-appliance-bay');
-          const ovens = props.filter((prop) => prop.installationRole === 'kitchen-built-in-oven');
-          expect(bays, `${unitType}:${variant}:${ovenOptionId}:bay`).toHaveLength(1);
-          expect(ovens, `${unitType}:${variant}:${ovenOptionId}:oven`).toHaveLength(1);
-          expect(ovens[0].assetId).toBe(ovenOptionId);
-          expect(ovens[0].sourceOptionId).toBe(ovenOptionId);
-          expect(ovens[0].positionMeters).not.toEqual(bays[0].positionMeters);
-          expect(bays[0].sourceOptionId).toBe('island-counter-modern');
+        const islandOptionIds = unitType === '55B'
+          ? ['island-counter-modern', 'island-counter-dining-integrated']
+          : ['island-counter-modern'];
+        for (const islandOptionId of islandOptionIds) {
+          const empty = optionProps(geometry, unitType, [islandOptionId], [legacyIsland, legacyOven], variant);
+          const emptyIslands = empty.filter((prop) => prop.installationRole === 'kitchen-island');
+          expect(emptyIslands, `${unitType}:${variant}:${islandOptionId}:base`).toHaveLength(1);
+          expect(emptyIslands[0].assetId).toBe('bunfirvil-island-integrated-cabinet-base');
+          expect(emptyIslands[0].sourceOptionId).toBe(islandOptionId);
+          expect(empty.some((prop) => prop.assetId === 'island-counter-modern')).toBe(false);
+          expect(empty.filter((prop) => prop.installationRole === 'kitchen-built-in-oven')).toHaveLength(0);
+          for (const ovenOptionId of ['built-in-oven-navien', 'built-in-oven-samsung', 'built-in-oven-lg']) {
+            const props = optionProps(geometry, unitType, [islandOptionId, ovenOptionId], [legacyIsland, legacyOven], variant);
+            const islands = props.filter((prop) => prop.installationRole === 'kitchen-island');
+            const ovens = props.filter((prop) => prop.installationRole === 'kitchen-built-in-oven');
+            expect(islands, `${unitType}:${variant}:${islandOptionId}:${ovenOptionId}:island`).toHaveLength(1);
+            expect(ovens, `${unitType}:${variant}:${islandOptionId}:${ovenOptionId}:oven`).toHaveLength(1);
+            expect(islands[0].assetId).toBe('bunfirvil-island-integrated-cabinet-oven-ready');
+            expect(islands[0].sourceOptionId).toBe(islandOptionId);
+            expect(islands[0].id).toBe(emptyIslands[0].id);
+            expect(islands[0].positionMeters).toEqual(emptyIslands[0].positionMeters);
+            expect(islands[0].dimensionsMeters).toEqual(emptyIslands[0].dimensionsMeters);
+            expect(ovens[0].assetId).toBe(ovenOptionId);
+            expect(ovens[0].sourceOptionId).toBe(ovenOptionId);
+            expect(ovens[0].positionMeters).not.toEqual(islands[0].positionMeters);
+            expect(props.some((prop) => prop.assetId === 'island-counter-modern')).toBe(false);
+          }
         }
       }
     }
     const assets = new Map(STRUCTURAL_PROP_ASSETS.map((asset) => [asset.assetId, asset]));
-    expect(assets.get('bunfirvil-island-appliance-open-bay')?.parts?.some((part) => String(part.materialRole).startsWith('rice-cooker'))).toBe(false);
-    expect(assets.get('bunfirvil-island-appliance-open-bay')?.parts?.some((part) => part.scale?.[0] === .45 && part.scale?.[2] === .035)).toBe(true);
+    const baseParts = assets.get('bunfirvil-island-integrated-cabinet-base')?.parts || [];
+    const ovenReadyParts = assets.get('bunfirvil-island-integrated-cabinet-oven-ready')?.parts || [];
+    expect(assets.has('bunfirvil-island-appliance-open-bay')).toBe(false);
+    for (const parts of [baseParts, ovenReadyParts]) {
+      expect(parts.some((part) => String(part.materialRole).startsWith('rice-cooker'))).toBe(false);
+      expect(parts.filter((part) => part.materialRole === 'island-slide-shelf')).toHaveLength(1);
+      expect(parts.filter((part) => part.materialRole === 'island-lower-drawer')).toHaveLength(2);
+      expect(parts.filter((part) => part.materialRole === 'cabinet-side')).toHaveLength(0);
+    }
+    expect(baseParts.filter((part) => part.materialRole === 'island-oven-filler')).toHaveLength(1);
+    expect(baseParts.filter((part) => part.materialRole === 'cabinet-opening')).toHaveLength(1);
+    expect(ovenReadyParts.filter((part) => part.materialRole === 'island-oven-filler')).toHaveLength(0);
+    expect(ovenReadyParts.filter((part) => part.materialRole === 'cabinet-opening')).toHaveLength(2);
     expect(assets.get('built-in-oven-navien')?.parts?.filter((part) => part.materialRole === 'oven-dial')).toHaveLength(2);
     expect(assets.get('built-in-oven-samsung')?.parts?.filter((part) => part.materialRole === 'oven-dial')).toHaveLength(0);
     expect(assets.get('built-in-oven-lg')?.parts?.filter((part) => part.materialRole === 'oven-dial')).toHaveLength(1);
@@ -607,15 +638,20 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
           [base],
           variant,
         );
-        const bay = props.find((prop) => prop.installationRole === 'kitchen-island-appliance-bay');
+        const integratedIsland = props.find((prop) => prop.installationRole === 'kitchen-island');
         const oven = props.find((prop) => prop.installationRole === 'kitchen-built-in-oven');
-        expect(bay?.yawDeg, `${unitType}:${variant}:bay yaw`).toBe(base.yawDeg);
+        expect(props.filter((prop) => prop.installationRole === 'kitchen-island')).toHaveLength(1);
+        expect(integratedIsland?.assetId).toBe('bunfirvil-island-integrated-cabinet-oven-ready');
+        expect(integratedIsland?.id).toBe(base.id);
+        expect(integratedIsland?.positionMeters).toEqual(base.positionMeters);
+        expect(integratedIsland?.dimensionsMeters).toEqual(base.dimensionsMeters);
+        expect(integratedIsland?.yawDeg, `${unitType}:${variant}:island yaw`).toBe(base.yawDeg);
         expect(oven?.yawDeg, `${unitType}:${variant}:oven yaw`).toBe(base.yawDeg);
         const yaw = Number(base.yawDeg) * Math.PI / 180;
         const frontNormal: [number, number] = [-Math.sin(yaw), Math.cos(yaw)];
-        const bayPosition = bay?.positionMeters as number[];
-        const frontDistance = (bayPosition[0] - center[0]) * frontNormal[0]
-          + (bayPosition[1] - center[1]) * frontNormal[1];
+        const ovenPosition = oven?.positionMeters as number[];
+        const frontDistance = (ovenPosition[0] - center[0]) * frontNormal[0]
+          + (ovenPosition[1] - center[1]) * frontNormal[1];
         expect(frontDistance, `${unitType}:${variant}:front side`).toBeGreaterThan(0);
       }
     }

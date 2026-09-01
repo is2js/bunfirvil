@@ -1078,6 +1078,11 @@ function isLegacyBuiltInOvenProp(prop: ApartmentInteriorProp): boolean {
     || /kitchen-built-in-oven$/.test(String(prop.id || ''));
 }
 
+function isLegacyIslandBaseProp(prop: ApartmentInteriorProp): boolean {
+  return prop.installationRole === 'kitchen-island'
+    || prop.anchorId === 'kitchen.island.baseBoundsMeters';
+}
+
 function selectedIslandOptionId(selected: ReadonlySet<string>): string {
   return ISLAND_OPTION_IDS.find((optionId) => selected.has(optionId)) || '';
 }
@@ -1086,10 +1091,7 @@ function selectedBuiltInOvenOptionId(selected: ReadonlySet<string>): string {
   return BUILT_IN_OVEN_OPTION_IDS.find((optionId) => selected.has(optionId)) || '';
 }
 
-/**
- * 기존 아일랜드장의 방향/상판은 그대로 두고 전면에 오픈형 가전 bay만 덧댄다.
- * 오븐 미선택 시에도 공고문 유의사항대로 왼쪽 bay는 오픈 수납장으로 남는다.
- */
+/** 기본형·식탁일체형 모두 기존 임시 본체를 일체형 가전 수납장으로 통째로 교체한다. */
 function islandApplianceBayProps(
   geometry: ApartmentGeometry,
   unitType: UnitTypeId,
@@ -1120,51 +1122,50 @@ function islandApplianceBayProps(
     ? Math.min(Math.abs(candidate[0] - kx1), Math.abs(kx2 - candidate[0]))
     : Math.min(Math.abs(candidate[1] - ky1), Math.abs(ky2 - candidate[1]));
   const wallNearPositiveEnd = endWallDistance(positiveEnd) <= endWallDistance(negativeEnd);
-  const moduleWidth = Math.max(.72, width - .08);
-  const moduleDepth = .12;
-  const facadeCenter: Point = [
-    center[0] + frontNormal[0] * (depth / 2 + moduleDepth / 2 + .004),
-    center[1] + frontNormal[1] * (depth / 2 + moduleDepth / 2 + .004),
-  ];
   // optionAnchors.kitchen.island.yawDeg는 plan variant 적용 단계에서 이미 최종 전면으로 보정된다.
   // 여기서 B형을 다시 180도 돌리면 기존 아일랜드 본체와 가전 bay의 문 방향이 갈라진다.
   const renderedYaw = yawDeg;
-  const common: ApartmentInteriorProp = {
-    roomZoneId: 'kitchen-dining',
-    yawDeg: renderedYaw,
-    materialVariantId: 'pet-warm-ivory',
-    collisionMode: 'visual-only',
-    measurementObstacle: false,
-  };
+  const ovenOptionId = selectedBuiltInOvenOptionId(selected);
   const props: ApartmentInteriorProp[] = [{
-    ...common,
-    id: `bunfirvil-${unitType.toLowerCase()}-island-appliance-open-bay`,
-    assetId: 'bunfirvil-island-appliance-open-bay',
-    positionMeters: facadeCenter,
-    dimensionsMeters: [moduleWidth, moduleDepth, .72],
-    mountHeightMeters: .11,
+    id: `inspection-${unitType}-kitchen-island`,
+    assetId: ovenOptionId
+      ? 'bunfirvil-island-integrated-cabinet-oven-ready'
+      : 'bunfirvil-island-integrated-cabinet-base',
+    roomZoneId: 'kitchen-dining',
+    positionMeters: center,
+    dimensionsMeters: [width, depth, .9],
+    yawDeg: renderedYaw,
+    mountHeightMeters: .018,
     mirrored: wallNearPositiveEnd,
+    materialVariantId: selected.has('kitchen-wall-countertop-radianz-golden-shore')
+      ? 'golden-shore-engineered-stone'
+      : 'pet-warm-ivory',
     sourceOptionId: islandOptionId,
-    anchorId: 'bunfirvil.options.kitchen.island.applianceBay',
-    installationRole: 'kitchen-island-appliance-bay',
+    anchorId: 'kitchen.island.baseBoundsMeters',
+    installationRole: 'kitchen-island',
+    collisionMode: 'solid',
+    measurementObstacle: true,
   }];
 
-  const ovenOptionId = selectedBuiltInOvenOptionId(selected);
   if (!ovenOptionId) return props;
   const ovenEndSign = wallNearPositiveEnd ? 1 : -1;
   props.push({
-    ...common,
     id: `bunfirvil-${unitType.toLowerCase()}-island-${ovenOptionId}`,
     assetId: ovenOptionId,
+    roomZoneId: 'kitchen-dining',
     positionMeters: [
-      facadeCenter[0] + widthAxis[0] * ovenEndSign * moduleWidth * .25 + frontNormal[0] * .012,
-      facadeCenter[1] + widthAxis[1] * ovenEndSign * moduleWidth * .25 + frontNormal[1] * .012,
+      center[0] + widthAxis[0] * ovenEndSign * width * .25 + frontNormal[0] * depth * .47,
+      center[1] + widthAxis[1] * ovenEndSign * width * .25 + frontNormal[1] * depth * .47,
     ],
-    dimensionsMeters: [moduleWidth * .46, .08, .48],
+    dimensionsMeters: [width * .47, .055, .48],
+    yawDeg: renderedYaw,
     mountHeightMeters: .29,
+    materialVariantId: 'pet-warm-ivory',
     sourceOptionId: ovenOptionId,
     anchorId: 'bunfirvil.options.kitchen.island.builtInOven',
     installationRole: 'kitchen-built-in-oven',
+    collisionMode: 'visual-only',
+    measurementObstacle: false,
   });
   return props;
 }
@@ -1189,7 +1190,8 @@ export function refineBundangOptionProps(
       && (!airPlannerRoomUnits.length || !isLegacyAirPlannerUnitProp(prop))
       && !isKitchenCooktopProp(prop)
       && !isKitchenRangeHoodProp(prop)
-      && !isLegacyBuiltInOvenProp(prop))
+      && !isLegacyBuiltInOvenProp(prop)
+      && !isLegacyIslandBaseProp(prop))
     .map((prop) => refineRefrigeratorCabinetProp(geometry, selected, prop, planVariant))
     .filter((prop): prop is ApartmentInteriorProp => Boolean(prop))
     .map(refineWidePlankAndVentilatorProp)

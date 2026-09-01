@@ -71,6 +71,33 @@ interface RuntimeMaterialManifest {
   }>;
 }
 
+function islandIntegratedCabinetParts(ovenReady: boolean): RuntimePart[] {
+  const parts: RuntimePart[] = [
+    // 기존 임시 오픈 수납 recipe를 쓰지 않고 본체부터 한 덩어리로 다시 만든다.
+    { shape: 'box', scale: [1, .78, .86], offset: [0, -.02, .43], materialRole: 'primary' },
+    { shape: 'box', scale: [.96, .78, .07], offset: [0, -.03, .035], materialRole: 'accent' },
+    { shape: 'box', scale: [1, 1, .10], offset: [0, 0, .95], materialRole: 'secondary' },
+    // 오른쪽은 밥솥을 올려 두는 빈 슬라이드 선반이며 제품 모형은 고정하지 않는다.
+    { shape: 'box', scale: [.485, .045, .57], offset: [.25, .36, .59], materialRole: 'cabinet-opening' },
+    { shape: 'box', scale: [.46, .72, .035], offset: [.25, .04, .30], materialRole: 'island-slide-shelf' },
+    { shape: 'box', scale: [.42, .055, .025], offset: [.25, .49, .315], materialRole: 'cabinet-handle' },
+    // 오븐/슬라이드 아래에는 각각 하나씩, 총 두 칸의 얇은 수납장이 이어진다.
+    ...[-.25, .25].map((offsetX): RuntimePart => ({
+      shape: 'box', scale: [.485, .06, .19], offset: [offsetX, .49, .145], materialRole: 'island-lower-drawer',
+    })),
+    ...[-.25, .25].map((offsetX): RuntimePart => ({
+      shape: 'box', scale: [.35, .035, .018], offset: [offsetX, .525, .235], materialRole: 'cabinet-handle',
+    })),
+    // 얇은 중앙 구획선과 상부 레일만 두어 오븐 양옆이 작은 문처럼 보이지 않게 한다.
+    { shape: 'box', scale: [.014, .055, .62], offset: [0, .49, .565], materialRole: 'cabinet-seam' },
+    { shape: 'box', scale: [1, .055, .035], offset: [0, .49, .885], materialRole: 'primary' },
+  ];
+  parts.push(ovenReady
+    ? { shape: 'box', scale: [.485, .045, .57], offset: [-.25, .36, .59], materialRole: 'cabinet-opening' }
+    : { shape: 'box', scale: [.485, .06, .57], offset: [-.25, .49, .59], materialRole: 'island-oven-filler' });
+  return parts;
+}
+
 interface OptionRuntimeModule {
   bundangPrototypeOptionProps(
     geometry: ApartmentGeometry,
@@ -320,21 +347,14 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
     ],
   },
   {
-    assetId: 'bunfirvil-island-appliance-open-bay', rendererKind: 'procedural', mountingKind: 'anchored',
-    defaultMountHeightMeters: .11, defaultDimensionsMeters: [1.18, .12, .72],
-    parts: [
-      { shape: 'box', scale: [1, .12, .96], offset: [0, -.44, .5], materialRole: 'primary' },
-      { shape: 'box', scale: [.025, 1, .96], offset: [-.487, 0, .5], materialRole: 'primary' },
-      { shape: 'box', scale: [.025, 1, .96], offset: [.487, 0, .5], materialRole: 'primary' },
-      { shape: 'box', scale: [.018, 1, .96], offset: [0, 0, .5], materialRole: 'primary' },
-      { shape: 'box', scale: [.47, .18, .62], offset: [-.25, -.35, .61], materialRole: 'cabinet-opening' },
-      { shape: 'box', scale: [.47, .18, .62], offset: [.25, -.35, .61], materialRole: 'cabinet-opening' },
-      { shape: 'box', scale: [.47, .92, .18], offset: [-.25, 0, .105], materialRole: 'secondary' },
-      { shape: 'box', scale: [.47, .92, .18], offset: [.25, 0, .105], materialRole: 'secondary' },
-      { shape: 'box', scale: [.33, .54, .018], offset: [-.25, .51, .16], materialRole: 'cabinet-handle' },
-      { shape: 'box', scale: [.33, .54, .018], offset: [.25, .51, .16], materialRole: 'cabinet-handle' },
-      { shape: 'box', scale: [.45, .82, .035], offset: [.25, -.02, .32], materialRole: 'secondary' },
-    ],
+    assetId: 'bunfirvil-island-integrated-cabinet-base', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultMountHeightMeters: .018, defaultDimensionsMeters: [1.26, .8, .9],
+    parts: islandIntegratedCabinetParts(false),
+  },
+  {
+    assetId: 'bunfirvil-island-integrated-cabinet-oven-ready', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultMountHeightMeters: .018, defaultDimensionsMeters: [1.26, .8, .9],
+    parts: islandIntegratedCabinetParts(true),
   },
   {
     assetId: 'built-in-oven-navien', rendererKind: 'procedural', mountingKind: 'anchored',
@@ -1973,6 +1993,8 @@ export class ThreeWorldRenderer {
                                 ? this.material('#63686a', { roughness: .34, metalness: .62 })
                                 : role === 'cabinet-opening'
                                   ? this.material('#7e7a72', { roughness: .93 })
+                                  : role === 'island-slide-shelf' || role === 'island-lower-drawer' || role === 'island-oven-filler'
+                                    ? this.material(palette.secondary, { roughness: .82 })
                                   : role === 'cabinet-light'
                                     ? this.material('#ffe7a3', { roughness: .18 })
                                     : role === 'outlet'
