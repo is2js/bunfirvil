@@ -608,6 +608,82 @@ function kitchenAnchor(geometry: ApartmentGeometry, id: 'cooktop' | 'hood'): Rec
   return record(kitchen?.[id]);
 }
 
+function metricBounds(value: unknown): [number, number, number, number] | null {
+  if (!Array.isArray(value) || value.length < 4) return null;
+  const [sourceX1, sourceY1, sourceX2, sourceY2] = value.slice(0, 4).map(Number);
+  if (![sourceX1, sourceY1, sourceX2, sourceY2].every(Number.isFinite)) return null;
+  return [
+    Math.min(sourceX1, sourceX2), Math.min(sourceY1, sourceY2),
+    Math.max(sourceX1, sourceX2), Math.max(sourceY1, sourceY2),
+  ];
+}
+
+export function bundangKitchenApplianceAnchor(geometry: ApartmentGeometry): {
+  cooktopPosition: Point;
+  hoodPosition: Point;
+  yawDeg: number;
+  countertopEdge: string;
+} | null {
+  const optionAnchors = record(geometry.optionAnchors);
+  const kitchen = record(optionAnchors?.kitchen);
+  const refrigerator = record(kitchen?.refrigeratorCabinet);
+  const refrigeratorBounds = metricBounds(refrigerator?.boundsMeters);
+  const authoredCooktop = kitchenAnchor(geometry, 'cooktop');
+  const authoredHood = kitchenAnchor(geometry, 'hood');
+  const fallbackCooktop = point(authoredCooktop?.positionMeters);
+  const fallbackHood = point(authoredHood?.positionMeters);
+  const runs = Array.isArray(kitchen?.countertopRuns)
+    ? kitchen.countertopRuns.flatMap((value): Array<{ bounds: [number, number, number, number]; edge: string }> => {
+        const run = record(value);
+        const bounds = metricBounds(run?.boundsMeters);
+        return bounds ? [{ bounds, edge: String(run?.backsplashEdge || '') }] : [];
+      })
+    : [];
+  if (!refrigeratorBounds || !runs.length) {
+    if (!fallbackCooktop || !fallbackHood) return null;
+    return {
+      cooktopPosition: fallbackCooktop,
+      hoodPosition: fallbackHood,
+      yawDeg: Number.isFinite(Number(authoredHood?.yawDeg)) ? Number(authoredHood?.yawDeg) : Number(authoredCooktop?.yawDeg) || 0,
+      countertopEdge: 'authored',
+    };
+  }
+  const rectangleGap = (bounds: [number, number, number, number]): number => {
+    const gapX = Math.max(refrigeratorBounds[0] - bounds[2], bounds[0] - refrigeratorBounds[2], 0);
+    const gapY = Math.max(refrigeratorBounds[1] - bounds[3], bounds[1] - refrigeratorBounds[3], 0);
+    return Math.hypot(gapX, gapY);
+  };
+  const run = [...runs].sort((left, right) => rectangleGap(left.bounds) - rectangleGap(right.bounds))[0];
+  const [x1, y1, x2, y2] = run.bounds;
+  const refrigeratorCenter = boundsCenter(refrigeratorBounds);
+  const vertical = y2 - y1 >= x2 - x1;
+  const alongClearance = .39;
+  const clamp = (value: number, minimum: number, maximum: number): number => Math.max(minimum, Math.min(maximum, value));
+  const cooktopPosition: Point = vertical
+    ? [
+        (x1 + x2) / 2,
+        clamp(refrigeratorCenter[1] >= (y1 + y2) / 2 ? y2 - alongClearance : y1 + alongClearance, y1 + alongClearance, y2 - alongClearance),
+      ]
+    : [
+        clamp(refrigeratorCenter[0] >= (x1 + x2) / 2 ? x2 - alongClearance : x1 + alongClearance, x1 + alongClearance, x2 - alongClearance),
+        (y1 + y2) / 2,
+      ];
+  const wallOffset: Record<string, Point> = {
+    north: [0, -.22], east: [.22, 0], south: [0, .22], west: [-.22, 0],
+  };
+  const yawByEdge: Record<string, number> = { north: 0, east: 90, south: 180, west: 270 };
+  const offset = wallOffset[run.edge] || [0, 0];
+  return {
+    cooktopPosition: cooktopPosition.map((value) => Math.round(value * 1000) / 1000) as Point,
+    hoodPosition: [
+      Math.round((cooktopPosition[0] + offset[0]) * 1000) / 1000,
+      Math.round((cooktopPosition[1] + offset[1]) * 1000) / 1000,
+    ],
+    yawDeg: yawByEdge[run.edge] ?? (Number(authoredHood?.yawDeg) || 0),
+    countertopEdge: run.edge,
+  };
+}
+
 function selectedCooktopAssetId(selected: ReadonlySet<string>): string {
   return COOKTOP_OPTION_IDS.find((assetId) => selected.has(assetId)) || DEFAULT_GAS_COOKTOP_ASSET_ID;
 }
@@ -636,10 +712,9 @@ function kitchenCooktopAndHoodProps(
   selected: ReadonlySet<string>,
   planVariant?: string,
 ): ApartmentInteriorProp[] {
-  const cooktop = kitchenAnchor(geometry, 'cooktop');
-  const hood = kitchenAnchor(geometry, 'hood');
-  const cooktopPosition = point(cooktop?.positionMeters);
-  const hoodPosition = point(hood?.positionMeters);
+  const applianceAnchor = bundangKitchenApplianceAnchor(geometry);
+  const cooktopPosition = applianceAnchor?.cooktopPosition || null;
+  const hoodPosition = applianceAnchor?.hoodPosition || null;
   const cooktopAssetId = selectedCooktopAssetId(selected);
   const cooktopSourceOptionId = COOKTOP_OPTION_ID_SET.has(cooktopAssetId) ? cooktopAssetId : undefined;
   const cooktopDimensions: Record<string, [number, number, number]> = {
@@ -648,9 +723,9 @@ function kitchenCooktopAndHoodProps(
     'induction-cooktop-bei3asb4bi': [.58, .52, .059],
     'induction-cooktop-nz63b5056ak': [.60, .52, .048],
   };
-  const hoodYaw = Number(hood?.yawDeg);
+  const hoodYaw = Number(applianceAnchor?.yawDeg);
   const variantYawOffset = planVariantKey(planVariant) === 'B' ? 180 : 0;
-  const cooktopYaw = (Number.isFinite(hoodYaw) ? hoodYaw : Number(cooktop?.yawDeg) || 0) + variantYawOffset;
+  const cooktopYaw = (Number.isFinite(hoodYaw) ? hoodYaw : 0) + variantYawOffset;
   const result: ApartmentInteriorProp[] = [];
   if (cooktopPosition) {
     result.push({
@@ -678,7 +753,7 @@ function kitchenCooktopAndHoodProps(
       roomZoneId: 'kitchen-dining',
       positionMeters: hoodPosition,
       dimensionsMeters: silent ? [.9, .5, .42] : [.75, .46, .34],
-      yawDeg: normalizedYaw((Number(hood?.yawDeg) || 0) + variantYawOffset),
+      yawDeg: normalizedYaw((Number.isFinite(hoodYaw) ? hoodYaw : 0) + variantYawOffset),
       mountHeightMeters: 1.48,
       materialVariantId: 'pet-warm-ivory',
       sourceOptionId: silent ? SILENT_RANGE_HOOD_OPTION_ID : undefined,

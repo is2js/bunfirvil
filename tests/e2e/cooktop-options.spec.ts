@@ -6,7 +6,9 @@ test('기본 쿡탑·후드와 택1 옵션이 같은 주방 앵커에서 즉시 
   await expect(canvas).toHaveAttribute('data-apartment-structure', 'ready');
   await expect(canvas).toHaveAttribute('data-kitchen-cooktop-asset-id', 'bunfirvil-default-navien-magic-gas-cooktop-3');
   await expect(canvas).toHaveAttribute('data-kitchen-range-hood-asset-id', 'bunfirvil-default-kitchen-range-hood');
-  await expect(canvas).toHaveAttribute('data-kitchen-cooktop-yaw-deg', '180');
+  await expect(canvas).toHaveAttribute('data-kitchen-cooktop-yaw-deg', '90');
+  await expect(canvas).toHaveAttribute('data-kitchen-cooktop-position', '6.24,7.89');
+  await expect(canvas).toHaveAttribute('data-kitchen-range-hood-position', '6.46,7.89');
 
   const erh = page.locator('input[data-option-id="electric-cooktop-erh-3903"]');
   const lg = page.locator('input[data-option-id="induction-cooktop-bei3asb4bi"]');

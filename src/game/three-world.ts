@@ -1578,16 +1578,20 @@ export class ThreeWorldRenderer {
     if (cooktop) {
       this.canvas.dataset.kitchenCooktopAssetId = String(cooktop.assetId || '');
       this.canvas.dataset.kitchenCooktopYawDeg = String(cooktop.yawDeg ?? '');
+      this.canvas.dataset.kitchenCooktopPosition = (cooktop.positionMeters || []).join(',');
     } else {
       delete this.canvas.dataset.kitchenCooktopAssetId;
       delete this.canvas.dataset.kitchenCooktopYawDeg;
+      delete this.canvas.dataset.kitchenCooktopPosition;
     }
     if (rangeHood) {
       this.canvas.dataset.kitchenRangeHoodAssetId = String(rangeHood.assetId || '');
       this.canvas.dataset.kitchenRangeHoodYawDeg = String(rangeHood.yawDeg ?? '');
+      this.canvas.dataset.kitchenRangeHoodPosition = (rangeHood.positionMeters || []).join(',');
     } else {
       delete this.canvas.dataset.kitchenRangeHoodAssetId;
       delete this.canvas.dataset.kitchenRangeHoodYawDeg;
+      delete this.canvas.dataset.kitchenRangeHoodPosition;
     }
     for (const prop of props) if (prop.id) this.renderedProps.set(String(prop.id), { ...prop, positionMeters: [...(prop.positionMeters || [])] });
     this.canvas.dataset.apartmentPropCount = String(props.length);
