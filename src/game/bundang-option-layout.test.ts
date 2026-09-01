@@ -423,6 +423,70 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     expect(appliance?.parts?.some((part) => part.materialRole === 'airflow-accent')).toBe(true);
   });
 
+  it('51A·55A·55B·59A A/B의 거실·주방/식당·각 침실 중앙에만 천장 유닛을 배치한다', async () => {
+    const apartments = await apartmentsByUnit();
+    const expectedRooms: Record<string, string[]> = {
+      '51A': ['living', 'kitchen-dining', 'bedroom-1', 'bedroom-2'],
+      '55A': ['living', 'kitchen-dining', 'bedroom-1', 'bedroom-2'],
+      '55B': ['living', 'kitchen-dining', 'bedroom-1', 'bedroom-2'],
+      '59A': ['living', 'kitchen-dining', 'bedroom-1', 'bedroom-2', 'bedroom-3'],
+    };
+    for (const [unitType, apartment] of apartments) {
+      const geometry = apartment.geometry;
+      expect(geometry, `${unitType}:geometry`).toBeTruthy();
+      if (!geometry) continue;
+      const sourceDisplay: ApartmentInteriorProp = {
+        id: `inspection-${unitType}-air-planner-display-1`,
+        assetId: 'bedroom-smart-display-switch',
+        roomZoneId: 'bedroom-1',
+        anchorId: 'options.airPlannerDisplay.bedroom-1',
+      };
+      const legacyUnit: ApartmentInteriorProp = {
+        id: `inspection-${unitType}-air-planner`,
+        assetId: 'air-planner-ceiling-vent',
+        roomZoneId: 'living',
+        positionMeters: [0, 0],
+        anchorId: 'appliances.airPlanner',
+      };
+      for (const variant of ['A', 'B'] as const) {
+        const props = optionProps(
+          geometry,
+          unitType,
+          ['air-planner-ceiling-vent'],
+          [legacyUnit, sourceDisplay],
+          variant,
+        );
+        const units = props.filter((prop) => prop.assetId === 'air-planner-ceiling-vent');
+        expect(units.map((prop) => prop.roomZoneId), `${unitType}:${variant}:rooms`)
+          .toEqual(expectedRooms[unitType]);
+        expect(props.some((prop) => prop.id === sourceDisplay.id), `${unitType}:${variant}:display`).toBe(true);
+
+        const transformedApartment: WorldObject = {
+          ...apartment,
+          transform: { ...planVariantDefinition(unitType, variant).transform },
+        };
+        for (const unit of units) {
+          const room = (geometry.roomZones || []).find((candidate) => candidate.id === unit.roomZoneId);
+          const bounds = room?.boundsMeters as number[];
+          const center: [number, number] = [
+            (bounds[0] + bounds[2]) / 2,
+            (bounds[1] + bounds[3]) / 2,
+          ];
+          const sourceYaw = bounds[2] - bounds[0] >= bounds[3] - bounds[1] ? 0 : 90;
+          expect(unit.positionMeters, `${unitType}:${variant}:${unit.roomZoneId}:local`).toEqual(center);
+          expect(unit.yawDeg, `${unitType}:${variant}:${unit.roomZoneId}:yaw`)
+            .toBe((sourceYaw + (variant === 'B' ? 180 : 0)) % 360);
+          expect(unit.anchorId).toBe(`bunfirvil.options.airPlannerRoom.${unit.roomZoneId}`);
+          expect(unit.collisionMode).toBe('visual-only');
+          const placement = apartmentPropPlacement(transformedApartment, unit);
+          const expectedWorld = apartmentUnitWorldPoint(transformedApartment, center);
+          expect(placement.center.x, `${unitType}:${variant}:${unit.roomZoneId}:world-x`).toBeCloseTo(expectedWorld.x, 6);
+          expect(placement.center.y, `${unitType}:${variant}:${unit.roomZoneId}:world-y`).toBeCloseTo(expectedWorld.y, 6);
+        }
+      }
+    }
+  });
+
   it('비데일체형 양변기의 모델 전면축을 기본 양변기 방향에 맞춰 보정한다', () => {
     const geometry = { wallSegments: [] } as ApartmentGeometry;
     for (const yawDeg of [0, 90, 180, 270]) {

@@ -1471,6 +1471,13 @@ export class ThreeWorldRenderer {
       object.planVariant,
     ), this.selectedOptionIds);
     const props = mergeEditorPropsWithBase(baseProps, this.editorProps);
+    const airPlannerRoomUnits = props.filter((prop) => prop.assetId === 'air-planner-ceiling-vent'
+      && String(prop.anchorId || '').startsWith('bunfirvil.options.airPlannerRoom.'));
+    this.canvas.dataset.airPlannerRoomUnitCount = String(airPlannerRoomUnits.length);
+    this.canvas.dataset.airPlannerRoomUnitRooms = airPlannerRoomUnits
+      .map((prop) => String(prop.roomZoneId || ''))
+      .filter(Boolean)
+      .join(',');
     const refrigerator = props.find((prop) => prop.installationRole === 'refrigerator-cabinet');
     if (refrigerator) {
       this.canvas.dataset.refrigeratorAssetId = String(refrigerator.assetId || '');

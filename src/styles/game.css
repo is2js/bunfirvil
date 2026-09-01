@@ -1878,7 +1878,7 @@ input:focus-visible {
 .stage-option-chips::-webkit-scrollbar { width: 5px; }
 .stage-option-chips::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(213, 183, 112, .34); }
 .stage-option-chips > span:not(.stage-option-chip) { min-width: max-content; height: 22px; display: inline-flex; align-items: center; gap: 6px; padding: 0 7px; border: 1px solid rgba(179, 167, 137, .14); background: rgba(255, 255, 255, .025); }
-.stage-option-chip { min-width: max-content; height: 22px; display: inline-flex; align-items: stretch; border: 1px solid rgba(179, 167, 137, .14); background: rgba(255, 255, 255, .025); }
+.stage-option-chip { min-width: max-content; height: 22px; display: inline-flex; align-items: stretch; border: 1px solid rgba(179, 167, 137, .14); background: rgba(255, 255, 255, .025); cursor: pointer; }
 .stage-option-chip.is-world-selected { border-color: rgba(95, 210, 187, .78); background: rgba(70, 178, 158, .16); box-shadow: inset 0 0 0 1px rgba(132, 239, 216, .1), 0 0 10px rgba(50, 174, 151, .08); }
 .stage-option-chip.is-world-selected b { color: #d9fff6; }
 .stage-option-chip.is-world-selected em { color: #8ee8d4; }

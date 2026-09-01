@@ -107,7 +107,7 @@ export const BUNDANG_OPTION_DISPLAY_OVERRIDES: Readonly<Record<string, Partial<P
   }),
   [AIR_PLANNER_OPTION_ID]: Object.freeze({
     label: '실별 환기·공기청정 시스템',
-    description: 'D-에어플래너와 침실 스마트 디스플레이 스위치 구성입니다. 스마트홈 연계 조명 시스템 선택 시 D-에어플래너 구성으로 적용됩니다.',
+    description: '거실·주방/식당·각 침실 천장 D-에어플래너 단말과 침실 스마트 디스플레이 스위치 구성입니다. 스마트홈 연계 조명 시스템 선택 시 D-에어플래너 구성으로 적용됩니다.',
     previewUrl: 'assets/options/previews/air-planner-ceiling-vent-v2.png',
   }),
   [SMART_LIGHTING_OPTION_ID]: Object.freeze({
@@ -528,6 +528,57 @@ function isLegacyPrecisionStorageProp(prop: ApartmentInteriorProp): boolean {
     || /-dress-room-powder-storage$/.test(id);
 }
 
+function airPlannerTargetRoomRank(room: Record<string, unknown>): number | null {
+  const id = String(room.id || '').trim().toLowerCase();
+  const label = String(room.label || '').replace(/\s+/g, '');
+  if (id === 'living' || label === '거실') return 0;
+  if (id === 'kitchen-dining' || (label.includes('주방') && label.includes('식당'))) return 1;
+  const bedroomNumber = id.match(/^bedroom-(\d+)$/)?.[1] || label.match(/^침실(\d+)$/)?.[1];
+  return bedroomNumber ? 10 + Number(bedroomNumber) : null;
+}
+
+function airPlannerRoomUnitProps(
+  geometry: ApartmentGeometry,
+  unitType: UnitTypeId,
+  planVariant: string | undefined,
+): ApartmentInteriorProp[] {
+  return (geometry.roomZones || [])
+    .flatMap((room): Array<{ room: Record<string, unknown>; rank: number; bounds: number[] }> => {
+      const rank = airPlannerTargetRoomRank(room);
+      const bounds = Array.isArray(room.boundsMeters) ? room.boundsMeters.slice(0, 4).map(Number) : [];
+      if (rank === null || bounds.length < 4 || !bounds.every(Number.isFinite)) return [];
+      if (bounds[2] <= bounds[0] || bounds[3] <= bounds[1]) return [];
+      return [{ room, rank, bounds }];
+    })
+    .sort((left, right) => left.rank - right.rank)
+    .map(({ room, bounds }) => {
+      const roomId = String(room.id || '');
+      const width = bounds[2] - bounds[0];
+      const depth = bounds[3] - bounds[1];
+      // 장축에 본체 폭을 맞추고, 단일축 반사인 B형은 덕트 방향을 180° 보정한다.
+      const sourceYaw = width >= depth ? 0 : 90;
+      return {
+        id: `bunfirvil-${unitType.toLowerCase()}-air-planner-${roomId}`,
+        assetId: AIR_PLANNER_OPTION_ID,
+        roomZoneId: roomId,
+        positionMeters: [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2],
+        dimensionsMeters: [.72, .58, .28],
+        yawDeg: normalizedYaw(sourceYaw + (planVariantKey(planVariant) === 'B' ? 180 : 0)),
+        materialVariantId: 'system-ac-light-gray',
+        mountHeightMeters: undefined,
+        sourceOptionId: AIR_PLANNER_OPTION_ID,
+        anchorId: `bunfirvil.options.airPlannerRoom.${roomId}`,
+        installationRole: 'ceiling-appliance',
+        collisionMode: 'visual-only',
+        measurementObstacle: false,
+      };
+    });
+}
+
+function isLegacyAirPlannerUnitProp(prop: ApartmentInteriorProp): boolean {
+  return prop.assetId === AIR_PLANNER_OPTION_ID || prop.anchorId === 'appliances.airPlanner';
+}
+
 function refineWidePlankAndVentilatorProp(prop: ApartmentInteriorProp): ApartmentInteriorProp {
   if (prop.assetId === WIDE_PLANK_FLOOR_OPTION_ID) {
     return { ...prop, sourceOptionId: WIDE_PLANK_FLOOR_OPTION_ID };
@@ -663,8 +714,13 @@ export function refineBundangOptionProps(
   const layout = BUNDANG_OPTION_LAYOUTS[unitType];
   if (!layout) return baseProps;
   const selected = new Set(selectedIds);
+  const airPlannerRoomUnits = selected.has(AIR_PLANNER_OPTION_ID)
+    ? airPlannerRoomUnitProps(geometry, unitType, planVariant)
+    : [];
   const props = baseProps
-    .filter((prop) => !isLegacyEntryLivingOptionProp(prop) && !isLegacyPrecisionStorageProp(prop))
+    .filter((prop) => !isLegacyEntryLivingOptionProp(prop)
+      && !isLegacyPrecisionStorageProp(prop)
+      && (!airPlannerRoomUnits.length || !isLegacyAirPlannerUnitProp(prop)))
     .map((prop) => refineRefrigeratorCabinetProp(geometry, selected, prop, planVariant))
     .filter((prop): prop is ApartmentInteriorProp => Boolean(prop))
     .map(refineWidePlankAndVentilatorProp)
@@ -679,6 +735,7 @@ export function refineBundangOptionProps(
     props.push(...bedroomOneStorageProps(geometry, layout, BEDROOM_ONE_PET_CLOSET_OPTION_ID, planVariant));
   }
   if (selected.has(DRESS_ROOM_POWDER_STORAGE_OPTION_ID)) props.push(...dressRoomPowderStorageProps(geometry, layout, planVariant));
+  if (airPlannerRoomUnits.length) props.push(...airPlannerRoomUnits);
   return props;
 }
 

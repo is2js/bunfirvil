@@ -9,7 +9,9 @@ import { FloorPlanMinimap } from './floorplan-minimap';
 import { highlightedMessageParts } from './highlighted-message';
 import { interiorSelectionName } from './interior-selection-name';
 import { optionPropsForSelection, optionSourceIdForProp } from './option-prop-selection';
+import { centeredScrollTop } from './palette-scroll';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
+import { stageOptionChipActionFromPath } from './stage-option-chip-action';
 import {
   validateInteriorPlacement,
   type InteriorPlacementValidation,
@@ -185,6 +187,7 @@ export class ShowcaseApp {
   private paletteAppliedOnly = false;
   private optionChangePending = false;
   private selectedStageOptionId = '';
+  private optionFocusFrame = 0;
   private interiorAssets: InteriorAssetEntry[] = [];
   private interiorCatalogUrl = '';
   private localInteriorProps: ApartmentInteriorProp[] = [];
@@ -280,6 +283,7 @@ export class ShowcaseApp {
     this.cancelInteriorGhost('', false);
     this.abortController.abort();
     cancelAnimationFrame(this.animationFrame);
+    cancelAnimationFrame(this.optionFocusFrame);
     this.effectPlayer?.destroy();
     this.threeRenderer?.dispose();
   }
@@ -616,21 +620,17 @@ export class ShowcaseApp {
       this.renderFurniturePalette();
     }, { signal });
     this.get<HTMLElement>('#stage-option-chips').addEventListener('click', (event) => {
-      const removeTarget = event.target instanceof Element
-        ? event.target.closest<HTMLButtonElement>('button[data-stage-option-remove]')
-        : null;
-      const selectTarget = event.target instanceof Element
-        ? event.target.closest<HTMLButtonElement>('button[data-stage-option-select]')
-        : null;
+      const action = stageOptionChipActionFromPath(event.composedPath());
+      if (!action) return;
       const options = compatibleOptions(this.catalog.bOptions, this.currentMap.unitType).map((option) => ({
         ...option,
         price: option.prices?.[this.currentMap.unitType] ?? option.price,
       }));
-      if (removeTarget) {
-        this.removeStageOptionImmediately(options, removeTarget.dataset.stageOptionRemove || '');
+      if (action.kind === 'remove') {
+        this.removeStageOptionImmediately(options, action.optionId);
         return;
       }
-      if (selectTarget) this.selectStageOptionInWorld(selectTarget.dataset.stageOptionSelect || '');
+      this.selectStageOptionInWorld(action.optionId);
     }, { signal });
     this.get<HTMLButtonElement>('#stage-option-clear').addEventListener('click', () => {
       void this.clearAllSelectedOptionsWithConfirmation();
@@ -772,6 +772,9 @@ export class ShowcaseApp {
     }, { signal });
     stage.addEventListener('pointerdown', (event) => {
       const target = event.target instanceof Element ? event.target : null;
+      // HUD/팔레트 조작은 맵 선택 해제나 패닝보다 먼저 종료한다. 특히 좌하단
+      // 옵션 chip을 pointerdown에서 다시 그리면 뒤따르는 click 자체가 사라진다.
+      if (target?.closest('.combat-dock,.map-identity,.floorplan-minimap,.stage-option-quote,.game-toast,.stage-zoom,.furniture-selection-toolbar')) return;
       if (target?.closest('.istarpark-laser-toggle,.istarpark-laser-hud')) return;
       if (this.inspectionLaser.active) {
         event.preventDefault();
@@ -2294,7 +2297,7 @@ export class ShowcaseApp {
     this.get<HTMLButtonElement>('#stage-option-clear').hidden = selectedOptions.length === 0;
     this.get<HTMLElement>('#stage-option-total').innerHTML = `${numberFormat.format(total)}<small>원</small>`;
     this.get<HTMLElement>('#stage-option-chips').innerHTML = selectedOptions.length
-      ? selectedOptions.map((option) => `<span class="stage-option-chip ${this.selectedStageOptionId === option.id ? 'is-world-selected' : ''}">
+      ? selectedOptions.map((option) => `<span class="stage-option-chip ${this.selectedStageOptionId === option.id ? 'is-world-selected' : ''}" data-stage-option-select="${escapeHtml(option.id)}">
           <button type="button" class="stage-option-select" data-stage-option-select="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 인게임 구성 선택"><b>${escapeHtml(option.label)}</b><em>+${numberFormat.format(option.price)}원</em></button>
           <button type="button" class="stage-option-remove" data-stage-option-remove="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 바로 삭제">×</button>
         </span>`).join('')
@@ -2310,15 +2313,23 @@ export class ShowcaseApp {
     this.paletteAppliedOnly = false;
     this.setPaletteTab('options');
     this.renderOptions();
-    requestAnimationFrame(() => {
+    cancelAnimationFrame(this.optionFocusFrame);
+    this.optionFocusFrame = requestAnimationFrame(() => {
+      this.optionFocusFrame = 0;
       const list = this.get<HTMLElement>('#option-list');
       const card = [...list.querySelectorAll<HTMLElement>('[data-option-card-id]')]
         .find((candidate) => candidate.dataset.optionCardId === optionId);
       if (!card) return;
       const listBounds = list.getBoundingClientRect();
       const cardBounds = card.getBoundingClientRect();
-      const top = list.scrollTop + cardBounds.top - listBounds.top - (list.clientHeight - cardBounds.height) / 2;
-      list.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      list.scrollTop = centeredScrollTop({
+        scrollTop: list.scrollTop,
+        viewportTop: listBounds.top,
+        viewportHeight: list.clientHeight,
+        contentHeight: list.scrollHeight,
+        itemTop: cardBounds.top,
+        itemHeight: cardBounds.height,
+      });
     });
   }
 
