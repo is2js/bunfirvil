@@ -13,6 +13,7 @@ import {
 import { castsExteriorStructureShadow } from './structure-shadow';
 import {
   bundangEditorSelectionPropIds,
+  bundangPreciseEditorPickOnly,
   refineBundangOptionProps,
   replacedBundangOpeningIds,
 } from './bundang-option-layout';
@@ -895,6 +896,8 @@ export class ThreeWorldRenderer {
     const projected = this.propRoot.children.flatMap((object) => {
       const id = String(object.userData.editorPropId || '');
       if (!id || (allowedIds && !allowedIds.has(id))) return [];
+      // 디자인 월은 긴 투영 사각형 전체를 보조 히트박스로 쓰지 않고 실제 얇은 메시 교차만 허용한다.
+      if (bundangPreciseEditorPickOnly(this.renderedProps.get(id))) return [];
       object.updateWorldMatrix(true, true);
       const bounds = new THREE.Box3().setFromObject(object);
       if (bounds.isEmpty()) return [];

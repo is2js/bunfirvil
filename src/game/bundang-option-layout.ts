@@ -112,7 +112,7 @@ export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLa
     dressRoomPowderStorage: { roomId: 'dress-room', edge: 'east', featureNearestRoomId: 'bedroom-2' },
     variantFacingRules: {
       A: { powderVanityYawOffsetDeg: 180 },
-      B: { bedroomOneYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
+      B: { bedroomOneYawOffsetDeg: 180, powderVanityYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
     },
     designWallRuns: [
       { id: 'living-south', roomZoneId: 'living', segmentIds: ['outer-south-living-before', 'outer-south-living-sill', 'outer-south-living-lintel', 'outer-south-living-after'], interiorNormal: [0, -1] },
@@ -131,7 +131,7 @@ export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLa
     bedroomOneStorage: { roomId: 'bedroom-1', edge: 'west', featureNearestRoomId: 'dress-room' },
     dressRoomPowderStorage: { roomId: 'dress-room', edge: 'west', featureNearestRoomId: 'bedroom-2' },
     variantFacingRules: {
-      A: { bedroomOneYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
+      A: { bedroomOneYawOffsetDeg: 180, powderVanityYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
       B: { powderVanityYawOffsetDeg: 180 },
     },
     designWallRuns: [
@@ -153,7 +153,7 @@ export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLa
     dressRoomPowderStorage: { roomId: 'dress-room', edge: 'north', featureNearestRoomId: 'bedroom-2' },
     variantFacingRules: {
       A: { powderStorageYawOffsetDeg: 180, powderSwapSections: true },
-      B: { bedroomOneYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180, powderSwapSections: true },
+      B: { bedroomOneYawOffsetDeg: 180, powderVanityYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180, powderSwapSections: true },
     },
     designWallRuns: [
       { id: 'living-west', roomZoneId: 'living', segmentIds: ['outer-west-living-before', 'outer-west-living-sill', 'outer-west-living-lintel', 'outer-west-living-after'], interiorNormal: [1, 0] },
@@ -173,7 +173,7 @@ export const BUNDANG_OPTION_LAYOUTS: Readonly<Record<UnitTypeId, BundangOptionLa
     bedroomOneStorage: { roomId: 'bedroom-1', edge: 'west', featureNearestRoomId: 'dress-room' },
     dressRoomPowderStorage: { roomId: 'dress-room', edge: 'west', featureNearestRoomId: 'bedroom-2' },
     variantFacingRules: {
-      A: { bedroomOneYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
+      A: { bedroomOneYawOffsetDeg: 180, powderVanityYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
       B: { bedroomOneYawOffsetDeg: 180, powderVanityYawOffsetDeg: 180, powderStorageYawOffsetDeg: 180 },
     },
     designWallRuns: [
@@ -554,6 +554,11 @@ export function replacedBundangOpeningIds(unitTypeId: string, selectedIds: Itera
       ? allowedAnchors.filter((anchor) => anchor.roomId === 'bedroom-1').slice(0, 1)
       : [];
   return new Set(anchors.map((anchor) => anchor.openingId).filter((id): id is string => Boolean(id)));
+}
+
+export function bundangPreciseEditorPickOnly(prop: ApartmentInteriorProp | undefined): boolean {
+  return prop?.sourceOptionId === BUNDANG_DESIGN_WALL_OPTION_ID
+    || prop?.installationRole === 'wall-skin-finish';
 }
 
 export function bundangEditorSelectionPropIds(

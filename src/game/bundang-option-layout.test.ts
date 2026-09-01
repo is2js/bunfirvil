@@ -6,6 +6,7 @@ import {
   BUNDANG_OPTION_LAYOUTS,
   BUNDANG_OPTION_DISPLAY_OVERRIDES,
   bundangEditorSelectionPropIds,
+  bundangPreciseEditorPickOnly,
   refineBundangOptionProps,
   replacedBundangOpeningIds,
 } from './bundang-option-layout';
@@ -164,6 +165,9 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     expect(bundangEditorSelectionPropIds(props, 'wall-a')).toEqual(['wall-a', 'wall-b']);
     expect(bundangEditorSelectionPropIds(props, 'floor-a')).toEqual(['floor-a', 'floor-b']);
     expect(bundangEditorSelectionPropIds(props, 'sofa')).toEqual(['sofa']);
+    expect(bundangPreciseEditorPickOnly(props[0])).toBe(true);
+    expect(bundangPreciseEditorPickOnly(props[2])).toBe(false);
+    expect(bundangPreciseEditorPickOnly(props[4])).toBe(false);
   });
 
   it('광폭 강마루 runtime 조각에 하나의 옵션 그룹 ID를 부여한다', () => {
@@ -220,10 +224,10 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
   it('파우더 화장대와 3칸 수납장을 분리해 평형·A/B형별 위치와 전면을 기본값으로 고정한다', async () => {
     const apartments = await apartmentsByUnit();
     const expected: Record<string, Record<'A' | 'B', { vanityYaw: number; storageYaw: number; swapped: boolean }>> = {
-      '51A': { A: { vanityYaw: 270, storageYaw: 90, swapped: false }, B: { vanityYaw: 90, storageYaw: 270, swapped: false } },
-      '55A': { A: { vanityYaw: 90, storageYaw: 270, swapped: false }, B: { vanityYaw: 270, storageYaw: 90, swapped: false } },
-      '55B': { A: { vanityYaw: 0, storageYaw: 180, swapped: true }, B: { vanityYaw: 0, storageYaw: 180, swapped: true } },
-      '59A': { A: { vanityYaw: 90, storageYaw: 270, swapped: false }, B: { vanityYaw: 270, storageYaw: 270, swapped: false } },
+      '51A': { A: { vanityYaw: 270, storageYaw: 90, swapped: false }, B: { vanityYaw: 270, storageYaw: 270, swapped: false } },
+      '55A': { A: { vanityYaw: 270, storageYaw: 270, swapped: false }, B: { vanityYaw: 270, storageYaw: 90, swapped: false } },
+      '55B': { A: { vanityYaw: 0, storageYaw: 180, swapped: true }, B: { vanityYaw: 180, storageYaw: 180, swapped: true } },
+      '59A': { A: { vanityYaw: 270, storageYaw: 270, swapped: false }, B: { vanityYaw: 270, storageYaw: 270, swapped: false } },
     };
     for (const [unitType, layout] of Object.entries(BUNDANG_OPTION_LAYOUTS)) {
       const geometry = apartments.get(unitType)?.geometry;
