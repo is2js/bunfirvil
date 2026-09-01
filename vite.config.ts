@@ -15,6 +15,7 @@ export default defineConfig({
         buildingAdmin: resolve(__dirname, "building-admin/index.html"),
         interiorAdmin: resolve(__dirname, "interior-admin/index.html"),
         guides: resolve(__dirname, "guides/index.html"),
+        households: resolve(__dirname, "households/index.html"),
       },
     },
   },
