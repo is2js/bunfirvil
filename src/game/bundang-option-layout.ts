@@ -55,11 +55,13 @@ const DRESS_ROOM_POWDER_STORAGE_OPTION_ID = 'dress-room-powder-storage';
 const BATHROOM_COMBINATION_VENTILATOR_OPTION_ID = 'bathroom-combination-ventilator';
 const SMART_LIGHTING_OPTION_ID = 'smart-lighting-package';
 const AIR_PLANNER_OPTION_ID = 'air-planner-ceiling-vent';
+const AIR_PLANNER_RENDER_DIMENSIONS_METERS: [number, number, number] = [.36, .29, .14];
 const CLOSET_BREEZE_OPTION_ID = 'closet-breeze-dehumidifier';
 const CLOTHING_CARE_APPLIANCE_OPTION_ID = 'lg-styler-sc5mbr53';
 const SILENT_RANGE_HOOD_OPTION_ID = 'silent-range-hood';
 export const DEFAULT_GAS_COOKTOP_ASSET_ID = 'bunfirvil-default-navien-magic-gas-cooktop-3';
 export const DEFAULT_RANGE_HOOD_ASSET_ID = 'bunfirvil-default-kitchen-range-hood';
+export const KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS = .961;
 export const COOKTOP_OPTION_IDS = Object.freeze([
   'electric-cooktop-erh-3903',
   'induction-cooktop-bei3asb4bi',
@@ -585,7 +587,7 @@ function airPlannerRoomUnitProps(
         assetId: AIR_PLANNER_OPTION_ID,
         roomZoneId: roomId,
         positionMeters: [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2],
-        dimensionsMeters: [.72, .58, .28],
+        dimensionsMeters: [...AIR_PLANNER_RENDER_DIMENSIONS_METERS],
         yawDeg: normalizedYaw(sourceYaw + (planVariantKey(planVariant) === 'B' ? 180 : 0)),
         materialVariantId: 'system-ac-light-gray',
         mountHeightMeters: undefined,
@@ -735,7 +737,8 @@ function kitchenCooktopAndHoodProps(
       positionMeters: cooktopPosition,
       dimensionsMeters: cooktopDimensions[cooktopAssetId],
       yawDeg: normalizedYaw(cooktopYaw),
-      mountHeightMeters: .93,
+      // 기본/업그레이드 상판의 0.960m 상단보다 1mm 위에서 시작해 판 전체를 노출한다.
+      mountHeightMeters: KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS,
       materialVariantId: cooktopAssetId === DEFAULT_GAS_COOKTOP_ASSET_ID ? 'brushed-chrome' : 'charcoal-accent',
       sourceOptionId: cooktopSourceOptionId,
       anchorId: 'kitchen.cooktop',
@@ -783,7 +786,7 @@ function refineWidePlankAndVentilatorProp(prop: ApartmentInteriorProp): Apartmen
   if (prop.assetId === AIR_PLANNER_OPTION_ID) {
     return {
       ...prop,
-      dimensionsMeters: [.72, .58, .28],
+      dimensionsMeters: [...AIR_PLANNER_RENDER_DIMENSIONS_METERS],
       materialVariantId: 'system-ac-light-gray',
       // 천장 높이에서 본체 높이를 뺀 ThreeWorldRenderer의 ceiling fallback을 쓴다.
       mountHeightMeters: undefined,

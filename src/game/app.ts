@@ -10,6 +10,7 @@ import { highlightedMessageParts } from './highlighted-message';
 import { interiorSelectionName } from './interior-selection-name';
 import { optionPropsForSelection, optionSourceIdForProp } from './option-prop-selection';
 import { centeredScrollTop } from './palette-scroll';
+import { isMapPanDrag } from './pointer-gesture';
 import { COOKTOP_OPTION_IDS } from './bundang-option-layout';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import { stageOptionChipActionFromPath } from './stage-option-chip-action';
@@ -104,6 +105,13 @@ interface DemoSkill {
   cooldownMs: number;
   manaCost: number;
   glyph: string;
+}
+
+interface PendingSceneSelection {
+  pointerId: number;
+  prop: ApartmentInteriorProp | null;
+  openMenu: boolean;
+  message: string;
 }
 
 const BASIC_ATTACK: DemoSkill = {
@@ -205,9 +213,12 @@ export class ShowcaseApp {
   private interiorGhostValidation: InteriorPlacementValidation | null = null;
   private lastInteriorPointerPoint: NumericPoint | null = null;
   private mapPanPointer = -1;
+  private mapPanStartX = 0;
+  private mapPanStartY = 0;
   private mapPanLastX = 0;
   private mapPanLastY = 0;
   private mapPanMoved = false;
+  private pendingSceneSelection: PendingSceneSelection | null = null;
   private cameraTrackingPaused = false;
   private animationFrame = 0;
   private lastMetricPaint = 0;
@@ -789,8 +800,8 @@ export class ShowcaseApp {
         return;
       }
       if (event.button === 0) {
-        if ((this.paletteTab === 'furniture' || this.interiorRelocationArmed || this.interiorGhostProp) && this.handleInteriorPointerDown(event)) return;
-        if (this.paletteTab === 'options' && this.handleFurnitureSelectionPointerDown(event)) return;
+        if (this.interiorGhostProp && this.handleInteriorPointerDown(event)) return;
+        this.prepareSceneSelection(event);
         this.startMapPan(event);
         return;
       }
@@ -808,7 +819,7 @@ export class ShowcaseApp {
     }, { signal });
     stage.addEventListener('pointercancel', (event) => {
       this.handleInteriorPointerUp(event);
-      this.finishMapPan(event);
+      this.finishMapPan(event, true);
     }, { signal });
     stage.addEventListener('wheel', (event) => {
       if (this.inspectionLaser.active && event.shiftKey) {
@@ -865,6 +876,8 @@ export class ShowcaseApp {
     if (!target || target.closest('button,a,input,textarea,select,label,[contenteditable="true"],.furniture-selection-toolbar')) return;
     event.preventDefault();
     this.mapPanPointer = event.pointerId;
+    this.mapPanStartX = event.clientX;
+    this.mapPanStartY = event.clientY;
     this.mapPanLastX = event.clientX;
     this.mapPanLastY = event.clientY;
     this.mapPanMoved = false;
@@ -875,11 +888,11 @@ export class ShowcaseApp {
 
   private handleMapPanMove(event: PointerEvent): void {
     if (event.pointerId !== this.mapPanPointer) return;
-    const deltaX = event.clientX - this.mapPanLastX;
-    const deltaY = event.clientY - this.mapPanLastY;
+    if (!this.mapPanMoved && !isMapPanDrag(this.mapPanStartX, this.mapPanStartY, event.clientX, event.clientY)) return;
+    const deltaX = event.clientX - (this.mapPanMoved ? this.mapPanLastX : this.mapPanStartX);
+    const deltaY = event.clientY - (this.mapPanMoved ? this.mapPanLastY : this.mapPanStartY);
     this.mapPanLastX = event.clientX;
     this.mapPanLastY = event.clientY;
-    if (Math.abs(deltaX) + Math.abs(deltaY) < .5) return;
     this.mapPanMoved = true;
     this.cameraTrackingPaused = true;
     const stage = this.get<HTMLElement>('#game-stage');
@@ -887,14 +900,20 @@ export class ShowcaseApp {
     this.renderer.panByScreenDelta(deltaX, deltaY);
   }
 
-  private finishMapPan(event: PointerEvent): void {
+  private finishMapPan(event: PointerEvent, cancelled = false): void {
     if (event.pointerId !== this.mapPanPointer) return;
     const stage = this.get<HTMLElement>('#game-stage');
+    const moved = this.mapPanMoved;
     if (stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
     stage.classList.remove('is-panning');
-    stage.dataset.lastPanMoved = String(this.mapPanMoved);
+    stage.dataset.lastPanMoved = String(moved);
     this.mapPanPointer = -1;
     this.mapPanMoved = false;
+    const pending = this.pendingSceneSelection?.pointerId === event.pointerId
+      ? this.pendingSceneSelection
+      : null;
+    this.pendingSceneSelection = null;
+    if (!cancelled && !moved && pending) this.commitSceneSelection(pending);
   }
 
   private resumeCameraTracking(): void {
@@ -1624,27 +1643,32 @@ export class ShowcaseApp {
     if (status) status.textContent = `${interiorSelectionName(prop, this.catalog.bOptions, this.interiorAssets)} · ${message}`;
   }
 
-  private handleFurnitureSelectionPointerDown(event: PointerEvent): boolean {
-    if ((event.target as HTMLElement | null)?.closest('.furniture-selection-toolbar')) {
-      event.preventDefault();
-      event.stopPropagation();
-      return Boolean(this.selectedSceneProp());
-    }
+  private prepareSceneSelection(event: PointerEvent): void {
     const picked = this.scenePropAt(event);
-    if (!picked) {
-      this.selectedLocalPropId = '';
-      this.selectedStageOptionId = '';
-      this.selectedScenePropSnapshot = null;
-      this.furnitureContextMenuOpen = false;
-      this.threeRenderer?.setEditorSelection('');
-      this.renderOptions();
-      this.updateFurnitureToolbar();
-      return false;
+    const openMenu = this.paletteTab === 'furniture';
+    this.pendingSceneSelection = {
+      pointerId: event.pointerId,
+      prop: picked || null,
+      openMenu,
+      message: openMenu
+        ? '가구를 선택했습니다. 화면 조작창에서 재배치할 수 있습니다.'
+        : '가구를 선택했습니다. L 키로 가까운 벽에 자석처럼 붙일 수 있습니다.',
+    };
+  }
+
+  private commitSceneSelection(pending: PendingSceneSelection): void {
+    if (pending.prop) {
+      this.selectSceneProp(pending.prop, pending.openMenu, pending.message);
+      return;
     }
-    event.preventDefault();
-    event.stopPropagation();
-    this.selectSceneProp(picked, false, '가구를 선택했습니다. L 키로 가까운 벽에 자석처럼 붙일 수 있습니다.');
-    return true;
+    this.selectedLocalPropId = '';
+    this.selectedStageOptionId = '';
+    this.selectedScenePropSnapshot = null;
+    this.furnitureContextMenuOpen = false;
+    this.threeRenderer?.setEditorSelection('');
+    this.renderOptions();
+    this.renderFurniturePalette();
+    this.updateFurnitureToolbar();
   }
 
   private handleFurnitureContextMenu(event: MouseEvent): boolean {

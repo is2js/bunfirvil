@@ -349,11 +349,13 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   const mainSelectionX = Number(await authoringCanvas.getAttribute("data-selected-editor-x"));
   const mainSelectionY = Number(await authoringCanvas.getAttribute("data-selected-editor-y"));
   const beforeMainDrag = await page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId);
+  const beforeFurniturePan = Number(await authoringCanvas.getAttribute('data-pan-count') || 0);
   await page.mouse.move(authoringBounds!.x + mainSelectionX, authoringBounds!.y + mainSelectionY);
   await page.mouse.down();
   await page.mouse.move(authoringBounds!.x + mainSelectionX + 24, authoringBounds!.y + mainSelectionY, { steps: 4 });
   await page.mouse.up();
-  await expect.poll(async () => page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId)).not.toBe(beforeMainDrag);
+  await expect.poll(async () => Number(await authoringCanvas.getAttribute('data-pan-count') || 0)).toBeGreaterThan(beforeFurniturePan);
+  expect(await page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId)).toBe(beforeMainDrag);
   const beforeRelocate = await page.evaluate((mapId) => JSON.stringify(JSON.parse(localStorage.getItem(`bunfirvil:layout:v1:${mapId}`) || '{}').props?.[0]?.positionMeters), placedMapId);
   await page.getByRole("button", { name: "가구 재배치" }).click();
   await page.mouse.click(authoringBounds!.x + authoringBounds!.width * .61, authoringBounds!.y + authoringBounds!.height * .56);

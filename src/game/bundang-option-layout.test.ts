@@ -9,6 +9,7 @@ import {
   bundangEditorSelectionPropIds,
   bundangKitchenApplianceAnchor,
   bundangPreciseEditorPickOnly,
+  KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS,
   refrigeratorCabinetFacingYaw,
   refineBundangOptionProps,
   replacedBundangOpeningIds,
@@ -208,6 +209,7 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
           anchorId: 'kitchen.cooktop',
           positionMeters: applianceAnchor?.cooktopPosition,
           yawDeg: expectedYaw,
+          mountHeightMeters: KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS,
         });
         expect(defaultHoods[0]).toMatchObject({
           id: `inspection-${unitType}-kitchen-range-hood`,
@@ -223,6 +225,7 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
           expect(cooktops[0]).toMatchObject({
             id: `inspection-${unitType}-kitchen-cooktop`, assetId: optionId, sourceOptionId: optionId,
             anchorId: 'kitchen.cooktop', yawDeg: expectedYaw,
+            mountHeightMeters: KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS,
           });
         }
         const silent = optionProps(geometry, unitType, ['silent-range-hood'], staleRuntimeProps, variant)
@@ -498,7 +501,7 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
     }]);
     expect(props[0]).toMatchObject({
       assetId: 'air-planner-ceiling-vent',
-      dimensionsMeters: [.72, .58, .28],
+      dimensionsMeters: [.36, .29, .14],
       materialVariantId: 'system-ac-light-gray',
       installationRole: 'ceiling-appliance',
       sourceOptionId: 'air-planner-ceiling-vent',
@@ -507,6 +510,7 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
 
     const appliance = STRUCTURAL_PROP_ASSETS.find((asset) => asset.assetId === 'air-planner-ceiling-vent');
     expect(appliance?.mountingKind).toBe('ceiling');
+    expect(appliance?.defaultDimensionsMeters).toEqual([.36, .29, .14]);
     expect(appliance?.parts?.filter((part) => part.materialRole === 'air-duct')).toHaveLength(2);
     expect(appliance?.parts?.filter((part) => part.materialRole === 'air-duct-rim')).toHaveLength(2);
     expect(appliance?.parts?.some((part) => part.materialRole === 'airflow-accent')).toBe(true);
@@ -566,6 +570,7 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
           expect(unit.yawDeg, `${unitType}:${variant}:${unit.roomZoneId}:yaw`)
             .toBe((sourceYaw + (variant === 'B' ? 180 : 0)) % 360);
           expect(unit.anchorId).toBe(`bunfirvil.options.airPlannerRoom.${unit.roomZoneId}`);
+          expect(unit.dimensionsMeters).toEqual([.36, .29, .14]);
           expect(unit.collisionMode).toBe('visual-only');
           const placement = apartmentPropPlacement(transformedApartment, unit);
           const expectedWorld = apartmentUnitWorldPoint(transformedApartment, center);
@@ -624,16 +629,24 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
   });
 
   it('기본 가스쿡탑·3종 전기쿡탑과 기본/D-사일런트 후드를 서로 다른 정밀 recipe로 제공한다', () => {
+    expect(KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS).toBeGreaterThan(.96);
     const assets = new Map(STRUCTURAL_PROP_ASSETS.map((asset) => [asset.assetId, asset]));
     const gas = assets.get('bunfirvil-default-navien-magic-gas-cooktop-3');
+    expect(gas?.defaultMountHeightMeters).toBe(KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS);
     expect(gas?.parts?.filter((part) => part.materialRole === 'gas-burner')).toHaveLength(3);
     expect(gas?.parts?.filter((part) => part.materialRole === 'gas-control-knob')).toHaveLength(4);
 
     const erh = assets.get('electric-cooktop-erh-3903');
+    expect(erh?.defaultMountHeightMeters).toBe(KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS);
+    expect(erh?.parts?.some((part) => part.materialRole === 'cooktop-glass')).toBe(true);
     expect(erh?.parts?.filter((part) => part.materialRole === 'cooktop-radiant-ring').length).toBeGreaterThanOrEqual(2);
     const lg = assets.get('induction-cooktop-bei3asb4bi');
+    expect(lg?.defaultMountHeightMeters).toBe(KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS);
+    expect(lg?.parts?.some((part) => part.materialRole === 'cooktop-glass')).toBe(true);
     expect(lg?.parts?.filter((part) => part.materialRole === 'cooktop-control-led')).toHaveLength(0);
     const samsung = assets.get('induction-cooktop-nz63b5056ak');
+    expect(samsung?.defaultMountHeightMeters).toBe(KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS);
+    expect(samsung?.parts?.some((part) => part.materialRole === 'cooktop-glass')).toBe(true);
     expect(samsung?.parts?.filter((part) => part.materialRole === 'cooktop-control-led')).toHaveLength(4);
 
     const basicHood = assets.get('bunfirvil-default-kitchen-range-hood');

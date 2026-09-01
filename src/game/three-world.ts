@@ -15,6 +15,7 @@ import {
   bundangEditorSelectionPropIds,
   bundangPreciseEditorPickOnly,
   isBundangManagedKitchenApplianceProp,
+  KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS,
   refineBundangOptionProps,
   replacedBundangOpeningIds,
 } from './bundang-option-layout';
@@ -230,7 +231,7 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
   },
   {
     assetId: 'air-planner-ceiling-vent', rendererKind: 'procedural', mountingKind: 'ceiling',
-    defaultDimensionsMeters: [.72, .58, .28],
+    defaultDimensionsMeters: [.36, .29, .14],
     parts: [
       // 밝은 시스템에어컨 계열의 본체와 천장 고정판.
       { shape: 'box', scale: [.92, .78, .64], offset: [0, -.04, .34], materialRole: 'primary' },
@@ -268,7 +269,7 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
   })),
   {
     assetId: 'bunfirvil-default-navien-magic-gas-cooktop-3', rendererKind: 'procedural', mountingKind: 'anchored',
-    defaultMountHeightMeters: .93, defaultDimensionsMeters: [.59, .51, .055],
+    defaultMountHeightMeters: KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS, defaultDimensionsMeters: [.59, .51, .055],
     parts: [
       { shape: 'box', scale: [1, 1, .34], offset: [0, 0, .18], materialRole: 'gas-cooktop-body' },
       ...([[-.26, -.22, .24], [-.26, .20, .20], [.22, -.02, .29]] as Array<[number, number, number]>).flatMap(([x, z, size]): RuntimePart[] => ([
@@ -284,7 +285,7 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
   },
   {
     assetId: 'electric-cooktop-erh-3903', rendererKind: 'procedural', mountingKind: 'anchored',
-    defaultMountHeightMeters: .93, defaultDimensionsMeters: [.59, .52, .06],
+    defaultMountHeightMeters: KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS, defaultDimensionsMeters: [.59, .52, .06],
     parts: [
       { shape: 'box', scale: [1, 1, .32], offset: [0, 0, .17], materialRole: 'cooktop-glass' },
       { shape: 'torus', scale: [.30, .30, .045], offset: [-.25, -.20, .50], materialRole: 'cooktop-zone-ring' },
@@ -296,7 +297,7 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
   },
   {
     assetId: 'induction-cooktop-bei3asb4bi', rendererKind: 'procedural', mountingKind: 'anchored',
-    defaultMountHeightMeters: .93, defaultDimensionsMeters: [.58, .52, .059],
+    defaultMountHeightMeters: KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS, defaultDimensionsMeters: [.58, .52, .059],
     parts: [
       { shape: 'box', scale: [1, 1, .32], offset: [0, 0, .17], materialRole: 'cooktop-glass' },
       { shape: 'box', scale: [.31, .014, .035], offset: [-.24, -.22, .49], materialRole: 'cooktop-zone-ring' },
@@ -308,7 +309,7 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
   },
   {
     assetId: 'induction-cooktop-nz63b5056ak', rendererKind: 'procedural', mountingKind: 'anchored',
-    defaultMountHeightMeters: .93, defaultDimensionsMeters: [.60, .52, .048],
+    defaultMountHeightMeters: KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS, defaultDimensionsMeters: [.60, .52, .048],
     parts: [
       { shape: 'box', scale: [1, 1, .34], offset: [0, 0, .18], materialRole: 'cooktop-glass' },
       { shape: 'box', scale: [.34, .014, .04], offset: [-.24, -.21, .51], materialRole: 'cooktop-zone-ring' },
