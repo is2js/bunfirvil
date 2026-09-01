@@ -13,6 +13,7 @@ import {
   refrigeratorCabinetFacingYaw,
   refineBundangOptionProps,
   replacedBundangOpeningIds,
+  secondaryBedroomStoragePlacement,
 } from './bundang-option-layout';
 import { planVariantDefinition } from './plan-variants';
 import { mergeEditorPropsWithBase, mergeRuntimeAssetCatalogs, STRUCTURAL_PROP_ASSETS } from './three-world';
@@ -96,6 +97,24 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
       label: '삼성 인덕션 3구(NZ63B5056AK)',
       previewUrl: 'assets/options/previews/induction-cooktop-nz63b5056ak-v2.png',
     });
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['bedroom-2-built-in-closet-pet']).toMatchObject({
+      label: '침실2 붙박이장',
+      previewUrl: 'assets/options/previews/bedroom-secondary-built-in-closet-v2.webp',
+    });
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['bedroom-2-closet-desk-set']?.label)
+      .toBe('침실2 데스크형 붙박이장');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['bedroom-3-built-in-closet-pet']?.label)
+      .toBe('침실3 붙박이장');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['bedroom-3-closet-desk-set']?.label)
+      .toBe('침실3 데스크형 붙박이장');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['built-in-oven-navien']).toMatchObject({
+      label: '나비엔 매직 컨벡션 스팀 오븐(EOB-5004)',
+      previewUrl: 'assets/options/previews/built-in-oven-navien-v2.webp',
+    });
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['built-in-oven-samsung']?.label)
+      .toBe('삼성 비스포크 오븐(NQ50T8539BK)');
+    expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['built-in-oven-lg']?.label)
+      .toBe('LG 디오스 광파오븐(MZ385EBTA)');
     expect(BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES['air-planner-ceiling-vent']?.[0])
       .toMatchObject({ label: '조명특화 연동 -15만원', prices: { '55A': 4_830_000 } });
     expect(BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES['closet-breeze-dehumidifier']?.[0])
@@ -446,6 +465,109 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
         expect(clothingCare?.mirrored, `${unitType}:${variant}:styler end`).toBe(expectedClothingCareMirrored[unitType][variant]);
       }
     }
+  });
+
+  it('침실2와 59A 침실3 ALT1/ALT2를 문 반대 모서리·창가 데스크 규칙으로 배치한다', async () => {
+    const apartments = await apartmentsByUnit();
+    const expected: Record<string, Array<{
+      roomId: 'bedroom-2' | 'bedroom-3';
+      closet: [number, number, number];
+      wardrobe: [number, number, number];
+      desk: [number, number];
+      yawA: number;
+    }>> = {
+      '51A': [{ roomId: 'bedroom-2', closet: [.975, 6.14, 1.61], wardrobe: [.44, 6.925, 2.11], desk: [.44, 8.43], yawA: 270 }],
+      '55A': [{ roomId: 'bedroom-2', closet: [10.75, 5.74, 1.76], wardrobe: [11.36, 6.50, 2.06], desk: [11.36, 7.98], yawA: 90 }],
+      '55B': [{ roomId: 'bedroom-2', closet: [11.075, 5.84, 2.01], wardrobe: [11.81, 6.75, 2.36], desk: [11.81, 8.38], yawA: 90 }],
+      '59A': [
+        { roomId: 'bedroom-2', closet: [9.075, 5.94, 1.51], wardrobe: [9.56, 6.70, 2.06], desk: [9.56, 8.18], yawA: 90 },
+        { roomId: 'bedroom-3', closet: [11.675, 5.94, 1.51], wardrobe: [12.16, 6.70, 2.06], desk: [12.16, 8.18], yawA: 90 },
+      ],
+    };
+    for (const [unitType, rows] of Object.entries(expected)) {
+      const geometry = apartments.get(unitType)?.geometry;
+      expect(geometry, `${unitType}:geometry`).toBeTruthy();
+      if (!geometry) continue;
+      for (const row of rows) {
+        const petOptionId = `${row.roomId}-built-in-closet-pet`;
+        const deskOptionId = `${row.roomId}-closet-desk-set`;
+        const direct = secondaryBedroomStoragePlacement(geometry, row.roomId);
+        expect(direct?.closet.position[0]).toBeCloseTo(row.closet[0]);
+        expect(direct?.closet.position[1]).toBeCloseTo(row.closet[1]);
+        expect(direct?.closet.width).toBeCloseTo(row.closet[2]);
+        expect(direct?.deskWall.wardrobePosition[0]).toBeCloseTo(row.wardrobe[0]);
+        expect(direct?.deskWall.wardrobePosition[1]).toBeCloseTo(row.wardrobe[1]);
+        expect(direct?.deskWall.deskPosition[0]).toBeCloseTo(row.desk[0]);
+        expect(direct?.deskWall.deskPosition[1]).toBeCloseTo(row.desk[1]);
+
+        for (const variant of ['A', 'B'] as const) {
+          const legacy: ApartmentInteriorProp[] = [
+            { id: `inspection-${unitType}-${row.roomId}-wardrobe`, assetId: 'wardrobe-two-door', anchorId: `options.storage.${row.roomId}` },
+            { id: `inspection-${unitType}-${row.roomId}-desk-desk`, assetId: 'work-desk', anchorId: `options.storage.${row.roomId}.desk` },
+          ];
+          const pet = optionProps(geometry, unitType, [petOptionId], legacy, variant)
+            .filter((prop) => prop.sourceOptionId === petOptionId);
+          expect(pet, `${unitType}:${row.roomId}:${variant}:pet`).toHaveLength(1);
+          expect(pet[0]).toMatchObject({
+            assetId: 'bunfirvil-secondary-bedroom-pet-closet',
+            yawDeg: variant === 'A' ? 0 : 180,
+          });
+          expect((pet[0].dimensionsMeters as number[])[0]).toBeCloseTo(row.closet[2]);
+          expect(pet.some((prop) => String(prop.id).startsWith('inspection-'))).toBe(false);
+
+          const deskSet = optionProps(geometry, unitType, [deskOptionId], legacy, variant)
+            .filter((prop) => prop.sourceOptionId === deskOptionId);
+          expect(deskSet, `${unitType}:${row.roomId}:${variant}:desk`).toHaveLength(2);
+          const wardrobe = deskSet.find((prop) => prop.assetId === 'bunfirvil-secondary-bedroom-desk-wardrobe-three-bay');
+          const desk = deskSet.find((prop) => prop.assetId === 'bunfirvil-secondary-bedroom-desk-module');
+          const expectedYaw = (row.yawA + (variant === 'B' ? 180 : 0)) % 360;
+          expect(wardrobe?.yawDeg).toBe(expectedYaw);
+          expect(desk?.yawDeg).toBe(expectedYaw);
+          expect((wardrobe?.dimensionsMeters as number[])[0]).toBeCloseTo(row.wardrobe[2]);
+          expect(wardrobe?.positionMeters?.[0]).toBeCloseTo(row.wardrobe[0]);
+          expect(wardrobe?.positionMeters?.[1]).toBeCloseTo(row.wardrobe[1]);
+          expect(desk?.positionMeters?.[0]).toBeCloseTo(row.desk[0]);
+          expect(desk?.positionMeters?.[1]).toBeCloseTo(row.desk[1]);
+          expect(bundangEditorSelectionPropIds(deskSet, String(desk?.id))).toHaveLength(2);
+        }
+      }
+    }
+  });
+
+  it('아일랜드 오픈 bay는 유지하고 오븐 3종만 즉시 교체·해제한다', async () => {
+    const apartments = await apartmentsByUnit();
+    for (const [unitType, apartment] of apartments) {
+      const geometry = apartment.geometry;
+      expect(geometry, `${unitType}:geometry`).toBeTruthy();
+      if (!geometry) continue;
+      const legacyOven: ApartmentInteriorProp = {
+        id: `inspection-${unitType}-kitchen-built-in-oven`,
+        assetId: 'built-in-oven-samsung',
+        anchorId: 'kitchen.island.builtInOven',
+        installationRole: 'kitchen-built-in-appliance',
+      };
+      for (const variant of ['A', 'B'] as const) {
+        const empty = optionProps(geometry, unitType, ['island-counter-modern'], [legacyOven], variant);
+        expect(empty.filter((prop) => prop.installationRole === 'kitchen-island-appliance-bay')).toHaveLength(1);
+        expect(empty.filter((prop) => prop.installationRole === 'kitchen-built-in-oven')).toHaveLength(0);
+        for (const ovenOptionId of ['built-in-oven-navien', 'built-in-oven-samsung', 'built-in-oven-lg']) {
+          const props = optionProps(geometry, unitType, ['island-counter-modern', ovenOptionId], [legacyOven], variant);
+          const bays = props.filter((prop) => prop.installationRole === 'kitchen-island-appliance-bay');
+          const ovens = props.filter((prop) => prop.installationRole === 'kitchen-built-in-oven');
+          expect(bays, `${unitType}:${variant}:${ovenOptionId}:bay`).toHaveLength(1);
+          expect(ovens, `${unitType}:${variant}:${ovenOptionId}:oven`).toHaveLength(1);
+          expect(ovens[0].assetId).toBe(ovenOptionId);
+          expect(ovens[0].sourceOptionId).toBe(ovenOptionId);
+          expect(ovens[0].positionMeters).not.toEqual(bays[0].positionMeters);
+          expect(bays[0].sourceOptionId).toBe('island-counter-modern');
+        }
+      }
+    }
+    const assets = new Map(STRUCTURAL_PROP_ASSETS.map((asset) => [asset.assetId, asset]));
+    expect(assets.get('bunfirvil-island-appliance-open-bay')?.parts?.some((part) => part.materialRole === 'rice-cooker-body')).toBe(true);
+    expect(assets.get('built-in-oven-navien')?.parts?.filter((part) => part.materialRole === 'oven-dial')).toHaveLength(2);
+    expect(assets.get('built-in-oven-samsung')?.parts?.filter((part) => part.materialRole === 'oven-dial')).toHaveLength(0);
+    expect(assets.get('built-in-oven-lg')?.parts?.filter((part) => part.materialRole === 'oven-dial')).toHaveLength(1);
   });
 
   it('파우더 화장대와 3칸 수납장을 분리해 평형·A/B형별 위치와 전면을 기본값으로 고정한다', async () => {

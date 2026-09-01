@@ -257,16 +257,113 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
       { shape: 'cylinder', scale: [0.46, 0.46, 0.08], offset: [0, 0, 0.91], materialRole: 'secondary' },
     ],
   },
-  ...['built-in-oven-navien', 'built-in-oven-samsung', 'built-in-oven-lg'].map((assetId): RuntimeAsset => ({
-    assetId, rendererKind: 'procedural', mountingKind: 'anchored', defaultDimensionsMeters: [0.6, 0.55, 0.6],
+  {
+    assetId: 'bunfirvil-secondary-bedroom-pet-closet', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [1.55, .58, 2.2],
     parts: [
-      { shape: 'box', scale: [1, 1, 1], offset: [0, 0, 0.5], materialRole: 'primary' },
-      { shape: 'box', scale: [0.90, 0.035, 0.68], offset: [0, 0.51, 0.45], materialRole: 'accent' },
-      { shape: 'box', scale: [0.90, 0.045, 0.18], offset: [0, 0.52, 0.84], materialRole: 'secondary' },
-      { shape: 'cylinder', scale: [0.055, 0.05, 0.055], offset: [0.32, 0.55, 0.84], materialRole: 'primary' },
-      { shape: 'box', scale: [0.68, 0.055, 0.035], offset: [0, 0.55, 0.16], materialRole: 'secondary' },
+      { shape: 'box', scale: [1, .94, 1], offset: [0, -.03, .5], materialRole: 'primary' },
+      { shape: 'box', scale: [.322, .035, .61], offset: [-.335, .49, .675], materialRole: 'secondary' },
+      { shape: 'box', scale: [.322, .035, .61], offset: [-.005, .49, .675], materialRole: 'secondary' },
+      { shape: 'box', scale: [.322, .035, .93], offset: [.335, .49, .51], materialRole: 'secondary' },
+      ...[.075, .205, .335].map((offsetZ): RuntimePart => ({
+        shape: 'box', scale: [.652, .04, .116], offset: [-.17, .495, offsetZ], materialRole: 'secondary',
+      })),
+      ...[-.17, .165].map((offsetX): RuntimePart => ({
+        shape: 'box', scale: [.006, .045, .94], offset: [offsetX, .515, .5], materialRole: 'cabinet-seam',
+      })),
+      ...[.14, .27].map((offsetZ): RuntimePart => ({
+        shape: 'box', scale: [.48, .025, .012], offset: [-.17, .53, offsetZ], materialRole: 'cabinet-handle',
+      })),
+      { shape: 'box', scale: [1, 1, .035], offset: [0, 0, .02], materialRole: 'accent' },
     ],
-  })),
+  },
+  {
+    assetId: 'bunfirvil-secondary-bedroom-desk-wardrobe-three-bay', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [2.1, .58, 2.2],
+    parts: [
+      { shape: 'box', scale: [1, .94, 1], offset: [0, -.03, .5], materialRole: 'primary' },
+      ...[-.33, 0, .33].map((offset): RuntimePart => ({
+        shape: 'box', scale: [.322, .035, .93], offset: [offset, .49, .51], materialRole: 'secondary',
+      })),
+      ...[-.165, .165].map((offset): RuntimePart => ({
+        shape: 'box', scale: [.006, .045, .94], offset: [offset, .515, .5], materialRole: 'cabinet-seam',
+      })),
+      { shape: 'box', scale: [1, 1, .035], offset: [0, 0, .02], materialRole: 'accent' },
+    ],
+  },
+  {
+    assetId: 'bunfirvil-secondary-bedroom-desk-module', rendererKind: 'procedural', mountingKind: 'floor',
+    defaultDimensionsMeters: [.9, .58, 2.2],
+    parts: [
+      { shape: 'box', scale: [1, .16, .68], offset: [0, -.42, .64], materialRole: 'primary' },
+      ...[-.375, -.125, .125, .375].map((offset): RuntimePart => ({
+        shape: 'box', scale: [.242, .045, .265], offset: [offset, .49, .855], materialRole: 'secondary',
+      })),
+      { shape: 'box', scale: [.96, .58, .025], offset: [0, .17, .61], materialRole: 'secondary' },
+      { shape: 'box', scale: [.96, 1, .035], offset: [0, 0, .345], materialRole: 'accent' },
+      { shape: 'box', scale: [.26, .92, .325], offset: [.36, -.03, .165], materialRole: 'primary' },
+      ...[.075, .18, .285].map((offsetZ): RuntimePart => ({
+        shape: 'box', scale: [.245, .05, .09], offset: [.36, .47, offsetZ], materialRole: 'secondary',
+      })),
+      { shape: 'box', scale: [.86, .025, .018], offset: [0, .32, .585], materialRole: 'cabinet-light' },
+      { shape: 'box', scale: [.12, .026, .07], offset: [.22, .51, .39], materialRole: 'outlet' },
+    ],
+  },
+  {
+    assetId: 'bunfirvil-island-appliance-open-bay', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultMountHeightMeters: .11, defaultDimensionsMeters: [1.18, .12, .72],
+    parts: [
+      { shape: 'box', scale: [1, .12, .96], offset: [0, -.44, .5], materialRole: 'primary' },
+      { shape: 'box', scale: [.025, 1, .96], offset: [-.487, 0, .5], materialRole: 'primary' },
+      { shape: 'box', scale: [.025, 1, .96], offset: [.487, 0, .5], materialRole: 'primary' },
+      { shape: 'box', scale: [.018, 1, .96], offset: [0, 0, .5], materialRole: 'primary' },
+      { shape: 'box', scale: [.47, .18, .62], offset: [-.25, -.35, .61], materialRole: 'cabinet-opening' },
+      { shape: 'box', scale: [.47, .18, .62], offset: [.25, -.35, .61], materialRole: 'cabinet-opening' },
+      { shape: 'box', scale: [.47, .92, .18], offset: [-.25, 0, .105], materialRole: 'secondary' },
+      { shape: 'box', scale: [.47, .92, .18], offset: [.25, 0, .105], materialRole: 'secondary' },
+      { shape: 'box', scale: [.33, .54, .018], offset: [-.25, .51, .16], materialRole: 'cabinet-handle' },
+      { shape: 'box', scale: [.33, .54, .018], offset: [.25, .51, .16], materialRole: 'cabinet-handle' },
+      { shape: 'box', scale: [.45, .82, .035], offset: [.25, -.02, .32], materialRole: 'secondary' },
+      { shape: 'ellipsoid', scale: [.27, .48, .36], offset: [.25, .02, .56], materialRole: 'rice-cooker-body' },
+      { shape: 'ellipsoid', scale: [.25, .39, .12], offset: [.25, .02, .76], materialRole: 'rice-cooker-lid' },
+      { shape: 'vertical-cylinder', scale: [.035, .035, .018], offset: [.25, .39, .56], materialRole: 'rice-cooker-button' },
+    ],
+  },
+  {
+    assetId: 'built-in-oven-navien', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultDimensionsMeters: [.54, .08, .48],
+    parts: [
+      { shape: 'box', scale: [1, 1, 1], offset: [0, 0, .5], materialRole: 'oven-body' },
+      { shape: 'box', scale: [.92, .08, .68], offset: [0, .52, .40], materialRole: 'oven-glass' },
+      { shape: 'box', scale: [.92, .09, .20], offset: [0, .525, .86], materialRole: 'oven-control' },
+      { shape: 'vertical-cylinder', scale: [.075, .075, .065], offset: [-.31, .56, .86], materialRole: 'oven-dial' },
+      { shape: 'vertical-cylinder', scale: [.075, .075, .065], offset: [.31, .56, .86], materialRole: 'oven-dial' },
+      { shape: 'box', scale: [.68, .08, .04], offset: [0, .57, .69], materialRole: 'oven-handle' },
+    ],
+  },
+  {
+    assetId: 'built-in-oven-samsung', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultDimensionsMeters: [.54, .08, .48],
+    parts: [
+      { shape: 'box', scale: [1, 1, 1], offset: [0, 0, .5], materialRole: 'oven-body' },
+      { shape: 'box', scale: [.94, .08, .74], offset: [0, .52, .42], materialRole: 'oven-glass' },
+      { shape: 'box', scale: [.94, .09, .15], offset: [0, .525, .89], materialRole: 'oven-control' },
+      { shape: 'box', scale: [.20, .035, .06], offset: [0, .575, .89], materialRole: 'oven-display' },
+      { shape: 'box', scale: [.72, .08, .035], offset: [0, .57, .73], materialRole: 'oven-handle' },
+    ],
+  },
+  {
+    assetId: 'built-in-oven-lg', rendererKind: 'procedural', mountingKind: 'anchored',
+    defaultDimensionsMeters: [.54, .08, .48],
+    parts: [
+      { shape: 'box', scale: [1, 1, 1], offset: [0, 0, .5], materialRole: 'oven-body' },
+      { shape: 'box', scale: [.72, .08, .68], offset: [-.11, .52, .40], materialRole: 'oven-glass' },
+      { shape: 'box', scale: [.18, .09, .68], offset: [.38, .525, .40], materialRole: 'oven-control' },
+      { shape: 'vertical-cylinder', scale: [.075, .075, .065], offset: [.38, .57, .63], materialRole: 'oven-dial' },
+      { shape: 'box', scale: [.13, .035, .08], offset: [.38, .58, .82], materialRole: 'oven-display' },
+      { shape: 'box', scale: [.62, .08, .04], offset: [-.11, .57, .69], materialRole: 'oven-handle' },
+    ],
+  },
   {
     assetId: 'bunfirvil-default-navien-magic-gas-cooktop-3', rendererKind: 'procedural', mountingKind: 'anchored',
     defaultMountHeightMeters: KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS, defaultDimensionsMeters: [.59, .51, .055],
@@ -1859,8 +1956,28 @@ export class ThreeWorldRenderer {
                       ? this.material('#e8dfd5', { roughness: .36, metalness: .03 })
                       : role === 'refrigerator-handle'
                         ? this.material('#585b59', { roughness: .45, metalness: .48 })
-                : role === 'cabinet-seam' || role === 'mirror-frame'
-                  ? this.material('#8c8981', { roughness: .64, metalness: .14 })
+                        : role === 'oven-glass' || role === 'oven-body'
+                          ? this.material('#111315', { roughness: .18, metalness: .24 })
+                          : role === 'oven-control'
+                            ? this.material('#232629', { roughness: .32, metalness: .28 })
+                            : role === 'oven-display'
+                              ? this.material('#080b0d', { roughness: .12, metalness: .15 })
+                              : role === 'oven-handle' || role === 'oven-dial'
+                                ? this.material('#63686a', { roughness: .34, metalness: .62 })
+                                : role === 'cabinet-opening'
+                                  ? this.material('#7e7a72', { roughness: .93 })
+                                  : role === 'cabinet-light'
+                                    ? this.material('#ffe7a3', { roughness: .18 })
+                                    : role === 'outlet'
+                                      ? this.material('#f5f3ec', { roughness: .72 })
+                                      : role === 'rice-cooker-body'
+                                        ? this.material('#eceae4', { roughness: .48, metalness: .04 })
+                                        : role === 'rice-cooker-lid'
+                                          ? this.material('#d8d5ce', { roughness: .42, metalness: .06 })
+                                          : role === 'rice-cooker-button'
+                                            ? this.material('#9d8f80', { roughness: .44, metalness: .12 })
+                                            : role === 'cabinet-handle' || role === 'cabinet-seam' || role === 'mirror-frame'
+                                              ? this.material('#8c8981', { roughness: .64, metalness: .14 })
         : asset?.assetId === 'interior-infinity-door-panel' && role === 'door-outline'
           ? this.material('#3b342d', { roughness: 0.72 })
         : this.material(palette[role] || palette.primary, { roughness: prop.materialVariantId === 'charcoal-accent' ? 0.62 : 0.88 });

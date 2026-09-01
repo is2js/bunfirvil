@@ -51,6 +51,10 @@ const OPEN_PREMIUM_SHOE_CABINET_OPTION_ID = 'entry-open-premium-shoe-cabinet';
 const WIDE_PLANK_FLOOR_OPTION_ID = 'wide-plank-floor-finish';
 const BEDROOM_ONE_PET_CLOSET_OPTION_ID = 'bedroom-1-built-in-closet-pet';
 const BEDROOM_ONE_CLOTHING_CARE_CLOSET_OPTION_ID = 'bedroom-1-clothing-care-closet';
+const BEDROOM_TWO_PET_CLOSET_OPTION_ID = 'bedroom-2-built-in-closet-pet';
+const BEDROOM_TWO_DESK_CLOSET_OPTION_ID = 'bedroom-2-closet-desk-set';
+const BEDROOM_THREE_PET_CLOSET_OPTION_ID = 'bedroom-3-built-in-closet-pet';
+const BEDROOM_THREE_DESK_CLOSET_OPTION_ID = 'bedroom-3-closet-desk-set';
 const DRESS_ROOM_POWDER_STORAGE_OPTION_ID = 'dress-room-powder-storage';
 const BATHROOM_COMBINATION_VENTILATOR_OPTION_ID = 'bathroom-combination-ventilator';
 const SMART_LIGHTING_OPTION_ID = 'smart-lighting-package';
@@ -69,6 +73,16 @@ export const COOKTOP_OPTION_IDS = Object.freeze([
 ] as const);
 const COOKTOP_OPTION_ID_SET = new Set<string>(COOKTOP_OPTION_IDS);
 const BUILT_IN_DISHWASHER_OPTION_ID = 'dishwasher-built-in-die6pt';
+const ISLAND_OPTION_IDS = Object.freeze([
+  'island-counter-modern',
+  'island-counter-dining-integrated',
+] as const);
+const BUILT_IN_OVEN_OPTION_IDS = Object.freeze([
+  'built-in-oven-navien',
+  'built-in-oven-samsung',
+  'built-in-oven-lg',
+] as const);
+const BUILT_IN_OVEN_OPTION_ID_SET = new Set<string>(BUILT_IN_OVEN_OPTION_IDS);
 const REFRIGERATOR_BASIC_OPTION_ID = 'refrigerator-cabinet-pet-basic';
 const REFRIGERATOR_BESPOKE_OPTION_ID = 'refrigerator-cabinet-bespoke-alt2';
 const REFRIGERATOR_LG_OPTION_ID = 'refrigerator-cabinet-lg-built-in';
@@ -112,6 +126,26 @@ export const BUNDANG_OPTION_DISPLAY_OVERRIDES: Readonly<Record<string, Partial<P
     description: '화장대(PET)·엔지니어드 스톤(래디언스-골든쇼어)·콘센트·다운라이트·붙박이장(PET)·디자인 월 구성입니다.',
     previewUrl: 'assets/options/previews/dress-room-powder-storage-v2.png',
   }),
+  [BEDROOM_TWO_PET_CLOSET_OPTION_ID]: Object.freeze({
+    label: '침실2 붙박이장',
+    description: '붙박이장(PET) 구성입니다. 출입문 반대쪽 모서리의 비어 있는 벽 구간에 설치됩니다.',
+    previewUrl: 'assets/options/previews/bedroom-secondary-built-in-closet-v2.webp',
+  }),
+  [BEDROOM_TWO_DESK_CLOSET_OPTION_ID]: Object.freeze({
+    label: '침실2 데스크형 붙박이장',
+    description: '붙박이장(PET)·데스크(PET)·가구 조명·상판매입 콘센트 구성입니다. 데스크는 창가 쪽 끝에 설치됩니다.',
+    previewUrl: 'assets/options/previews/bedroom-secondary-desk-closet-v2.webp',
+  }),
+  [BEDROOM_THREE_PET_CLOSET_OPTION_ID]: Object.freeze({
+    label: '침실3 붙박이장',
+    description: '59A 침실3의 출입문 반대쪽 모서리에 설치되는 붙박이장(PET) 구성입니다.',
+    previewUrl: 'assets/options/previews/bedroom-secondary-built-in-closet-v2.webp',
+  }),
+  [BEDROOM_THREE_DESK_CLOSET_OPTION_ID]: Object.freeze({
+    label: '침실3 데스크형 붙박이장',
+    description: '59A 침실3의 붙박이장(PET)·데스크(PET)·가구 조명·상판매입 콘센트 구성입니다.',
+    previewUrl: 'assets/options/previews/bedroom-secondary-desk-closet-v2.webp',
+  }),
   [BATHROOM_COMBINATION_VENTILATOR_OPTION_ID]: Object.freeze({
     previewUrl: 'assets/options/previews/bathroom-combination-ventilator-v2.png',
   }),
@@ -154,6 +188,21 @@ export const BUNDANG_OPTION_DISPLAY_OVERRIDES: Readonly<Record<string, Partial<P
   [BUILT_IN_DISHWASHER_OPTION_ID]: Object.freeze({
     label: '빌트인 식기세척기',
     description: 'LG 디오스 14인용(DIE6PT)과 콘센트 구성입니다.',
+  }),
+  'built-in-oven-navien': Object.freeze({
+    label: '나비엔 매직 컨벡션 스팀 오븐(EOB-5004)',
+    description: '아일랜드장의 벽 가까운 오픈 수납부에 설치되는 나비엔 매직 컨벡션 스팀 오븐입니다.',
+    previewUrl: 'assets/options/previews/built-in-oven-navien-v2.webp',
+  }),
+  'built-in-oven-samsung': Object.freeze({
+    label: '삼성 비스포크 오븐(NQ50T8539BK)',
+    description: '아일랜드장의 벽 가까운 오픈 수납부에 설치되는 삼성 비스포크 오븐입니다.',
+    previewUrl: 'assets/options/previews/built-in-oven-samsung-v2.webp',
+  }),
+  'built-in-oven-lg': Object.freeze({
+    label: 'LG 디오스 광파오븐(MZ385EBTA)',
+    description: '아일랜드장의 벽 가까운 오픈 수납부에 설치되는 LG 디오스 광파오븐입니다.',
+    previewUrl: 'assets/options/previews/built-in-oven-lg-v2.webp',
   }),
   [REFRIGERATOR_BASIC_OPTION_ID]: Object.freeze({
     previewUrl: 'assets/options/previews/refrigerator-cabinet-pet-basic-v2.png',
@@ -544,12 +593,131 @@ function dressRoomPowderStorageProps(
   ];
 }
 
+interface SecondaryBedroomStoragePlacementV1 {
+  closet: { position: Point; width: number; yawDeg: number };
+  deskWall: {
+    wardrobePosition: Point;
+    wardrobeWidth: number;
+    deskPosition: Point;
+    deskWidth: number;
+    yawDeg: number;
+  };
+}
+
+/**
+ * 분퍼빌 도면의 침실2/3 공통 규칙:
+ * - ALT1은 출입문이 없는 북벽의 긴 구간을 모서리까지 채운다.
+ * - 데스크형은 문과 반대인 측벽을 쓰고 창에 가까운 남측 끝을 데스크로 둔다.
+ */
+export function secondaryBedroomStoragePlacement(
+  geometry: ApartmentGeometry,
+  roomId: 'bedroom-2' | 'bedroom-3',
+): SecondaryBedroomStoragePlacementV1 | null {
+  const bounds = roomBounds(geometry, roomId);
+  if (!bounds) return null;
+  const opening = (geometry.openings || [])
+    .map(record)
+    .find((candidate) => String(candidate?.id || '') === `${roomId}-north-opening`);
+  const openingA = point(opening?.a);
+  const openingB = point(opening?.b);
+  if (!openingA || !openingB) return null;
+
+  const [x1, y1, x2, y2] = bounds;
+  const doorMinX = Math.max(x1, Math.min(openingA[0], openingB[0]));
+  const doorMaxX = Math.min(x2, Math.max(openingA[0], openingB[0]));
+  const leftStart = x1 + STORAGE_EDGE_CLEARANCE_METERS;
+  const leftEnd = doorMinX - STORAGE_EDGE_CLEARANCE_METERS;
+  const rightStart = doorMaxX + STORAGE_EDGE_CLEARANCE_METERS;
+  const rightEnd = x2 - STORAGE_EDGE_CLEARANCE_METERS;
+  const leftWidth = Math.max(0, leftEnd - leftStart);
+  const rightWidth = Math.max(0, rightEnd - rightStart);
+  const farSegmentOnRight = rightWidth >= leftWidth;
+  const closetStart = farSegmentOnRight ? rightStart : leftStart;
+  const closetEnd = farSegmentOnRight ? rightEnd : leftEnd;
+  const closetWidth = Math.max(.6, closetEnd - closetStart);
+
+  const deskWidth = Math.min(.9, Math.max(.72, y2 - y1 - .9));
+  const fullSideRun = Math.max(1.6, y2 - y1 - STORAGE_EDGE_CLEARANCE_METERS * 2);
+  const wardrobeWidth = Math.max(.68, fullSideRun - deskWidth);
+  const wallX = farSegmentOnRight
+    ? x2 - BEDROOM_STORAGE_DEPTH_METERS / 2
+    : x1 + BEDROOM_STORAGE_DEPTH_METERS / 2;
+  return {
+    closet: {
+      position: [(closetStart + closetEnd) / 2, y1 + BEDROOM_STORAGE_DEPTH_METERS / 2],
+      width: closetWidth,
+      yawDeg: 0,
+    },
+    deskWall: {
+      wardrobePosition: [wallX, y1 + STORAGE_EDGE_CLEARANCE_METERS + wardrobeWidth / 2],
+      wardrobeWidth,
+      deskPosition: [wallX, y2 - STORAGE_EDGE_CLEARANCE_METERS - deskWidth / 2],
+      deskWidth,
+      yawDeg: farSegmentOnRight ? 90 : 270,
+    },
+  };
+}
+
+function secondaryBedroomStorageProps(
+  geometry: ApartmentGeometry,
+  unitType: UnitTypeId,
+  roomId: 'bedroom-2' | 'bedroom-3',
+  optionId: string,
+  deskSet: boolean,
+  planVariant?: string,
+): ApartmentInteriorProp[] {
+  const placement = secondaryBedroomStoragePlacement(geometry, roomId);
+  if (!placement) return [];
+  const yawOffset = planVariantKey(planVariant) === 'B' ? 180 : 0;
+  const common: ApartmentInteriorProp = {
+    roomZoneId: roomId,
+    materialVariantId: 'pet-warm-ivory',
+    sourceOptionId: optionId,
+    installationRole: 'secondary-bedroom-storage',
+    collisionMode: 'solid',
+    measurementObstacle: true,
+  };
+  if (!deskSet) {
+    return [{
+      ...common,
+      id: `bunfirvil-${unitType.toLowerCase()}-${roomId}-pet-closet`,
+      assetId: 'bunfirvil-secondary-bedroom-pet-closet',
+      positionMeters: placement.closet.position,
+      dimensionsMeters: [placement.closet.width, BEDROOM_STORAGE_DEPTH_METERS, BEDROOM_STORAGE_HEIGHT_METERS],
+      yawDeg: normalizedYaw(placement.closet.yawDeg + yawOffset),
+      anchorId: `bunfirvil.options.storage.${roomId}.doorOppositeCorner`,
+    }];
+  }
+  return [
+    {
+      ...common,
+      id: `bunfirvil-${unitType.toLowerCase()}-${roomId}-desk-closet-three-bay`,
+      assetId: 'bunfirvil-secondary-bedroom-desk-wardrobe-three-bay',
+      positionMeters: placement.deskWall.wardrobePosition,
+      dimensionsMeters: [placement.deskWall.wardrobeWidth, BEDROOM_STORAGE_DEPTH_METERS, BEDROOM_STORAGE_HEIGHT_METERS],
+      yawDeg: normalizedYaw(placement.deskWall.yawDeg + yawOffset),
+      anchorId: `bunfirvil.options.storage.${roomId}.deskWall.wardrobe`,
+    },
+    {
+      ...common,
+      id: `bunfirvil-${unitType.toLowerCase()}-${roomId}-desk-module`,
+      assetId: 'bunfirvil-secondary-bedroom-desk-module',
+      positionMeters: placement.deskWall.deskPosition,
+      dimensionsMeters: [placement.deskWall.deskWidth, BEDROOM_STORAGE_DEPTH_METERS, BEDROOM_STORAGE_HEIGHT_METERS],
+      yawDeg: normalizedYaw(placement.deskWall.yawDeg + yawOffset),
+      anchorId: `bunfirvil.options.storage.${roomId}.deskWall.windowEnd`,
+    },
+  ];
+}
+
 function isLegacyPrecisionStorageProp(prop: ApartmentInteriorProp): boolean {
   const id = String(prop.id || '');
   const anchorId = String(prop.anchorId || '');
   return anchorId === 'options.storage.bedroom-1'
     || anchorId === 'options.dressRoomPowderStorage'
+    || /^options\.storage\.bedroom-[23](?:\.desk)?$/.test(anchorId)
     || /-bedroom-1(?:-clothing-care)?-wardrobe$/.test(id)
+    || /-bedroom-[23](?:-desk)?-(?:wardrobe|desk)$/.test(id)
     || /-dress-room-powder-storage$/.test(id);
 }
 
@@ -894,6 +1062,102 @@ function refineRefrigeratorCabinetProp(
   };
 }
 
+function isLegacyBuiltInOvenProp(prop: ApartmentInteriorProp): boolean {
+  return prop.anchorId === 'kitchen.island.builtInOven'
+    || BUILT_IN_OVEN_OPTION_ID_SET.has(String(prop.assetId || ''))
+    || /kitchen-built-in-oven$/.test(String(prop.id || ''));
+}
+
+function selectedIslandOptionId(selected: ReadonlySet<string>): string {
+  return ISLAND_OPTION_IDS.find((optionId) => selected.has(optionId)) || '';
+}
+
+function selectedBuiltInOvenOptionId(selected: ReadonlySet<string>): string {
+  return BUILT_IN_OVEN_OPTION_IDS.find((optionId) => selected.has(optionId)) || '';
+}
+
+/**
+ * 기존 아일랜드장의 방향/상판은 그대로 두고 전면에 오픈형 가전 bay만 덧댄다.
+ * 오븐 미선택 시에도 공고문 유의사항대로 왼쪽 bay는 오픈 수납장으로 남는다.
+ */
+function islandApplianceBayProps(
+  geometry: ApartmentGeometry,
+  unitType: UnitTypeId,
+  selected: ReadonlySet<string>,
+  planVariant?: string,
+): ApartmentInteriorProp[] {
+  const islandOptionId = selectedIslandOptionId(selected);
+  if (!islandOptionId) return [];
+  const optionAnchors = record(geometry.optionAnchors);
+  const kitchen = record(optionAnchors?.kitchen);
+  const island = record(kitchen?.island);
+  const bounds = metricBounds(island?.baseBoundsMeters);
+  const kitchenBounds = roomBounds(geometry, 'kitchen-dining');
+  if (!bounds || !kitchenBounds) return [];
+
+  const [x1, y1, x2, y2] = bounds;
+  const width = Math.max(x2 - x1, y2 - y1);
+  const depth = Math.min(x2 - x1, y2 - y1);
+  if (width < .72 || depth < .35) return [];
+  const center: Point = [(x1 + x2) / 2, (y1 + y2) / 2];
+  const yawDeg = normalizedYaw(Number(island?.yawDeg) || (x2 - x1 >= y2 - y1 ? 0 : 90));
+  const yawRadians = yawDeg * Math.PI / 180;
+  const widthAxis: Point = [Math.cos(yawRadians), Math.sin(yawRadians)];
+  const frontNormal: Point = [-Math.sin(yawRadians), Math.cos(yawRadians)];
+  const positiveEnd: Point = [center[0] + widthAxis[0] * width / 2, center[1] + widthAxis[1] * width / 2];
+  const negativeEnd: Point = [center[0] - widthAxis[0] * width / 2, center[1] - widthAxis[1] * width / 2];
+  const [kx1, ky1, kx2, ky2] = kitchenBounds;
+  const endWallDistance = (candidate: Point): number => Math.abs(widthAxis[0]) >= Math.abs(widthAxis[1])
+    ? Math.min(Math.abs(candidate[0] - kx1), Math.abs(kx2 - candidate[0]))
+    : Math.min(Math.abs(candidate[1] - ky1), Math.abs(ky2 - candidate[1]));
+  const wallNearPositiveEnd = endWallDistance(positiveEnd) <= endWallDistance(negativeEnd);
+  const moduleWidth = Math.max(.72, width - .08);
+  const moduleDepth = .12;
+  const facadeCenter: Point = [
+    center[0] + frontNormal[0] * (depth / 2 + moduleDepth / 2 + .004),
+    center[1] + frontNormal[1] * (depth / 2 + moduleDepth / 2 + .004),
+  ];
+  const renderedYaw = normalizedYaw(yawDeg + (planVariantKey(planVariant) === 'B' ? 180 : 0));
+  const common: ApartmentInteriorProp = {
+    roomZoneId: 'kitchen-dining',
+    yawDeg: renderedYaw,
+    materialVariantId: 'pet-warm-ivory',
+    collisionMode: 'visual-only',
+    measurementObstacle: false,
+  };
+  const props: ApartmentInteriorProp[] = [{
+    ...common,
+    id: `bunfirvil-${unitType.toLowerCase()}-island-appliance-open-bay`,
+    assetId: 'bunfirvil-island-appliance-open-bay',
+    positionMeters: facadeCenter,
+    dimensionsMeters: [moduleWidth, moduleDepth, .72],
+    mountHeightMeters: .11,
+    mirrored: wallNearPositiveEnd,
+    sourceOptionId: islandOptionId,
+    anchorId: 'bunfirvil.options.kitchen.island.applianceBay',
+    installationRole: 'kitchen-island-appliance-bay',
+  }];
+
+  const ovenOptionId = selectedBuiltInOvenOptionId(selected);
+  if (!ovenOptionId) return props;
+  const ovenEndSign = wallNearPositiveEnd ? 1 : -1;
+  props.push({
+    ...common,
+    id: `bunfirvil-${unitType.toLowerCase()}-island-${ovenOptionId}`,
+    assetId: ovenOptionId,
+    positionMeters: [
+      facadeCenter[0] + widthAxis[0] * ovenEndSign * moduleWidth * .25 + frontNormal[0] * .012,
+      facadeCenter[1] + widthAxis[1] * ovenEndSign * moduleWidth * .25 + frontNormal[1] * .012,
+    ],
+    dimensionsMeters: [moduleWidth * .46, .08, .48],
+    mountHeightMeters: .29,
+    sourceOptionId: ovenOptionId,
+    anchorId: 'bunfirvil.options.kitchen.island.builtInOven',
+    installationRole: 'kitchen-built-in-oven',
+  });
+  return props;
+}
+
 export function refineBundangOptionProps(
   geometry: ApartmentGeometry,
   unitTypeId: string,
@@ -913,7 +1177,8 @@ export function refineBundangOptionProps(
       && !isLegacyPrecisionStorageProp(prop)
       && (!airPlannerRoomUnits.length || !isLegacyAirPlannerUnitProp(prop))
       && !isKitchenCooktopProp(prop)
-      && !isKitchenRangeHoodProp(prop))
+      && !isKitchenRangeHoodProp(prop)
+      && !isLegacyBuiltInOvenProp(prop))
     .map((prop) => refineRefrigeratorCabinetProp(geometry, selected, prop, planVariant))
     .filter((prop): prop is ApartmentInteriorProp => Boolean(prop))
     .map(refineWidePlankAndVentilatorProp)
@@ -928,8 +1193,19 @@ export function refineBundangOptionProps(
     props.push(...bedroomOneStorageProps(geometry, layout, BEDROOM_ONE_PET_CLOSET_OPTION_ID, planVariant));
   }
   if (selected.has(DRESS_ROOM_POWDER_STORAGE_OPTION_ID)) props.push(...dressRoomPowderStorageProps(geometry, layout, planVariant));
+  if (selected.has(BEDROOM_TWO_DESK_CLOSET_OPTION_ID)) {
+    props.push(...secondaryBedroomStorageProps(geometry, unitType, 'bedroom-2', BEDROOM_TWO_DESK_CLOSET_OPTION_ID, true, planVariant));
+  } else if (selected.has(BEDROOM_TWO_PET_CLOSET_OPTION_ID)) {
+    props.push(...secondaryBedroomStorageProps(geometry, unitType, 'bedroom-2', BEDROOM_TWO_PET_CLOSET_OPTION_ID, false, planVariant));
+  }
+  if (selected.has(BEDROOM_THREE_DESK_CLOSET_OPTION_ID)) {
+    props.push(...secondaryBedroomStorageProps(geometry, unitType, 'bedroom-3', BEDROOM_THREE_DESK_CLOSET_OPTION_ID, true, planVariant));
+  } else if (selected.has(BEDROOM_THREE_PET_CLOSET_OPTION_ID)) {
+    props.push(...secondaryBedroomStorageProps(geometry, unitType, 'bedroom-3', BEDROOM_THREE_PET_CLOSET_OPTION_ID, false, planVariant));
+  }
   if (airPlannerRoomUnits.length) props.push(...airPlannerRoomUnits);
   props.push(...kitchenCooktopAndHoodProps(geometry, unitType, selected, planVariant));
+  props.push(...islandApplianceBayProps(geometry, unitType, selected, planVariant));
   return props;
 }
 
