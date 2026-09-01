@@ -601,8 +601,8 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
       expect(parts.filter((part) => part.materialRole === 'island-lower-drawer')).toHaveLength(2);
       expect(parts.filter((part) => part.materialRole === 'cabinet-side')).toHaveLength(0);
     }
-    expect(baseParts.filter((part) => part.materialRole === 'island-oven-filler')).toHaveLength(1);
-    expect(baseParts.filter((part) => part.materialRole === 'cabinet-opening')).toHaveLength(1);
+    expect(baseParts.filter((part) => part.materialRole === 'island-oven-filler')).toHaveLength(0);
+    expect(baseParts.filter((part) => part.materialRole === 'cabinet-opening')).toHaveLength(2);
     expect(ovenReadyParts.filter((part) => part.materialRole === 'island-oven-filler')).toHaveLength(0);
     expect(ovenReadyParts.filter((part) => part.materialRole === 'cabinet-opening')).toHaveLength(2);
     expect(assets.get('built-in-oven-navien')?.parts?.filter((part) => part.materialRole === 'oven-dial')).toHaveLength(2);
@@ -623,12 +623,13 @@ describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
         const island = anchors.kitchen.island as Record<string, any>;
         const [x1, y1, x2, y2] = island.baseBoundsMeters.map(Number);
         const center: [number, number] = [(x1 + x2) / 2, (y1 + y2) / 2];
+        const inheritedYaw = (Number(island.yawDeg) + 180) % 360;
         const base: ApartmentInteriorProp = {
           id: `inspection-${unitType}-kitchen-island`,
           assetId: 'island-counter-modern',
           positionMeters: center,
           dimensionsMeters: [Math.max(x2 - x1, y2 - y1), Math.min(x2 - x1, y2 - y1), .9],
-          yawDeg: Number(island.yawDeg) || 0,
+          yawDeg: inheritedYaw,
           installationRole: 'kitchen-island',
         };
         const props = optionProps(

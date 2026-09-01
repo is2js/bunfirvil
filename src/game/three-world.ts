@@ -71,7 +71,7 @@ interface RuntimeMaterialManifest {
   }>;
 }
 
-function islandIntegratedCabinetParts(ovenReady: boolean): RuntimePart[] {
+function islandIntegratedCabinetParts(): RuntimePart[] {
   const parts: RuntimePart[] = [
     // 기존 임시 오픈 수납 recipe를 쓰지 않고 본체부터 한 덩어리로 다시 만든다.
     { shape: 'box', scale: [1, .78, .86], offset: [0, -.02, .43], materialRole: 'primary' },
@@ -92,9 +92,8 @@ function islandIntegratedCabinetParts(ovenReady: boolean): RuntimePart[] {
     { shape: 'box', scale: [.014, .055, .62], offset: [0, .49, .565], materialRole: 'cabinet-seam' },
     { shape: 'box', scale: [1, .055, .035], offset: [0, .49, .885], materialRole: 'primary' },
   ];
-  parts.push(ovenReady
-    ? { shape: 'box', scale: [.485, .045, .57], offset: [-.25, .36, .59], materialRole: 'cabinet-opening' }
-    : { shape: 'box', scale: [.485, .06, .57], offset: [-.25, .49, .59], materialRole: 'island-oven-filler' });
+  // 오븐은 별도 옵션 prop으로 이 빈 슬롯에 들어간다. 미선택 상태에서도 문짝으로 막지 않는다.
+  parts.push({ shape: 'box', scale: [.485, .045, .57], offset: [-.25, .36, .59], materialRole: 'cabinet-opening' });
   return parts;
 }
 
@@ -349,12 +348,12 @@ export const STRUCTURAL_PROP_ASSETS: RuntimeAsset[] = [
   {
     assetId: 'bunfirvil-island-integrated-cabinet-base', rendererKind: 'procedural', mountingKind: 'floor',
     defaultMountHeightMeters: .018, defaultDimensionsMeters: [1.26, .8, .9],
-    parts: islandIntegratedCabinetParts(false),
+    parts: islandIntegratedCabinetParts(),
   },
   {
     assetId: 'bunfirvil-island-integrated-cabinet-oven-ready', rendererKind: 'procedural', mountingKind: 'floor',
     defaultMountHeightMeters: .018, defaultDimensionsMeters: [1.26, .8, .9],
-    parts: islandIntegratedCabinetParts(true),
+    parts: islandIntegratedCabinetParts(),
   },
   {
     assetId: 'built-in-oven-navien', rendererKind: 'procedural', mountingKind: 'anchored',

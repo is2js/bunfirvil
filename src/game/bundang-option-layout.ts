@@ -1096,6 +1096,7 @@ function islandApplianceBayProps(
   geometry: ApartmentGeometry,
   unitType: UnitTypeId,
   selected: ReadonlySet<string>,
+  legacyIslandBase?: ApartmentInteriorProp,
 ): ApartmentInteriorProp[] {
   const islandOptionId = selectedIslandOptionId(selected);
   if (!islandOptionId) return [];
@@ -1107,11 +1108,26 @@ function islandApplianceBayProps(
   if (!bounds || !kitchenBounds) return [];
 
   const [x1, y1, x2, y2] = bounds;
-  const width = Math.max(x2 - x1, y2 - y1);
-  const depth = Math.min(x2 - x1, y2 - y1);
+  const legacyDimensions = Array.isArray(legacyIslandBase?.dimensionsMeters)
+    ? legacyIslandBase.dimensionsMeters.map(Number)
+    : [];
+  const width = Number.isFinite(legacyDimensions[0]) && legacyDimensions[0] > 0
+    ? legacyDimensions[0]
+    : Math.max(x2 - x1, y2 - y1);
+  const depth = Number.isFinite(legacyDimensions[1]) && legacyDimensions[1] > 0
+    ? legacyDimensions[1]
+    : Math.min(x2 - x1, y2 - y1);
   if (width < .72 || depth < .35) return [];
-  const center: Point = [(x1 + x2) / 2, (y1 + y2) / 2];
-  const yawDeg = normalizedYaw(Number(island?.yawDeg) || (x2 - x1 >= y2 - y1 ? 0 : 90));
+  const legacyPosition = Array.isArray(legacyIslandBase?.positionMeters)
+    ? legacyIslandBase.positionMeters.map(Number)
+    : [];
+  const center: Point = Number.isFinite(legacyPosition[0]) && Number.isFinite(legacyPosition[1])
+    ? [legacyPosition[0], legacyPosition[1]]
+    : [(x1 + x2) / 2, (y1 + y2) / 2];
+  const legacyYaw = Number(legacyIslandBase?.yawDeg);
+  const yawDeg = Number.isFinite(legacyYaw)
+    ? normalizedYaw(legacyYaw)
+    : normalizedYaw(Number(island?.yawDeg) || (x2 - x1 >= y2 - y1 ? 0 : 90));
   const yawRadians = yawDeg * Math.PI / 180;
   const widthAxis: Point = [Math.cos(yawRadians), Math.sin(yawRadians)];
   const frontNormal: Point = [-Math.sin(yawRadians), Math.cos(yawRadians)];
@@ -1122,12 +1138,12 @@ function islandApplianceBayProps(
     ? Math.min(Math.abs(candidate[0] - kx1), Math.abs(kx2 - candidate[0]))
     : Math.min(Math.abs(candidate[1] - ky1), Math.abs(ky2 - candidate[1]));
   const wallNearPositiveEnd = endWallDistance(positiveEnd) <= endWallDistance(negativeEnd);
-  // optionAnchors.kitchen.island.yawDeg는 plan variant 적용 단계에서 이미 최종 전면으로 보정된다.
-  // 여기서 B형을 다시 180도 돌리면 기존 아일랜드 본체와 가전 bay의 문 방향이 갈라진다.
+  // 생성된 기존 아일랜드 본체의 yaw를 우선 상속해 기존 수납장 전면 방향을 그대로 유지한다.
+  // 여기서 variant 회전을 다시 더하면 본체와 오븐/슬라이드 수납장의 전면이 반대로 뒤집힌다.
   const renderedYaw = yawDeg;
   const ovenOptionId = selectedBuiltInOvenOptionId(selected);
   const props: ApartmentInteriorProp[] = [{
-    id: `inspection-${unitType}-kitchen-island`,
+    id: legacyIslandBase?.id || `inspection-${unitType}-kitchen-island`,
     assetId: ovenOptionId
       ? 'bunfirvil-island-integrated-cabinet-oven-ready'
       : 'bunfirvil-island-integrated-cabinet-base',
@@ -1135,7 +1151,9 @@ function islandApplianceBayProps(
     positionMeters: center,
     dimensionsMeters: [width, depth, .9],
     yawDeg: renderedYaw,
-    mountHeightMeters: .018,
+    mountHeightMeters: Number.isFinite(Number(legacyIslandBase?.mountHeightMeters))
+      ? Number(legacyIslandBase?.mountHeightMeters)
+      : .018,
     mirrored: wallNearPositiveEnd,
     materialVariantId: selected.has('kitchen-wall-countertop-radianz-golden-shore')
       ? 'golden-shore-engineered-stone'
@@ -1181,6 +1199,7 @@ export function refineBundangOptionProps(
   const layout = BUNDANG_OPTION_LAYOUTS[unitType];
   if (!layout) return baseProps;
   const selected = new Set(selectedIds);
+  const legacyIslandBase = baseProps.find(isLegacyIslandBaseProp);
   const airPlannerRoomUnits = selected.has(AIR_PLANNER_OPTION_ID)
     ? airPlannerRoomUnitProps(geometry, unitType, planVariant)
     : [];
@@ -1218,7 +1237,7 @@ export function refineBundangOptionProps(
   }
   if (airPlannerRoomUnits.length) props.push(...airPlannerRoomUnits);
   props.push(...kitchenCooktopAndHoodProps(geometry, unitType, selected, planVariant));
-  props.push(...islandApplianceBayProps(geometry, unitType, selected));
+  props.push(...islandApplianceBayProps(geometry, unitType, selected, legacyIslandBase));
   return props;
 }
 
