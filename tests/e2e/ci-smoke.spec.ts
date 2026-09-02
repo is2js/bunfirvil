@@ -136,8 +136,8 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(page.locator('#household-nickname-stage')).toBeVisible();
   await expect(page.locator('#household-nickname-status')).toHaveText('운영자 인증이 완료되었습니다. 관리 메뉴를 사용할 수 있습니다.');
   await expect(page.getByPlaceholder('닉네임 입력')).toBeDisabled();
-  await expect(page.getByRole('button', { name: '인증 확인' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: '등록 요청' })).toBeDisabled();
+  await expect(page.locator('#household-verify-nickname')).toBeDisabled();
+  await expect(page.locator('#household-request-verification')).toBeDisabled();
   await expect(page.locator('#household-selection-dock')).toBeVisible();
   await expect(page.locator('#household-selection-dock')).toHaveClass(/is-authenticated/);
   await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeEnabled();
