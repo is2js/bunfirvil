@@ -18,7 +18,6 @@ import {
 } from './sale-calculator-context';
 import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { ManifestEffectPlayer } from './effect-player';
-import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
 import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from './grid';
 import { FrameMetrics } from './metrics';
 import { FloorPlanMinimap } from './floorplan-minimap';
@@ -86,7 +85,6 @@ import type {
   BOptionEntry,
   CharacterKey,
   Direction,
-  HotbarValue,
   ShowcaseCatalog,
   StaticCharacterEntry,
   StaticMapEntry,
@@ -207,8 +205,8 @@ export class ShowcaseApp {
   private canvasRenderer!: IsometricWorldRenderer;
   private threeRenderer: ThreeWorldRendererInstance | null = null;
   private effectPlayer!: ManifestEffectPlayer;
-  private hotbar: HotbarValue[] = [];
   private activeActor: CharacterKey = '100';
+  private pigmyTransformationActive = false;
   private readonly actors = new Map<CharacterKey, ActorState>();
   private readonly actorViews = new Map<CharacterKey, ActorView>();
   private readonly pressedKeys = new Set<string>();
@@ -308,9 +306,8 @@ export class ShowcaseApp {
     }
     this.currentMap = mapFromQuery(catalog, window.location.search);
     this.planVariant = planVariantFromQuery(window.location.search);
-    const requestedActor = new URLSearchParams(window.location.search).get('actor');
-    if (requestedActor === '200') this.activeActor = '200';
-    this.hotbar = readHotbar(catalog.defaultHotbar);
+    // 쇼케이스는 돌범으로 시작하고 슬롯 2에서 돌범/피치를 전환한다.
+    this.activeActor = '100';
 
     this.renderShell(fallback);
     this.get<HTMLElement>('#game-stage').dataset.movementIntervalMs = String(MOVEMENT_INTERVAL_MS);
@@ -339,7 +336,10 @@ export class ShowcaseApp {
     this.bindEvents();
     this.renderHotbar();
 
-    await Promise.all([...this.actorViews.values()].map((view) => view.load(() => this.trackAsset())));
+    await Promise.all([...this.actorViews.values()].map(async (view) => {
+      await view.load(() => this.trackAsset());
+      await view.loadTransformation('assets/transformations/pigmy/animation.json', () => this.trackAsset());
+    }));
     await this.selectMap(this.currentMap.id, false);
 
     this.animationFrame = requestAnimationFrame(this.tick);
@@ -429,7 +429,7 @@ export class ShowcaseApp {
 
         <main class="showcase-layout">
           <section class="play-column" aria-label="RPG 렌더링 쇼케이스">
-            <div class="control-deck">
+            <div class="control-deck ${operator ? '' : 'is-user-hidden'}">
               <label class="select-field">
                 <span>INSPECTION MAP</span>
                 <select id="map-select" aria-label="검수맵 선택">${mapOptions}</select>
@@ -455,7 +455,7 @@ export class ShowcaseApp {
               </div>
             </div>
 
-            <div class="map-tabs" role="tablist" aria-label="빠른 맵 선택">${mapTabs}</div>
+            <div class="map-tabs ${operator ? '' : 'is-user-hidden'}" role="tablist" aria-label="빠른 맵 선택">${mapTabs}</div>
 
             <div class="game-stage" id="game-stage">
               <canvas id="world-canvas" aria-label="Canvas2D 등각 투영 검수맵"></canvas>
@@ -551,7 +551,7 @@ export class ShowcaseApp {
                   <div><small>ACTIVE ACTOR</small><b id="active-actor-label">${CHARACTER_DISPLAY_NAMES[this.activeActor]}</b></div>
                   <span class="local-tag">LOCAL</span>
                 </div>
-                <div id="hotbar" class="hotbar" aria-label="로컬 스킬 핫바"></div>
+                <div id="hotbar" class="hotbar" aria-label="쇼케이스 전환 핫바"></div>
               </div>
             </div>
           </section>
@@ -924,7 +924,7 @@ export class ShowcaseApp {
         this.activateSkill('basic-attack');
         return;
       }
-      if (/^[1-6]$/.test(key)) {
+      if (/^[1-4]$/.test(key)) {
         event.preventDefault();
         this.activateHotbarSlot(Number(key) - 1, this.cursorScreenPoint);
         return;
@@ -2224,7 +2224,12 @@ export class ShowcaseApp {
     if (!this.actors.has(key) && this.actors.size > 0) key = [...this.actors.keys()][0];
     this.activeActor = key;
     this.resumeCameraTracking();
-    this.actorViews.forEach((view, actorKey) => view.setSelected(actorKey === key));
+    this.actorViews.forEach((view, actorKey) => {
+      const active = actorKey === key;
+      view.setSelected(active);
+      view.setVisible(active);
+      view.setTransformed(active && this.pigmyTransformationActive);
+    });
     this.mount.querySelectorAll<HTMLElement>('[data-actor-key]').forEach((button) => button.classList.toggle('is-active', button.dataset.actorKey === key));
     const actor = this.actors.get(key);
     const portrait = this.mount.querySelector<HTMLElement>('#active-portrait');
@@ -2234,6 +2239,7 @@ export class ShowcaseApp {
     }
     const label = this.mount.querySelector<HTMLElement>('#active-actor-label');
     if (label) label.textContent = actor?.label || key;
+    this.renderHotbar();
     if (updateUrl && this.catalog) this.updateQuery();
   }
 
@@ -2247,45 +2253,25 @@ export class ShowcaseApp {
 
   private renderHotbar(): void {
     const element = this.get<HTMLElement>('#hotbar');
-    element.innerHTML = this.hotbar
-      .map((skillId, index) => {
-        const skill = skillId ? this.skillById(skillId) : null;
-        const icon = skill?.iconUrl
-          ? `<img src="${escapeHtml(resolveProjectUrl(skill.iconUrl))}" alt="" onerror="this.hidden=true" />`
-          : '';
-        return `
-          <button type="button" class="hotbar-slot ${skill ? '' : 'is-empty'}" data-slot="${index}" data-skill-id="${escapeHtml(skillId || '')}" draggable="${Boolean(skill)}" aria-label="${skill ? `${index + 1}번 ${escapeHtml(skill.label)}` : `${index + 1}번 빈 슬롯`}">
-            <span class="slot-number">${index + 1}</span>
-            ${skill ? `${icon}<span class="skill-glyph">${escapeHtml(skill.glyph)}</span><span class="skill-name">${escapeHtml(skill.label)}</span>` : '<span class="empty-cross">+</span>'}
-            <span class="cooldown-sweep"></span><span class="cooldown-number"></span>
-          </button>
-        `;
-      })
-      .join('');
+    const teleport = this.skillById('common-teleport');
+    const controls = [
+      { id: 'common-teleport', label: '텔레포트', icon: teleport.iconUrl ? `<img src="${escapeHtml(resolveProjectUrl(teleport.iconUrl))}" alt="" onerror="this.hidden=true" />` : '', glyph: teleport.glyph, state: '', active: false },
+      { id: 'showcase-gender-toggle', label: '성별전환', icon: `<img src="${escapeHtml(resolveProjectUrl('assets/showcase-controls/lk-custom-023.png'))}" alt="" />`, glyph: '↺', state: CHARACTER_DISPLAY_NAMES[this.activeActor], active: this.activeActor === '200' },
+      { id: 'showcase-plan-toggle', label: '방향전환', icon: '', glyph: 'A↔B', state: `${this.planVariant}형`, active: this.planVariant === 'B' },
+      { id: 'showcase-pigmy-toggle', label: '피그미', icon: '<span class="pigmy-hotbar-icon" aria-hidden="true"></span>', glyph: '', state: this.pigmyTransformationActive ? 'ON' : '', active: this.pigmyTransformationActive },
+    ];
+    element.innerHTML = controls.map((control, index) => `
+      <button type="button" class="hotbar-slot hotbar-control ${control.active ? 'is-active' : ''}" data-slot="${index}" data-hotbar-action="${control.id}" ${control.id === 'common-teleport' ? 'data-skill-id="common-teleport"' : ''} aria-label="${index + 1}번 ${escapeHtml(control.label)}">
+        <span class="slot-number">${index + 1}</span>
+        ${control.icon}<span class="skill-glyph">${escapeHtml(control.glyph)}</span>
+        <span class="hotbar-control-name">${escapeHtml(control.label)}</span>
+        ${control.state ? `<span class="hotbar-control-state">${escapeHtml(control.state)}</span>` : ''}
+        ${control.id === 'common-teleport' ? '<span class="cooldown-sweep"></span><span class="cooldown-number"></span>' : ''}
+      </button>
+    `).join('');
 
     element.querySelectorAll<HTMLButtonElement>('.hotbar-slot').forEach((slot) => {
       slot.addEventListener('click', () => this.activateHotbarSlot(Number(slot.dataset.slot), this.cursorScreenPoint), { signal: this.abortController.signal });
-      slot.addEventListener('dragstart', (event) => {
-        event.dataTransfer?.setData('text/plain', slot.dataset.slot || '');
-        event.dataTransfer?.setDragImage(slot, slot.clientWidth / 2, slot.clientHeight / 2);
-        slot.classList.add('is-dragging');
-      }, { signal: this.abortController.signal });
-      slot.addEventListener('dragend', () => slot.classList.remove('is-dragging'), { signal: this.abortController.signal });
-      slot.addEventListener('dragover', (event) => {
-        event.preventDefault();
-        slot.classList.add('is-drop-target');
-      }, { signal: this.abortController.signal });
-      slot.addEventListener('dragleave', () => slot.classList.remove('is-drop-target'), { signal: this.abortController.signal });
-      slot.addEventListener('drop', (event) => {
-        event.preventDefault();
-        slot.classList.remove('is-drop-target');
-        const from = Number(event.dataTransfer?.getData('text/plain'));
-        const to = Number(slot.dataset.slot);
-        if (!Number.isInteger(from) || !Number.isInteger(to)) return;
-        this.hotbar = reorderHotbar(this.hotbar, from, to);
-        writeHotbar(this.hotbar);
-        this.renderHotbar();
-      }, { signal: this.abortController.signal });
     });
   }
 
@@ -2305,12 +2291,30 @@ export class ShowcaseApp {
   }
 
   private activateHotbarSlot(index: number, target: { x: number; y: number } | null = null): void {
-    const skillId = this.hotbar[index];
-    if (!skillId) {
-      this.toast(`${index + 1}번 슬롯이 비어 있습니다.`, 'notice');
+    if (index === 0) {
+      this.activateSkill('common-teleport', target);
       return;
     }
-    this.activateSkill(skillId, target);
+    if (index === 1) {
+      const next: CharacterKey = this.activeActor === '100' ? '200' : '100';
+      this.setActiveActor(next);
+      this.toast(`${CHARACTER_DISPLAY_NAMES[next]}로 전환했습니다.`, 'success');
+      return;
+    }
+    if (index === 2) {
+      const next: ApartmentPlanVariant = this.planVariant === 'A' ? 'B' : 'A';
+      void this.selectPlanVariant(next).then(() => {
+        this.renderHotbar();
+        this.toast(`${next}형 평면 방향으로 전환했습니다.`, 'success');
+      });
+      return;
+    }
+    if (index === 3) {
+      this.pigmyTransformationActive = !this.pigmyTransformationActive;
+      this.actorViews.forEach((view, key) => view.setTransformed(key === this.activeActor && this.pigmyTransformationActive));
+      this.renderHotbar();
+      this.toast(this.pigmyTransformationActive ? '피그미 변신 ON' : `${CHARACTER_DISPLAY_NAMES[this.activeActor]}로 돌아왔습니다.`, 'success');
+    }
   }
 
   private activateSkill(skillId: string, target: { x: number; y: number } | null = null, ignoreCooldown = false): void {
@@ -2954,7 +2958,7 @@ export class ShowcaseApp {
       const actor = this.actors.get(key);
       if (actor) view.update(actor, this.renderer.project(actor.displayX, actor.displayY), time, actorWorldScale);
     });
-    this.minimap.render(this.actors.values(), this.activeActor, time);
+    this.minimap.render(active ? [active] : [], this.activeActor, time);
     if (this.selectedLocalPropId) this.updateFurnitureToolbar();
     this.paintCooldowns(time);
 

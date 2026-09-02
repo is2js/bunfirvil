@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 3,
+  "assetKind": "showcase-transformation",
+  "assetKey": "M004",
+  "name": "피그미",
+  "cellSize": 128,
+  "footY": 122,
+  "displaySize": 128,
+  "directions": ["n", "ne", "e", "se", "s", "sw", "w", "nw"],
+  "defaultActions": {
+    "walk": "normal",
+    "attack": "normal",
+    "cast": "normal"
+  },
+  "motions": {
+    "walk": {
+      "loop": true,
+      "durationMs": 450,
+      "actions": {
+        "normal": {
+          "frameCount": 3,
+          "sheet": "sheets/walk/normal.png",
+          "sheetFrameWidth": 128,
+          "sheetFrameHeight": 128,
+          "sheetRows": 8,
+          "sheetColumns": 3
+        }
+      }
+    },
+    "attack": {
+      "loop": false,
+      "durationMs": 450,
+      "actions": {
+        "normal": {
+          "frameCount": 3,
+          "sheet": "sheets/attack/normal.png",
+          "sheetFrameWidth": 128,
+          "sheetFrameHeight": 128,
+          "sheetRows": 8,
+          "sheetColumns": 3
+        }
+      }
+    },
+    "cast": {
+      "loop": false,
+      "durationMs": 500,
+      "actions": {
+        "normal": {
+          "frameCount": 1,
+          "sheet": "sheets/cast/normal.png",
+          "sheetFrameWidth": 128,
+          "sheetFrameHeight": 128,
+          "sheetRows": 8,
+          "sheetColumns": 1
+        }
+      }
+    }
+  },
+  "revision": "1503f776ee633925"
+}

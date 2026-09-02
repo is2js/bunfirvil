@@ -12,6 +12,9 @@ export class ActorView {
   private readonly sprite: HTMLSpanElement;
   private manifest: CharacterManifest | null = null;
   private manifestUrl = '';
+  private transformationManifest: CharacterManifest | null = null;
+  private transformationManifestUrl = '';
+  private transformed = false;
   private lastSheet = '';
 
   constructor(
@@ -45,6 +48,29 @@ export class ActorView {
     }
   }
 
+  async loadTransformation(manifestUrl: string, onAssetLoaded: () => void): Promise<void> {
+    this.transformationManifestUrl = resolveProjectUrl(manifestUrl);
+    try {
+      this.transformationManifest = await fetchJson<CharacterManifest>(this.transformationManifestUrl);
+      onAssetLoaded();
+    } catch (error) {
+      console.warn('[bunfirvil] Pigmy transformation uses the base actor fallback.', error);
+    }
+  }
+
+  setVisible(visible: boolean): void {
+    this.element.hidden = !visible;
+  }
+
+  setTransformed(transformed: boolean): void {
+    const next = transformed && Boolean(this.transformationManifest);
+    if (next === this.transformed) return;
+    this.transformed = next;
+    this.lastSheet = '';
+    this.element.classList.toggle('is-transformed', next);
+    this.element.dataset.transformation = next ? 'pigmy' : '';
+  }
+
   setSelected(selected: boolean): void {
     this.element.classList.toggle('is-selected', selected);
     this.element.setAttribute('aria-pressed', String(selected));
@@ -67,24 +93,27 @@ export class ActorView {
     this.element.dataset.travelProgress = actor.travel
       ? String(Math.max(0, Math.min(1, (time - actor.travel.startedAt) / Math.max(1, actor.travel.endsAt - actor.travel.startedAt))))
       : '1';
-    if (!this.manifest) return;
-    const motion = this.manifest.motions?.[actor.motion] || this.manifest.motions?.idle;
+    const manifest = this.transformed ? this.transformationManifest : this.manifest;
+    const manifestUrl = this.transformed ? this.transformationManifestUrl : this.manifestUrl;
+    if (!manifest) return;
+    const motion = manifest.motions?.[actor.motion] || manifest.motions?.idle || manifest.motions?.walk;
     if (!motion?.actions) return;
-    const defaultAction = this.manifest.defaultActions?.[actor.motion];
+    const defaultAction = manifest.defaultActions?.[actor.motion];
     const action = (defaultAction && motion.actions[defaultAction]) || Object.values(motion.actions)[0];
     if (!action?.sheet) return;
 
     const columns = Math.max(1, action.sheetColumns || action.frameCount || 1);
-    const rows = Math.max(1, action.sheetRows || this.manifest.directions?.length || 8);
+    const rows = Math.max(1, action.sheetRows || manifest.directions?.length || 8);
     const duration = Math.max(120, motion.durationMs || (actor.motion === 'walk' ? 640 : 1_000));
     this.element.dataset.animationCycleMs = String(duration);
     const frameCount = Math.max(1, Math.min(columns, action.frameCount || columns));
     const elapsed = Math.max(0, time - actor.motionStartedAt);
-    const frame = Math.floor((elapsed % duration) / duration * frameCount) % frameCount;
+    const animatedFrame = Math.floor((elapsed % duration) / duration * frameCount) % frameCount;
+    const frame = this.transformed && actor.motion === 'idle' ? Math.min(1, frameCount - 1) : animatedFrame;
     this.element.dataset.animationCycleProgress = String((elapsed % duration) / duration);
-    const directionOrder = this.manifest.directions || ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
+    const directionOrder = manifest.directions || ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
     const row = Math.max(0, directionOrder.indexOf(renderDirection));
-    const sheetUrl = resolveReferencedUrl(action.sheet, this.manifestUrl);
+    const sheetUrl = resolveReferencedUrl(action.sheet, manifestUrl);
 
     if (sheetUrl !== this.lastSheet) {
       this.lastSheet = sheetUrl;
