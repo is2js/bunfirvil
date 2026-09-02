@@ -22,6 +22,7 @@ export class ActorView {
     element.type = 'button';
     element.className = `rpg-actor rpg-actor--${entry.key}`;
     element.dataset.actor = entry.key;
+    element.tabIndex = -1;
     element.setAttribute('aria-label', `${entry.label} 조작`);
     element.innerHTML = `
       <span class="actor-shadow" aria-hidden="true"></span>

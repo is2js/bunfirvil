@@ -98,6 +98,7 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(actor100.locator('.actor-health')).toHaveCount(0);
   await expect(actor100.locator('.actor-select-ring')).toHaveCount(0);
   await expect(actor100.locator('.actor-name')).toHaveCSS('opacity', '0');
+  await expect(actor100).toHaveAttribute('tabindex', '-1');
   await actor100.hover();
   await expect(actor100.locator('.actor-name')).toHaveCSS('opacity', '1');
   await expect(actor100.locator('.actor-name')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
@@ -135,6 +136,10 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   await expect(page.locator("#active-actor-label")).toHaveText("돌범");
   await observeNextMotion(actor100, "attack");
   await page.getByRole("button", { name: "2번 기본 공격" }).click();
+  await expect(actor100).toHaveAttribute("data-observed-motion", "attack");
+  await page.waitForTimeout(900);
+  await observeNextMotion(actor100, "attack");
+  await page.keyboard.press('Space');
   await expect(actor100).toHaveAttribute("data-observed-motion", "attack");
 
   await page.getByRole("button", { name: "200", exact: true }).click();

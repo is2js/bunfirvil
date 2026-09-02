@@ -527,6 +527,8 @@ export class ShowcaseApp {
                   <span><span class="shortcut-keys"><kbd>Ctrl</kbd><i>+</i><kbd>휠</kbd></span><b>확대·축소</b></span>
                   <span class="shortcut-divider">·</span>
                   <span><span class="shortcut-keys"><kbd>Shift</kbd><i>+</i><kbd>휠</kbd></span><b>가구 회전</b></span>
+                  <span class="shortcut-divider">·</span>
+                  <span><kbd>Space</kbd><b>기본 공격</b></span>
                   <button type="button" id="inspection-laser-toggle" class="istarpark-laser-toggle" aria-pressed="false" title="레이저 실측 시작 (J)" hidden>
                     <kbd>J</kbd><b>레이저 실측</b>
                   </button>
@@ -626,8 +628,8 @@ export class ShowcaseApp {
           <p class="option-confirm-message">선택 옵션과 인증 세대의 타입·가격 층 구간을 계산기에 전달합니다. 동·호·닉네임은 저장하거나 전달하지 않습니다.</p>
           <fieldset>
             <legend>청약 구분</legend>
-            <label><input type="radio" name="sale-calculator-route" value="pre-subscription" checked /> 사전청약 당첨자</label>
-            <label><input type="radio" name="sale-calculator-route" value="main-subscription" /> 본청약 신규신청자</label>
+            <label><input type="radio" name="sale-calculator-route" value="pre-subscription" /> 사전청약 당첨자</label>
+            <label><input type="radio" name="sale-calculator-route" value="main-subscription" checked /> 본청약 신규신청자</label>
           </fieldset>
           <div class="option-confirm-actions">
             <button type="submit" value="cancel">취소</button>
@@ -911,6 +913,11 @@ export class ShowcaseApp {
         this.threeRenderer?.setEditorSelection('');
         this.renderFurniturePalette();
         this.updateFurnitureToolbar();
+        return;
+      }
+      if (event.code === 'Space' && !event.repeat) {
+        event.preventDefault();
+        this.activateSkill('basic-attack');
         return;
       }
       if (/^[1-6]$/.test(key)) {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BUNDANG_SALE_FINANCE_CATALOG_V1,
+  bundangMortgageFundSharePercent,
   calculateBundangAcquisitionTax,
   calculateBundangMortgage,
   calculateMoveInRequiredCash,
@@ -96,16 +97,25 @@ describe('Bundang sale finance', () => {
     expect(calculateBundangAcquisitionTax({ taxableAmountWon: 100_000_000, manualReliefWon: 99_999_999 })).toMatchObject({ acquisitionTaxWonBeforeRelief: 1_000_000, manualReliefWon: 1_000_000, acquisitionTaxWon: 0, localEducationTaxWon: 100_000, totalTaxWon: 100_000 });
   });
 
-  it('caps the 1.6% mortgage at 70% LTV and 4억원 for either supported term', () => {
+  it('uses the notice 1.3% mortgage and caps it at 70% LTV and 4억원', () => {
     const twenty = calculateBundangMortgage({ loanBaseWon: 682_380_000, termYears: 20 });
     const thirty = calculateBundangMortgage({ loanBaseWon: 682_380_000, termYears: 30, requestedLoanWon: 300_000_000 });
     expect(twenty.eligibleMaximumWon).toBe(400_000_000);
     expect(twenty.principalWon).toBe(400_000_000);
+    expect(twenty.annualRateBps).toBe(130);
     expect(twenty.graceMonths).toBe(12);
     expect(twenty.repaymentMonths).toBe(228);
     expect(twenty.repaymentMonthlyPrincipalInterestWon).toBeGreaterThan(thirty.repaymentMonthlyPrincipalInterestWon);
     expect(thirty.totalInterestWon).toBeGreaterThan(0);
     const schedules = [calculateBundangPaymentSchedule(600_000_000, 'main-subscription', 'supply')];
     expect(calculateMoveInRequiredCash(schedules, 400_000_000)).toBe(20_000_000);
+  });
+
+  it('applies the notice child-count and settlement-period fund share table', () => {
+    expect(bundangMortgageFundSharePercent(70, 0, '1-9')).toBe(50);
+    expect(bundangMortgageFundSharePercent(70, 2, '1-9')).toBe(30);
+    expect(bundangMortgageFundSharePercent(60, 1, '14')).toBe(25);
+    expect(bundangMortgageFundSharePercent(30, 0, '19')).toBe(20);
+    expect(bundangMortgageFundSharePercent(50, 2, '24+')).toBe(10);
   });
 });

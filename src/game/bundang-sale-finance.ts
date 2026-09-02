@@ -130,6 +130,9 @@ export interface BundangMortgageQuoteV1 {
   totalInterestWon: number;
 }
 
+export type BundangMortgageChildCount = 0 | 1 | 2;
+export type BundangMortgageSettlementPeriod = '1-9' | '14' | '19' | '24+';
+
 export interface BundangFinanceInputV1 {
   household: BundangSaleHouseholdV1;
   paymentPlanKind: BundangPaymentPlanKind;
@@ -201,10 +204,26 @@ export const BUNDANG_SALE_FINANCE_CATALOG_V1: BundangSaleFinanceCatalogV1 = Obje
 });
 
 export const BUNDANG_MORTGAGE_DEFAULTS_V1 = Object.freeze({
-  annualRateBps: 160,
+  annualRateBps: 130,
   ltvBps: 7_000,
   maxLoanWon: 400_000_000,
 });
+
+const BUNDANG_MORTGAGE_FUND_SHARE_V1 = Object.freeze({
+  '1-9': Object.freeze({ 70: [50, 40, 30], 60: [45, 35, 25], 50: [40, 30, 20], 40: [35, 25, 15], 30: [30, 20, 10] }),
+  '14': Object.freeze({ 70: [40, 30, 20], 60: [35, 25, 15], 50: [30, 20, 10], 40: [25, 15, 10], 30: [20, 15, 10] }),
+  '19': Object.freeze({ 70: [30, 20, 10], 60: [25, 15, 10], 50: [20, 15, 10], 40: [20, 15, 10], 30: [20, 15, 10] }),
+  '24+': Object.freeze({ 70: [20, 15, 10], 60: [20, 15, 10], 50: [20, 15, 10], 40: [20, 15, 10], 30: [20, 15, 10] }),
+} as const);
+
+/** 공고문 표에 따른 향후 매각차익의 기금 정산비율. 대출 원금 산정에는 쓰지 않는다. */
+export function bundangMortgageFundSharePercent(
+  ltvPercent: 30 | 40 | 50 | 60 | 70,
+  childCount: BundangMortgageChildCount,
+  settlementPeriod: BundangMortgageSettlementPeriod,
+): number {
+  return BUNDANG_MORTGAGE_FUND_SHARE_V1[settlementPeriod][ltvPercent][childCount];
+}
 
 /**
  * Read the official floor-priced supply amount.  Floors 5 and above share the
@@ -380,7 +399,7 @@ export function calculateBundangAcquisitionTax(input: BundangAcquisitionTaxInput
   };
 }
 
-/** 1.6% / 70% LTV / 4억원 cap with 1-year interest-only grace, then equal payments. */
+/** 공고문 기준 1.3% / 70% LTV / 4억원 한도, 1년 거치 후 원리금균등상환. */
 export function calculateBundangMortgage(input: BundangMortgageInputV1): BundangMortgageQuoteV1 {
   const loanBaseWon = nonNegativeWon(input.loanBaseWon);
   const ltvBps = nonNegativeWon(input.ltvBps ?? BUNDANG_MORTGAGE_DEFAULTS_V1.ltvBps);

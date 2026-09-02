@@ -521,6 +521,12 @@ input:focus-visible {
   will-change: transform;
 }
 
+.rpg-actor:focus,
+.rpg-actor:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .actor-sprite {
   width: 68px;
   height: 68px;
@@ -1108,11 +1114,18 @@ input:focus-visible {
 .stage-tip {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 5px;
+  width: max-content;
+  max-width: calc(100vw - 36px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
   color: rgba(174, 194, 190, 0.66);
   font-size: 10px;
 }
+
+.stage-tip::-webkit-scrollbar { display: none; }
 
 .stage-tip > span { display: inline-flex; align-items: center; gap: 5px; }
 
@@ -1900,20 +1913,23 @@ input:focus-visible {
 .stage-option-chips b { color: #aca38e; font-size: 9px; }
 .stage-option-chips em { color: #d5b96f; font: normal 650 8px ui-monospace, monospace; }
 .price-variant-label { display: inline-flex; margin-left: 6px; padding: 2px 5px; border: 1px solid rgba(225, 185, 99, .34); border-radius: 8px; color: #f0d18b; background: rgba(225, 185, 99, .1); font: normal 750 7px/1 inherit; vertical-align: middle; }
-.stage-option-quote > strong { min-height: 100%; grid-column: 3; grid-row: 1 / 3; padding-left: 11px; display: flex; align-items: center; border-left: 1px solid rgba(213, 183, 112, .14); color: #f0d18b; font: 800 18px ui-monospace, monospace; white-space: nowrap; }
-.stage-option-quote > strong small { margin-left: 2px; color: #9c8755; font-size: 9px; }
+.stage-option-quote > strong { min-width: 128px; min-height: 100%; grid-column: 3; grid-row: 1 / 3; padding-left: 11px; display: flex; align-items: center; justify-content: center; border-left: 1px solid rgba(213, 183, 112, .14); color: #f0d18b; font: 800 22px ui-monospace, monospace; text-align: center; white-space: nowrap; }
+.stage-option-quote > strong small { margin-left: 3px; color: #ad965f; font-size: 11px; }
 #open-sale-calculator {
   width: 100%;
-  min-height: 21px;
+  min-height: 27px;
   margin: 0;
   padding: 3px 6px;
   grid-column: 3;
   grid-row: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(135, 213, 194, .42);
   border-radius: 3px;
   color: #b8eee2;
   background: rgba(64, 142, 126, .14);
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1;
   text-align: center;

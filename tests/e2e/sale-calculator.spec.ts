@@ -70,11 +70,16 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await page.getByLabel('대출 추정 활성화').check();
   await expect(page.locator('#calculator-mortgage-details')).toHaveAttribute('open', '');
   await expect(page.locator('#calculator-mortgage-details')).toContainText('월 원리금');
+  await expect(page.locator('#calculator-mortgage-details')).toContainText('1.3% 고정');
+  await page.locator('#calculator-children').selectOption('2');
+  await page.locator('#calculator-settlement-period').selectOption('1-9');
+  await expect(page.locator('#calculator-mortgage-details')).toContainText('향후 매각차익 기금 정산비율30%');
 
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('.topbar')).toBeHidden();
   await expect(page.locator('.calculator-side')).toBeVisible();
   await expect(page.locator('#calculator-tax-details')).toBeVisible();
+  await expect(page.locator('.source-card')).toBeHidden();
   await page.emulateMedia({ media: 'screen' });
   await page.getByRole('button', { name: '인쇄 · PDF 저장' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-print-called', 'true');
