@@ -2185,7 +2185,8 @@ input:focus-visible {
 .household-building-number b { font-size: clamp(24px, 2.5vw, 34px); line-height: 1; letter-spacing: -.05em; }
 .household-building-number small { font-size: 12px; font-weight: 850; }
 .household-building-picker-panel.is-entering,
-.household-building-detail.is-entering { animation: household-panel-in 240ms ease-out both; }
+.household-building-detail.is-entering,
+.household-nickname-stage.is-entering { animation: household-panel-in 240ms ease-out both; }
 @keyframes household-panel-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .household-building-detail { max-width: 1020px; margin: 0 auto 44px; padding: clamp(22px, 3vw, 34px); display: grid; gap: 18px; border: 1px solid #dce5ed; border-radius: 20px; background: #fff; box-shadow: 0 14px 38px rgba(31, 50, 75, .08); }
 .household-building-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -2462,7 +2463,7 @@ button.household-cell:focus-visible { z-index: 2; outline: 2px solid #183d62; ou
 .household-legend .is-pilotis { color: #83928f; background: rgba(137, 155, 151, .07); }
 .household-legend .is-pilotis i { color: #071116; }
 
-.household-wizard-progress { margin: 0 0 17px; display: grid; grid-template-columns: auto minmax(36px, 100px) auto; align-items: center; justify-content: start; gap: 10px; }
+.household-wizard-progress { margin: 0 0 17px; display: grid; grid-template-columns: auto minmax(28px, 82px) auto minmax(28px, 82px) auto; align-items: center; justify-content: start; gap: 10px; }
 .household-wizard-progress span { display: inline-flex; align-items: center; gap: 8px; color: #667a77; font-size: 10px; line-height: 1; }
 .household-wizard-progress span i { width: 30px; height: 30px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: #7d918e; background: rgba(255, 255, 255, .025); font: 800 10px/1 ui-monospace, monospace; font-style: normal; }
 .household-wizard-progress span b { font-size: 10px; line-height: 1; }
@@ -2576,21 +2577,22 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 .household-building-card footer { min-width: 0; display: grid; grid-template-columns: repeat(var(--line-count), minmax(0, 1fr)); gap: 2px; align-items: end; }
 .household-building-card footer span { min-width: 0; padding: 3px 1px; overflow: hidden; border-radius: 2px; color: #fff; font: 800 clamp(5px, .65vw, 8px) ui-monospace, monospace; text-align: center; white-space: nowrap; }
 
-.household-nickname-dialog {
-  width: min(460px, calc(100vw - 24px));
-  padding: 0;
+.household-nickname-stage {
+  width: min(660px, 100%);
+  margin: 0 auto 34px;
+  padding: 18px;
+  display: grid;
+  gap: 13px;
   border: 1px solid rgba(92, 211, 189, .28);
-  border-radius: 13px;
+  border-radius: 10px;
   color: var(--ink);
-  background: #0b171c;
-  box-shadow: 0 28px 90px rgba(0, 0, 0, .62), 0 0 0 1px rgba(255, 255, 255, .018) inset;
+  background: rgba(11, 23, 28, .94);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .22), 0 0 0 1px rgba(255, 255, 255, .018) inset;
 }
-.household-nickname-dialog::backdrop { background: rgba(0, 8, 12, .76); backdrop-filter: blur(7px); }
-.household-nickname-dialog form { padding: 26px; position: relative; }
-.household-nickname-dialog .dialog-close { width: 30px; height: 30px; position: absolute; right: 14px; top: 14px; border: 1px solid var(--line); border-radius: 50%; color: #8ba19d; background: rgba(255, 255, 255, .03); cursor: pointer; }
-.household-nickname-dialog .eyebrow { margin: 0 0 5px; color: var(--mint); font-size: 8px; font-weight: 850; letter-spacing: .16em; }
-.household-nickname-dialog h2 { margin: 0; font-size: 22px; letter-spacing: -.035em; }
-.household-nickname-dialog form > p:not(.eyebrow) { margin: 8px 0 17px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.household-nickname-stage-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.household-nickname-card { width: min(480px, 100%); margin: 0 auto; padding: 26px; border: 1px solid var(--line); border-radius: 8px; background: rgba(4, 13, 17, .46); }
+.household-nickname-card .eyebrow { margin: 0 0 5px; color: var(--mint); font-size: 8px; font-weight: 850; letter-spacing: .16em; }
+.household-nickname-card > p:not(.eyebrow) { margin: 8px 0 17px; color: var(--muted); font-size: 10px; line-height: 1.55; }
 .household-nickname-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 7px; }
 .household-nickname-controls label { min-width: 0; display: grid; gap: 5px; }
 .household-nickname-controls label span { color: #819591; font-size: 8px; font-weight: 750; }
@@ -2598,7 +2600,7 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 .household-nickname-controls input:focus { border-color: rgba(92, 211, 189, .65); box-shadow: 0 0 0 3px rgba(92, 211, 189, .08); }
 .household-nickname-controls > button { height: 40px; padding: 0 14px; border: 1px solid rgba(92, 211, 189, .5); border-radius: 6px; color: #061411; background: var(--mint); font-size: 10px; font-weight: 850; cursor: pointer; white-space: nowrap; }
 .household-nickname-controls > button:disabled { border-color: var(--line); color: #627672; background: #102328; cursor: default; }
-.household-nickname-dialog output { min-height: 16px; margin-top: 7px; display: block; color: #8bcdbf; font-size: 9px; }
+.household-nickname-card output { min-height: 16px; margin-top: 7px; display: block; color: #8bcdbf; font-size: 9px; }
 
 .household-selection-dock {
   min-height: 72px;
@@ -2649,7 +2651,7 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
   .household-selector-tools { justify-content: flex-start; }
   .household-selector-tools button,
   .household-selector-tools .selector-overview-link { min-height: 32px; max-width: none; padding: 7px 9px; font-size: 9px; }
-  .household-wizard-progress { margin-bottom: 14px; grid-template-columns: auto minmax(30px, 70px) auto; gap: 8px; }
+  .household-wizard-progress { margin-bottom: 14px; grid-template-columns: auto minmax(12px, 36px) auto minmax(12px, 36px) auto; gap: 6px; }
   .household-wizard-progress span i { width: 28px; height: 28px; }
   .household-wizard-progress span b { font-size: 9.5px; }
   .household-building-picker-panel { padding: 12px; border-radius: 8px; }
@@ -2671,8 +2673,9 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
   .household-building-row.is-single .household-floor-rail > div span { font-size: 8.5px; }
   .household-building-row.is-single .household-building-card header b { font-size: 15px; }
   .household-building-row.is-single .household-building-card footer span { padding: 5px 1px; font-size: 9.5px; }
-  .household-nickname-dialog form { padding: 22px 18px 18px; }
-  .household-nickname-dialog h2 { font-size: 20px; }
+  .household-nickname-stage { margin-bottom: 28px; padding: 12px; gap: 11px; border-radius: 8px; }
+  .household-nickname-stage-head { align-items: center; }
+  .household-nickname-card { padding: 22px 18px 18px; }
   .household-nickname-controls input { font-size: 12px; }
   .household-selection-dock { min-height: 96px; padding: 9px 12px; align-items: stretch; flex-direction: column; gap: 6px; }
   .household-selection-dock > div { min-width: 0; }
@@ -2682,6 +2685,11 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 @media (max-width: 520px) {
   .household-building-picker { gap: 7px; }
   .household-building-choice { min-height: 60px; }
+  .household-wizard-progress span { gap: 5px; }
+  .household-wizard-progress span b { font-size: 8.5px; }
+  .household-wizard-progress span i { width: 27px; height: 27px; }
+  .household-nickname-controls { grid-template-columns: 1fr; }
+  .household-nickname-controls > button { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

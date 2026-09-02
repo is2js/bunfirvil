@@ -134,22 +134,6 @@ export function householdShellHeader(exportId: string, fallback = false, overvie
   </div>`;
 }
 
-function nicknameDialogMarkup(): string {
-  return `<dialog id="household-nickname-dialog" class="household-nickname-dialog">
-    <form method="dialog">
-      <button class="dialog-close" value="close" aria-label="닉네임 입력 닫기">×</button>
-      <p class="eyebrow">HOUSEHOLD NICKNAME</p>
-      <h2>쇼케이스 닉네임 입력</h2>
-      <p>선택한 세대에서 사용할 닉네임을 입력해 주세요. 현재 서버리스 데모에서는 입력 형식만 확인합니다.</p>
-      <div class="household-nickname-controls">
-        <label><span>닉네임</span><input id="household-nickname" type="text" maxlength="20" autocomplete="off" placeholder="닉네임 입력" /></label>
-        <button type="button" id="household-verify-nickname" disabled>인증 확인</button>
-      </div>
-      <output id="household-nickname-status" aria-live="polite"></output>
-    </form>
-  </dialog>`;
-}
-
 async function verifyHouseholdNickname(nickname: string): Promise<boolean> {
   await new Promise((resolve) => window.setTimeout(resolve, 160));
   return nickname.trim().length > 0;
@@ -171,6 +155,8 @@ export function waitForHouseholdSelection(
               <span id="household-step-building" class="is-current" aria-current="step"><i>1</i><b>동 선택</b></span>
               <em aria-hidden="true"></em>
               <span id="household-step-unit"><i>2</i><b>세대 선택</b></span>
+              <em aria-hidden="true"></em>
+              <span id="household-step-nickname"><i>3</i><b>닉네임 입력</b></span>
             </nav>
             <p class="eyebrow">BUNDANG FIRST VILLAGE</p>
             <h1 id="household-selector-title">분당퍼스트빌리지 동 선택</h1>
@@ -190,32 +176,48 @@ export function waitForHouseholdSelection(
           </header>
           <div id="household-building-rows" class="household-building-rows"></div>
         </section>
+        <section id="household-nickname-stage" class="household-nickname-stage" hidden>
+          <header class="household-nickname-stage-head">
+            <button type="button" id="household-unit-back" class="household-building-back">← 세대 다시 선택</button>
+            <span id="household-nickname-building" class="household-selected-building"></span>
+          </header>
+          <div class="household-nickname-card">
+            <p class="eyebrow">HOUSEHOLD NICKNAME</p>
+            <p>선택한 세대에서 사용할 닉네임을 입력해 주세요. 현재 서버리스 데모에서는 입력 형식만 확인합니다.</p>
+            <div class="household-nickname-controls">
+              <label><span>닉네임</span><input id="household-nickname" type="text" maxlength="20" autocomplete="off" placeholder="닉네임 입력" /></label>
+              <button type="button" id="household-verify-nickname" disabled>인증 확인</button>
+            </div>
+            <output id="household-nickname-status" aria-live="polite"></output>
+          </div>
+        </section>
       </main>
       <aside class="household-selection-dock" id="household-selection-dock" aria-live="polite" hidden>
         <div><small>선택 세대</small><b id="household-selection-summary">동·층·호를 선택해 주세요.</b></div>
         <button type="button" id="household-enter" disabled>선택한 세대 쇼케이스 보기</button>
       </aside>
       ${householdStorageDialogMarkup()}
-      ${nicknameDialogMarkup()}
     </div>`;
 
     const picker = mount.querySelector<HTMLElement>('#household-building-picker');
     const detail = mount.querySelector<HTMLElement>('#household-building-detail');
+    const nicknameStage = mount.querySelector<HTMLElement>('#household-nickname-stage');
     const rows = mount.querySelector<HTMLElement>('#household-building-rows');
     const title = mount.querySelector<HTMLElement>('#household-selector-title');
     const description = mount.querySelector<HTMLElement>('#household-selector-description');
     const legend = mount.querySelector<HTMLElement>('#household-selector-legend');
     const buildingStep = mount.querySelector<HTMLElement>('#household-step-building');
     const unitStep = mount.querySelector<HTMLElement>('#household-step-unit');
+    const nicknameStep = mount.querySelector<HTMLElement>('#household-step-nickname');
     const selectedBuilding = mount.querySelector<HTMLElement>('#household-selected-building');
+    const nicknameBuilding = mount.querySelector<HTMLElement>('#household-nickname-building');
     const dock = mount.querySelector<HTMLElement>('#household-selection-dock');
     const summary = mount.querySelector<HTMLElement>('#household-selection-summary');
     const enter = mount.querySelector<HTMLButtonElement>('#household-enter');
-    const nicknameDialog = mount.querySelector<HTMLDialogElement>('#household-nickname-dialog');
     const nicknameInput = mount.querySelector<HTMLInputElement>('#household-nickname');
     const verifyNickname = mount.querySelector<HTMLButtonElement>('#household-verify-nickname');
     const nicknameStatus = mount.querySelector<HTMLOutputElement>('#household-nickname-status');
-    if (!picker || !detail || !rows || !title || !description || !legend || !buildingStep || !unitStep || !selectedBuilding || !dock || !summary || !enter || !nicknameDialog || !nicknameInput || !verifyNickname || !nicknameStatus) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
+    if (!picker || !detail || !nicknameStage || !rows || !title || !description || !legend || !buildingStep || !unitStep || !nicknameStep || !selectedBuilding || !nicknameBuilding || !dock || !summary || !enter || !nicknameInput || !verifyNickname || !nicknameStatus) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
     let chosenBuildingId: string | null = null;
     let nickname = '';
     let nicknameVerified = false;
@@ -273,10 +275,10 @@ export function waitForHouseholdSelection(
 
     const showBuildingPicker = (): void => {
       selected = null;
-      if (nicknameDialog.open) nicknameDialog.close();
       resetNicknameVerification(true);
       picker.hidden = false;
       detail.hidden = true;
+      nicknameStage.hidden = true;
       dock.hidden = true;
       legend.hidden = true;
       title.textContent = '분당퍼스트빌리지 동 선택';
@@ -285,7 +287,10 @@ export function waitForHouseholdSelection(
       buildingStep.classList.toggle('is-complete', Boolean(chosenBuildingId));
       buildingStep.setAttribute('aria-current', 'step');
       unitStep.classList.remove('is-current');
+      unitStep.classList.remove('is-complete');
       unitStep.removeAttribute('aria-current');
+      nicknameStep.classList.remove('is-current', 'is-complete');
+      nicknameStep.removeAttribute('aria-current');
       paintBuildingChoice();
       animatePanel(picker);
       enter.disabled = true;
@@ -296,10 +301,10 @@ export function waitForHouseholdSelection(
       if (!building) return;
       chosenBuildingId = buildingId;
       selected = null;
-      if (nicknameDialog.open) nicknameDialog.close();
       resetNicknameVerification(true);
       picker.hidden = true;
       detail.hidden = false;
+      nicknameStage.hidden = true;
       dock.hidden = false;
       legend.hidden = false;
       rows.innerHTML = `<section class="household-building-row is-single" data-line-count="${building.lines.length}" style="--building-count:1" aria-label="${building.buildingId}동 세대">${floorRail()}${householdBuildingCard(building)}</section>`;
@@ -310,12 +315,42 @@ export function waitForHouseholdSelection(
       buildingStep.classList.add('is-complete');
       buildingStep.removeAttribute('aria-current');
       unitStep.classList.add('is-current');
+      unitStep.classList.remove('is-complete');
       unitStep.setAttribute('aria-current', 'step');
+      nicknameStep.classList.remove('is-current', 'is-complete');
+      nicknameStep.removeAttribute('aria-current');
       paintBuildingChoice();
       animatePanel(detail);
       updateSelectionSummary();
       if (pushHistory) history.pushState({ householdBuilding: buildingId }, '', `#building=${buildingId}`);
       requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    };
+
+    const showNicknameStage = (): void => {
+      if (!selected || !chosenBuildingId) return;
+      picker.hidden = true;
+      detail.hidden = true;
+      nicknameStage.hidden = false;
+      dock.hidden = false;
+      legend.hidden = true;
+      title.textContent = '닉네임 입력';
+      description.textContent = '선택한 세대에서 사용할 닉네임을 입력하고 인증을 확인해 주세요.';
+      nicknameBuilding.textContent = `${selected.buildingId}동 ${selected.householdNumber}호 선택됨`;
+      buildingStep.classList.remove('is-current');
+      buildingStep.classList.add('is-complete');
+      buildingStep.removeAttribute('aria-current');
+      unitStep.classList.remove('is-current');
+      unitStep.classList.add('is-complete');
+      unitStep.removeAttribute('aria-current');
+      nicknameStep.classList.add('is-current');
+      nicknameStep.classList.remove('is-complete');
+      nicknameStep.setAttribute('aria-current', 'step');
+      animatePanel(nicknameStage);
+      updateSelectionSummary();
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        nicknameInput.focus();
+      });
     };
 
     picker.addEventListener('click', (event) => {
@@ -334,8 +369,7 @@ export function waitForHouseholdSelection(
       );
       resetNicknameVerification(false);
       paintSelection();
-      if (!nicknameDialog.open) nicknameDialog.showModal();
-      requestAnimationFrame(() => nicknameInput.focus());
+      showNicknameStage();
     });
 
     nicknameInput.addEventListener('input', () => {
@@ -362,7 +396,6 @@ export function waitForHouseholdSelection(
       verifyNickname.disabled = false;
       nicknameStatus.textContent = verified ? '입력 확인이 완료되었습니다.' : '닉네임을 다시 확인해 주세요.';
       updateSelectionSummary();
-      if (verified) nicknameDialog.close();
     });
 
     const onPopState = (): void => {
@@ -374,6 +407,9 @@ export function waitForHouseholdSelection(
     mount.querySelector<HTMLButtonElement>('#household-building-back')?.addEventListener('click', () => {
       if (window.location.hash.startsWith('#building=')) history.back();
       else showBuildingPicker();
+    });
+    mount.querySelector<HTMLButtonElement>('#household-unit-back')?.addEventListener('click', () => {
+      if (chosenBuildingId) showBuilding(chosenBuildingId, false);
     });
 
     enter.addEventListener('click', () => {
