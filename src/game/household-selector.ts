@@ -192,16 +192,15 @@ export function waitForHouseholdSelection(
             <span id="household-nickname-building" class="household-selected-building"></span>
           </header>
           <div class="household-nickname-card">
-            <p class="eyebrow">HOUSEHOLD NICKNAME</p>
-            <p>선택한 세대에서 사용할 닉네임을 입력해 주세요. 선택한 세대에서 계산한 동·타입과 닉네임만 Google 인증 서비스로 전송하며 층·호수는 전송하지 않습니다.</p>
+            <h2>닉네임 입력</h2>
             <div class="household-nickname-controls">
               <label><span>닉네임</span><input id="household-nickname" type="text" maxlength="20" autocomplete="off" placeholder="닉네임 입력" /></label>
-              <div class="household-nickname-actions">
-                <button type="button" id="household-request-verification" class="is-secondary" disabled>인증 요청</button>
-                <button type="button" id="household-verify-nickname" disabled>인증 확인</button>
-              </div>
+              <button type="button" id="household-verify-nickname" disabled>인증 확인</button>
             </div>
             <output id="household-nickname-status" aria-live="polite"></output>
+            <div class="household-registration-request">
+              <button type="button" id="household-request-verification" disabled>등록 요청</button>
+            </div>
           </div>
         </section>
       </main>
@@ -251,6 +250,18 @@ export function waitForHouseholdSelection(
       requestAnimationFrame(() => panel.classList.add('is-entering'));
     };
 
+    const revealVerifiedDock = (): void => {
+      if (!nicknameVerified) return;
+      nicknameInput.disabled = true;
+      verifyNickname.disabled = true;
+      requestVerification.disabled = true;
+      nicknameStep.classList.add('is-complete');
+      dock.hidden = false;
+      dock.classList.remove('is-authenticated');
+      void dock.offsetWidth;
+      dock.classList.add('is-authenticated');
+    };
+
     const updateSelectionSummary = (): void => {
       if (!selected) {
         summary.textContent = '층·호를 선택해 주세요.';
@@ -272,11 +283,13 @@ export function waitForHouseholdSelection(
         nicknameInput.value = '';
       }
       verifyNickname.textContent = '인증 확인';
-      requestVerification.textContent = '인증 요청';
+      requestVerification.textContent = '등록 요청';
+      nicknameInput.disabled = false;
       verifyNickname.disabled = nickname.trim().length === 0 || !householdVerificationConfigured(verificationConfig);
       requestVerification.disabled = verifyNickname.disabled;
       verifyNickname.removeAttribute('aria-busy');
       requestVerification.removeAttribute('aria-busy');
+      dock.classList.remove('is-authenticated');
       nicknameStatus.textContent = householdVerificationConfigured(verificationConfig)
         ? ''
         : '인증 서비스 연결 주소가 아직 설정되지 않았습니다.';
@@ -358,7 +371,7 @@ export function waitForHouseholdSelection(
       picker.hidden = true;
       detail.hidden = true;
       nicknameStage.hidden = false;
-      dock.hidden = false;
+      dock.hidden = !nicknameVerified;
       legend.hidden = true;
       title.textContent = '닉네임 입력';
       description.textContent = '선택한 세대에서 사용할 닉네임을 입력하고 인증을 확인해 주세요.';
@@ -422,7 +435,7 @@ export function waitForHouseholdSelection(
       nicknameVerified = false;
       verifiedRole = null;
       verifyNickname.textContent = '인증 확인';
-      requestVerification.textContent = '인증 요청';
+      requestVerification.textContent = '등록 요청';
       verifyNickname.disabled = nickname.trim().length === 0 || !householdVerificationConfigured(verificationConfig);
       requestVerification.disabled = verifyNickname.disabled;
       verifyNickname.removeAttribute('aria-busy');
@@ -460,8 +473,9 @@ export function waitForHouseholdSelection(
           : response.verified
             ? '세대 및 닉네임 인증이 완료되었습니다.'
             : response.status === 'requested'
-              ? '인증 요청이 확인 대기 중입니다.'
+              ? '등록 요청이 확인 대기 중입니다.'
               : '선택한 동·타입과 닉네임을 확인할 수 없습니다.';
+        revealVerifiedDock();
       } catch {
         if (attempt !== verificationAttempt) return;
         nicknameVerified = false;
@@ -471,8 +485,8 @@ export function waitForHouseholdSelection(
       } finally {
         if (attempt === verificationAttempt) {
           verifyNickname.removeAttribute('aria-busy');
-          verifyNickname.disabled = false;
-          requestVerification.disabled = false;
+          verifyNickname.disabled = nicknameVerified;
+          requestVerification.disabled = nicknameVerified;
           updateSelectionSummary();
         }
       }
@@ -486,7 +500,7 @@ export function waitForHouseholdSelection(
       verifyNickname.disabled = true;
       requestVerification.disabled = true;
       requestVerification.setAttribute('aria-busy', 'true');
-      nicknameStatus.textContent = '인증 요청을 등록하고 있습니다.';
+      nicknameStatus.textContent = '닉네임 등록을 요청하고 있습니다.';
       try {
         const response = await requestHouseholdVerification(verificationConfig, {
           buildingId: selected.buildingId,
@@ -501,17 +515,18 @@ export function waitForHouseholdSelection(
           ? '이미 운영자로 인증되어 있습니다.'
           : response.verified
             ? '이미 인증된 정보입니다. 쇼케이스로 이동할 수 있습니다.'
-            : '인증 요청이 등록되었습니다. 운영자가 상태를 인증됨으로 바꾼 뒤 인증 확인을 눌러 주세요.';
+            : '등록 요청이 접수되었습니다. 운영자가 상태를 인증됨으로 바꾼 뒤 인증 확인을 눌러 주세요.';
+        revealVerifiedDock();
       } catch {
         if (attempt !== verificationAttempt) return;
         nicknameVerified = false;
         verifiedRole = null;
-        nicknameStatus.textContent = '인증 요청 서비스를 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
+        nicknameStatus.textContent = '등록 요청 서비스를 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
       } finally {
         if (attempt === verificationAttempt) {
           requestVerification.removeAttribute('aria-busy');
-          verifyNickname.disabled = false;
-          requestVerification.disabled = false;
+          verifyNickname.disabled = nicknameVerified;
+          requestVerification.disabled = nicknameVerified;
           updateSelectionSummary();
         }
       }

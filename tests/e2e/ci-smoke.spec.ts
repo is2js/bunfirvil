@@ -116,6 +116,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(page.getByRole('heading', { name: '105동 세대 선택' })).toBeVisible();
   await expect(page.locator('#household-building-detail')).toBeVisible();
   await household.click();
+  await expect(page.locator('#household-selection-dock')).toBeHidden();
   await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeDisabled();
   verificationMode = 'error';
   await page.getByPlaceholder('닉네임 입력').fill('통신오류');
@@ -134,6 +135,11 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await page.getByRole('button', { name: '인증 확인' }).click();
   await expect(page.locator('#household-nickname-stage')).toBeVisible();
   await expect(page.locator('#household-nickname-status')).toHaveText('운영자 인증이 완료되었습니다. 관리 메뉴를 사용할 수 있습니다.');
+  await expect(page.getByPlaceholder('닉네임 입력')).toBeDisabled();
+  await expect(page.getByRole('button', { name: '인증 확인' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '등록 요청' })).toBeDisabled();
+  await expect(page.locator('#household-selection-dock')).toBeVisible();
+  await expect(page.locator('#household-selection-dock')).toHaveClass(/is-authenticated/);
   await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeEnabled();
   await page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' }).click();
   await expect(page).toHaveURL(/map=bundang-first-village-51a-prototype/);
