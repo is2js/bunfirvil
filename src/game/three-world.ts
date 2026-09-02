@@ -13,11 +13,14 @@ import {
 import { castsExteriorStructureShadow } from './structure-shadow';
 import {
   bundangEditorSelectionPropIds,
+  bundangEffectiveKitchenFixtures,
+  bundangHidesInteriorDoorLeaves,
   bundangPreciseEditorPickOnly,
   isBundangManagedKitchenApplianceProp,
   KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS,
   refineBundangOptionProps,
   replacedBundangOpeningIds,
+  synchronizeBundangMinusOptionGeometryState,
 } from './bundang-option-layout';
 import { associateOptionSources } from './option-prop-selection';
 import {
@@ -1406,6 +1409,14 @@ export class ThreeWorldRenderer {
 
   private buildApartment(object: WorldObject): void {
     const geometry = object.geometry as ApartmentGeometry;
+    // Keep the transient option-derived geometry view in sync for the editor
+    // placement and laser modules. The source geometry and saved local layout
+    // remain unchanged, so deselection restores all base elements.
+    const hidesInteriorDoorLeaves = synchronizeBundangMinusOptionGeometryState(
+      geometry,
+      this.selectedOptionIds,
+    );
+    this.canvas.dataset.minusOptionActive = String(hidesInteriorDoorLeaves);
     const floorPolygon = points(geometry.floorPolygon);
     const floorGeometry = this.shapeGeometry(object, floorPolygon);
     if (!floorGeometry) return;
@@ -1438,7 +1449,9 @@ export class ThreeWorldRenderer {
       this.structureRoot.add(overlay);
     }
 
-    for (const fixtureValue of geometry.kitchenFixtures || []) {
+    const effectiveKitchenFixtures = bundangEffectiveKitchenFixtures(geometry);
+    this.canvas.dataset.kitchenFixtureCount = String(effectiveKitchenFixtures.length);
+    for (const fixtureValue of effectiveKitchenFixtures) {
       const fixture = fixtureValue as Record<string, unknown>;
       const polygon = rowPolygon(fixture);
       if (polygon.length < 3) continue;
@@ -1561,9 +1574,13 @@ export class ThreeWorldRenderer {
       object.unitTypeId || this.world?.entry.unitType || '',
       this.selectedOptionIds,
     );
+    let renderedInteriorDoorLeafCount = 0;
     for (const openingValue of geometry.openings || []) {
       const opening = openingValue as Record<string, unknown>;
-      if (replacedOpeningIds.has(String(opening.id || ''))) continue;
+      if (
+        replacedOpeningIds.has(String(opening.id || ''))
+        || (hidesInteriorDoorLeaves && String(opening.type || '') === 'interior-door')
+      ) continue;
       const ends = points([opening.a, opening.b]);
       if (ends.length !== 2) continue;
       const start = this.localPoint(object, ends[0]);
@@ -1581,8 +1598,10 @@ export class ThreeWorldRenderer {
         this.structureRoot.add(pane);
         continue;
       }
+      if (String(opening.type || '') === 'interior-door') renderedInteriorDoorLeafCount += 1;
       this.addDoor(object, opening, start, end, cellSize);
     }
+    this.canvas.dataset.interiorDoorLeafCount = String(renderedInteriorDoorLeafCount);
   }
 
   private updateStructureOcclusion(time: number): void {
@@ -1662,6 +1681,7 @@ export class ThreeWorldRenderer {
     const object = this.apartment;
     const geometry = object?.geometry;
     if (!object || !geometry) return;
+    synchronizeBundangMinusOptionGeometryState(geometry, this.selectedOptionIds);
     const runtimeProps = this.optionRuntime
       ? this.optionRuntime.bundangPrototypeOptionProps(geometry, object.unitTypeId || this.world?.entry.unitType || '', this.selectedOptionIds)
       : geometry.interiorProps || [];
@@ -1678,6 +1698,9 @@ export class ThreeWorldRenderer {
       return prop.sourcePropId ? [{ ...prop, localDeleted: false }] : [];
     }) || null;
     const props = mergeEditorPropsWithBase(baseProps, editorProps);
+    this.canvas.dataset.bathroomBaseFixtureCount = String(
+      props.filter((prop) => prop.installationRole === 'bathroom-base-fixture').length,
+    );
     const airPlannerRoomUnits = props.filter((prop) => prop.assetId === 'air-planner-ceiling-vent'
       && String(prop.anchorId || '').startsWith('bunfirvil.options.airPlannerRoom.'));
     this.canvas.dataset.airPlannerRoomUnitCount = String(airPlannerRoomUnits.length);

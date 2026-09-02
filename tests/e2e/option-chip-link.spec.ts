@@ -29,7 +29,7 @@ test('좌하단 옵션 chip은 옵션·가구 탭 모두에서 인게임 mask와
   const chipButton = page.locator(`button[data-stage-option-select="${OPTION_ID}"]`);
   await expect(chipButton).toBeVisible();
 
-  // 기본 B옵션 탭: stage pointerdown이 chip DOM을 교체하지 않아야 한다.
+  // 기본 옵션 탭: stage pointerdown이 chip DOM을 교체하지 않아야 한다.
   await chipButton.click();
   await expectLinkedOption(page);
 

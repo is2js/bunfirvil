@@ -10,7 +10,11 @@ import {
   measureIstarparkLaserGap,
   snapIstarparkLaserPoint,
 } from './istarpark-laser-measurement';
-import { refineBundangOptionProps } from './bundang-option-layout';
+import {
+  BUNDANG_MINUS_OPTION_PACKAGE_ID,
+  refineBundangOptionProps,
+  synchronizeBundangMinusOptionGeometryState,
+} from './bundang-option-layout';
 import { applyPlanVariant } from './plan-variants';
 
 const room = {
@@ -334,6 +338,18 @@ describe('이스타파크 레이저 실측 계약', () => {
       { assetId: 'display', mountingKind: 'wall' },
     ];
     expect(istarparkLaserObstacles({ geometry: room, props, assets }).filter((row: { kind: string }) => row.kind === 'furniture')).toHaveLength(0);
+  });
+
+  it('숨긴 Bunfirvil 기본 주방 구조는 레이저의 보이지 않는 접점으로 남지 않는다', () => {
+    const geometry = {
+      ...room,
+      kitchenFixtures: [{ id: 'base-kitchen', boundsMeters: [1.5, 1, 2.5, 2], heightMeters: .9 }],
+    };
+    expect(istarparkLaserObstacles({ geometry }).some((row: { id: string }) => row.id === 'base-kitchen')).toBe(true);
+    synchronizeBundangMinusOptionGeometryState(geometry, [BUNDANG_MINUS_OPTION_PACKAGE_ID]);
+    expect(istarparkLaserObstacles({ geometry }).some((row: { id: string }) => row.id === 'base-kitchen')).toBe(false);
+    synchronizeBundangMinusOptionGeometryState(geometry, []);
+    expect(istarparkLaserObstacles({ geometry }).some((row: { id: string }) => row.id === 'base-kitchen')).toBe(true);
   });
 
   it('공개 snapshot의 51A·55A·55B·59A에서도 자동 실측과 축 정렬 2점 실측이 같은 내부 치수를 쓴다', () => {

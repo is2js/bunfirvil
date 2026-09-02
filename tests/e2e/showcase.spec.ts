@@ -310,8 +310,8 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   const selectedFurnitureName = await page.locator("#furniture-selection-name").innerText();
   expect(selectedFurnitureName.trim().length).toBeGreaterThan(0);
 
-  // B옵션 탭에서도 좌클릭 선택은 이름표+RPG 금색 마스크, 우클릭은 전체 조작 메뉴를 연다.
-  await page.getByRole("button", { name: "B 옵션", exact: true }).click();
+  // 옵션 탭에서도 좌클릭 선택은 이름표+RPG 금색 마스크, 우클릭은 전체 조작 메뉴를 연다.
+  await page.getByRole("button", { name: "옵션", exact: true }).click();
   await expect(page.locator("#game-stage")).toHaveAttribute("data-selected-furniture-mode", "name");
   await expect(page.locator("#furniture-selection-toolbar")).toHaveClass(/is-name-only/);
   await expect(authoringCanvas).toHaveAttribute("data-selected-editor-mask", "rpg-gold");
@@ -375,10 +375,10 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
 
   await page.goto("guides/?guide=b-option");
   await expect(page.locator("body")).toHaveAttribute("data-guide-id", "b-option");
-  await expect(page.locator("#guideTitle")).toHaveText("B옵션 가이드");
+  await expect(page.locator("#guideTitle")).toHaveText("옵션 가이드");
   await expect(page.locator("#markdownBody")).toContainText("시스템 에어컨");
   await expect(page.locator("#markdownBody table")).toHaveCount(1);
-  await expect(page.locator("#markdownSource")).toContainText("# B옵션 팔레트 사용법");
+  await expect(page.locator("#markdownSource")).toContainText("# 옵션 팔레트 사용법");
   await expect(page.getByRole("link", { name: "GitHub에서 Markdown 수정" })).toHaveAttribute("href", /src\/guides\/content\/b-option\.md$/);
 
   expect(forbiddenRequests).toEqual([]);

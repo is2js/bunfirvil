@@ -6,6 +6,7 @@ import {
   validateReviewBundle,
 } from "./review-model";
 import type { BOptionV1, LocalReviewV1, ShowcaseCatalogV1, StaticMapEntryV1 } from "./types";
+import { BUNDANG_MINUS_OPTION_ID } from "../game/minus-option";
 
 const makeMap = (id: string, unitType: string): StaticMapEntryV1 => ({
   id,
@@ -168,6 +169,31 @@ describe("validateReviewBundle", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors.join(" ")).toContain("대안 필수 옵션");
   });
+
+  it("normalizes a mixed imported minus-option selection to minus-only", () => {
+    const minus: BOptionV1 = {
+      id: BUNDANG_MINUS_OPTION_ID,
+      label: "마이너스 옵션",
+      category: "마이너스 옵션",
+      price: 0,
+      prices: { "51A": 0 },
+      description: "감액 별도",
+      compatibleUnitTypes: ["51A"],
+      requires: [],
+      requiresAny: [],
+      excludes: options.map((option) => option.id),
+    };
+    const catalogWithMinus = { ...catalog, bOptions: [minus, ...options] };
+    const bundle = makeReviewBundle([
+      review({ selectedOptionIds: ["base", BUNDANG_MINUS_OPTION_ID, "premium"] }),
+    ]);
+
+    const result = validateReviewBundle(bundle, catalogWithMinus);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.reviews[0].selectedOptionIds).toEqual([BUNDANG_MINUS_OPTION_ID]);
+    }
+  });
 });
 
 describe("changeOptionSelection", () => {
@@ -222,6 +248,40 @@ describe("changeOptionSelection", () => {
       options,
     );
     expect(cascaded.selectedOptionIds).not.toContain("oven");
+  });
+
+  it("keeps the minus option exclusive and blocks ordinary options until it is cleared", () => {
+    const minus: BOptionV1 = {
+      id: BUNDANG_MINUS_OPTION_ID,
+      label: "마이너스 옵션",
+      category: "마이너스 옵션",
+      price: 0,
+      prices: { "51A": 0 },
+      description: "감액 별도",
+      compatibleUnitTypes: ["51A"],
+      requires: [],
+      requiresAny: [],
+      excludes: options.map((option) => option.id),
+    };
+    const optionsWithMinus = [minus, ...options];
+
+    const selected = changeOptionSelection(
+      ["base", "premium"],
+      BUNDANG_MINUS_OPTION_ID,
+      true,
+      "51A",
+      optionsWithMinus,
+    );
+    expect(selected.selectedOptionIds).toEqual([BUNDANG_MINUS_OPTION_ID]);
+    expect(() =>
+      changeOptionSelection(
+        selected.selectedOptionIds,
+        "base",
+        true,
+        "51A",
+        optionsWithMinus,
+      ),
+    ).toThrow("마이너스 옵션을 먼저 해제");
   });
 });
 

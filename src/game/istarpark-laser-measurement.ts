@@ -1,5 +1,6 @@
 // @ts-nocheck
 // PVP RPG 검수맵과 동일한 130 mm 자동·2점 방향 레이저 실측 계산 계약.
+import { bundangEffectiveKitchenFixtures } from './bundang-option-layout';
 export type InspectionLaserAxis = "x" | "y";
 export type InspectionLaserPhase = "hover" | "pick-start" | "await-second" | "complete";
 export interface InspectionLaserSurfaceHit {
@@ -271,7 +272,9 @@ export function istarparkLaserObstacles({
     const kind = role.includes("service") ? "service-wall" : "structure";
     rows.push({ id: String(block.id || "solid-block"), kind, label: obstacleLabel(kind), polygon });
   }
-  for (const fixture of Array.isArray(geometry.kitchenFixtures) ? geometry.kitchenFixtures : []) {
+  // Match the option-derived renderer/placement view: a hidden base fixture
+  // must not become an invisible laser contact.
+  for (const fixture of bundangEffectiveKitchenFixtures(geometry)) {
     if (!rowCrossesLaserHeight(fixture, measurementHeight)) continue;
     const polygon = rowPolygon(fixture);
     if (polygon.length >= 3) rows.push({ id: String(fixture.id || "fixture"), kind: "fixture", label: "고정 설비", polygon });

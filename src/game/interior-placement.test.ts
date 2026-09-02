@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { InteriorAssetEntry } from '../manage/interior-layout';
 import type { ApartmentGeometry, ApartmentInteriorProp } from './types';
+import { BUNDANG_MINUS_OPTION_PACKAGE_ID, synchronizeBundangMinusOptionGeometryState } from './bundang-option-layout';
 import { validateInteriorPlacement } from './interior-placement';
 
 const asset: InteriorAssetEntry = {
@@ -40,5 +41,21 @@ describe('RPG-style interior GHOST placement', () => {
     expect(validateInteriorPlacement({ prop: prop('candidate', [2, 1.5]), geometry, props: [existing], assets: [asset] }).errors)
       .toEqual(expect.arrayContaining([expect.objectContaining({ code: 'solid-prop-overlap' })]));
     expect(validateInteriorPlacement({ prop: existing, geometry, props: [existing], assets: [asset], ignorePropId: 'existing' }).ok).toBe(true);
+  });
+
+  it('does not leave a hidden Bunfirvil kitchen fixture as a GHOST placement obstacle', () => {
+    const fixtureGeometry: ApartmentGeometry = {
+      ...geometry,
+      kitchenFixtures: [{ id: 'base-kitchen', boundsMeters: [1.5, 1, 2.5, 2] }],
+    };
+    const candidate = prop('candidate', [2, 1.5]);
+    expect(validateInteriorPlacement({ prop: candidate, geometry: fixtureGeometry, assets: [asset] }).errors)
+      .toEqual(expect.arrayContaining([expect.objectContaining({ code: 'structural-fixture-overlap' })]));
+    synchronizeBundangMinusOptionGeometryState(fixtureGeometry, [BUNDANG_MINUS_OPTION_PACKAGE_ID]);
+    expect(validateInteriorPlacement({ prop: candidate, geometry: fixtureGeometry, assets: [asset] }).errors)
+      .not.toEqual(expect.arrayContaining([expect.objectContaining({ code: 'structural-fixture-overlap' })]));
+    synchronizeBundangMinusOptionGeometryState(fixtureGeometry, []);
+    expect(validateInteriorPlacement({ prop: candidate, geometry: fixtureGeometry, assets: [asset] }).errors)
+      .toEqual(expect.arrayContaining([expect.objectContaining({ code: 'structural-fixture-overlap' })]));
   });
 });

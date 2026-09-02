@@ -1,4 +1,5 @@
 import type { InteriorAssetEntry } from '../manage/interior-layout';
+import { bundangEffectiveKitchenFixtures } from './bundang-option-layout';
 import type { ApartmentGeometry, ApartmentInteriorProp } from './types';
 
 export interface InteriorPlacementIssue {
@@ -181,7 +182,10 @@ export function validateInteriorPlacement({
     }
   }
 
-  for (const collection of [geometry.solidBlocks || [], geometry.kitchenFixtures || []]) {
+  // Kitchen fixtures can be hidden by the transient Bunfirvil minus package.
+  // Use the same derived view as Three.js and laser measurement so a removed
+  // fixture never leaves an invisible red GHOST-placement obstacle behind.
+  for (const collection of [geometry.solidBlocks || [], bundangEffectiveKitchenFixtures(geometry)]) {
     const blocking = collection.find((row) => polygonsOverlap(footprint, rowPolygon(row)));
     if (blocking) {
       errors.push({ code: 'structural-fixture-overlap', message: `구조물 ${String(blocking.id || '')}과 겹칩니다.`.trim() });

@@ -4,6 +4,16 @@ import type {
   StaticMapEntryV1,
   ValidationResult,
 } from "./types";
+import {
+  BUNDANG_MINUS_OPTION_CATEGORY,
+  BUNDANG_MINUS_OPTION_DESCRIPTION,
+  BUNDANG_MINUS_OPTION_DISCOUNT_METADATA,
+  BUNDANG_MINUS_OPTION_ID,
+  BUNDANG_MINUS_OPTION_LABEL,
+  BUNDANG_MINUS_OPTION_PREVIEW_URL,
+  BUNDANG_MINUS_OPTION_UNIT_TYPES,
+  isBundangMinusOption,
+} from "../game/minus-option";
 
 export const EXPECTED_MAP_IDS = [
   "bundang-first-village-51a-prototype",
@@ -270,5 +280,21 @@ export async function loadCatalog(): Promise<ShowcaseCatalogV1> {
   if (!result.ok) {
     throw new Error(`catalog 검증 실패: ${result.errors.join(" ")}`);
   }
-  return result.value;
+  const regularOptions = result.value.bOptions.filter((option) => !isBundangMinusOption(option));
+  const minusOption: BOptionV1 = {
+    id: BUNDANG_MINUS_OPTION_ID,
+    label: BUNDANG_MINUS_OPTION_LABEL,
+    category: BUNDANG_MINUS_OPTION_CATEGORY,
+    price: 0,
+    prices: { "51A": 0, "55A": 0, "55B": 0, "59A": 0 },
+    description: BUNDANG_MINUS_OPTION_DESCRIPTION,
+    compatibleUnitTypes: [...BUNDANG_MINUS_OPTION_UNIT_TYPES],
+    requires: [],
+    requiresAny: [],
+    excludes: regularOptions.map((option) => option.id),
+    previewUrl: BUNDANG_MINUS_OPTION_PREVIEW_URL,
+    quoteMode: "discount-metadata-only",
+    discountMetadataByUnitType: BUNDANG_MINUS_OPTION_DISCOUNT_METADATA,
+  };
+  return { ...result.value, bOptions: [minusOption, ...regularOptions] };
 }

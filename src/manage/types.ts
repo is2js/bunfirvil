@@ -34,6 +34,11 @@ export interface BOptionV1 {
   requiresAny: string[];
   excludes: string[];
   previewUrl?: string;
+  quoteMode?: "standard" | "discount-metadata-only";
+  discountMetadataByUnitType?: Record<
+    string,
+    { supplyPriceWon: number; balconyExtensionWon: number }
+  >;
 }
 
 export interface ShowcaseCatalogV1 {

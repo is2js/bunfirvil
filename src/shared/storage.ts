@@ -107,14 +107,14 @@ export function validateReview(
   if (!STATUSES.has(row.status as ReviewStatus)) throw new Error("알 수 없는 검수 상태입니다.");
   if (typeof row.notes !== "string" || row.notes.length > 10_000) throw new Error("메모가 너무 길거나 잘못되었습니다.");
   if (!Array.isArray(row.selectedOptionIds) || !row.selectedOptionIds.every((id) => typeof id === "string")) {
-    throw new Error("B옵션 목록이 잘못되었습니다.");
+    throw new Error("옵션 목록이 잘못되었습니다.");
   }
   const selected = [...new Set(row.selectedOptionIds)];
   if (options.length) {
     const byId = new Map(options.map((option) => [option.id, option]));
     for (const id of selected) {
       const option = byId.get(id);
-      if (!option) throw new Error(`허용되지 않은 B옵션입니다: ${id}`);
+      if (!option) throw new Error(`허용되지 않은 옵션입니다: ${id}`);
       if (option.requires.some((required) => !selected.includes(required))) {
         throw new Error(`${option.label}의 필수 옵션이 선택되지 않았습니다.`);
       }

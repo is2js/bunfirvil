@@ -2,6 +2,17 @@ export type CharacterKey = '100' | '200';
 export type Direction = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
 export type MotionName = 'idle' | 'walk' | 'attack' | 'cast';
 export type HotbarValue = string | null;
+export type BOptionQuoteMode = 'standard' | 'discount-metadata-only';
+
+/**
+ * 마이너스 옵션처럼 견적 합계와 별도로 안내해야 하는 할인 내역입니다.
+ * 금액은 모두 원 단위의 양수 할인 정보이며, quoteMode가 metadata-only이면
+ * 현재 선택 옵션 합계에는 반영하지 않습니다.
+ */
+export interface BOptionDiscountMetadata {
+  supplyPriceWon: number;
+  balconyExtensionWon: number;
+}
 
 export interface StaticMapEntry {
   id: string;
@@ -53,6 +64,12 @@ export interface BOptionEntry {
     label?: string;
   }>;
   activePriceVariantLabel?: string;
+  /** 합계에 계산할 일반 옵션인지, 할인 안내 전용 항목인지 구분합니다. */
+  quoteMode?: BOptionQuoteMode;
+  /** 평형별 할인 안내. quoteMode가 discount-metadata-only일 때만 사용합니다. */
+  discountMetadataByUnitType?: Record<string, BOptionDiscountMetadata>;
+  /** 팔레트 특수 위치. 현재는 전체 탭의 첫 카드에만 사용합니다. */
+  palettePlacement?: 'all-first';
 }
 
 export interface ShowcaseCatalog {

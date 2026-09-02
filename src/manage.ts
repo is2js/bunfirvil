@@ -18,6 +18,7 @@ import type {
   StaticMapEntryV1,
 } from "./manage/types";
 import { guardOperatorPage } from './shared/operator-access';
+import { BUNDANG_MINUS_OPTION_ID } from './game/minus-option';
 
 const STATUS_LABELS: Record<ReviewStatus, string> = {
   unreviewed: "미검수",
@@ -235,7 +236,7 @@ class ReviewWorkspace {
     const optionDetails = createElement("details", "option-panel");
     const optionSummary = createElement("summary");
     const summaryCopy = createElement("span", "option-summary");
-    const summaryTitle = createElement("span", undefined, "B옵션 조합");
+    const summaryTitle = createElement("span", undefined, "옵션 조합");
     const summaryValue = createElement("small");
     summaryCopy.append(summaryTitle, summaryValue);
     optionSummary.append(summaryCopy);
@@ -298,7 +299,7 @@ class ReviewWorkspace {
     view.optionInputs.clear();
     if (options.length === 0) {
       view.optionContent.append(
-        createElement("p", "option-empty", `${map.unitType}에 공개 가능한 B옵션이 없습니다.`),
+        createElement("p", "option-empty", `${map.unitType}에 공개 가능한 옵션이 없습니다.`),
       );
       return;
     }
@@ -351,7 +352,9 @@ class ReviewWorkspace {
           createElement(
             "span",
             "option-price",
-            moneyFormatter.format(optionUnitPrice(option, map.unitType)),
+            option.id === BUNDANG_MINUS_OPTION_ID
+              ? "감액 별도"
+              : moneyFormatter.format(optionUnitPrice(option, map.unitType)),
           ),
         );
         section.append(row);
@@ -442,13 +445,19 @@ class ReviewWorkspace {
     view.saveLine.textContent = this.savedAtText(review.updatedAt);
     view.optionInputs.forEach((input, optionId) => {
       input.checked = review.selectedOptionIds.includes(optionId);
+      input.disabled =
+        review.selectedOptionIds.includes(BUNDANG_MINUS_OPTION_ID) &&
+        optionId !== BUNDANG_MINUS_OPTION_ID;
     });
     const map = this.catalog.maps.find((entry) => entry.id === mapId);
     const options = map ? compatibleOptions(this.catalog.bOptions, map.unitType) : [];
-    view.optionSummary.textContent = `${review.selectedOptionIds.length}개 · ${moneyFormatter.format(optionQuote(review.selectedOptionIds, options, map?.unitType))}`;
-    view.quote.textContent = moneyFormatter.format(
-      optionQuote(review.selectedOptionIds, options, map?.unitType),
-    );
+    const hasMinusOption = review.selectedOptionIds.includes(BUNDANG_MINUS_OPTION_ID);
+    view.optionSummary.textContent = hasMinusOption
+      ? "1개 · 감액 별도"
+      : `${review.selectedOptionIds.length}개 · ${moneyFormatter.format(optionQuote(review.selectedOptionIds, options, map?.unitType))}`;
+    view.quote.textContent = hasMinusOption
+      ? "감액 별도"
+      : moneyFormatter.format(optionQuote(review.selectedOptionIds, options, map?.unitType));
   }
 
   private updateSummary(): void {
@@ -526,7 +535,7 @@ class ReviewWorkspace {
   private resetReviews(): void {
     if (!this.catalog) return;
     const confirmed = window.confirm(
-      "이 브라우저에 저장된 네 개 검수맵의 상태, 메모, B옵션 조합을 모두 초기화할까요? 이 작업은 되돌릴 수 없습니다.",
+      "이 브라우저에 저장된 네 개 검수맵의 상태, 메모, 옵션 조합을 모두 초기화할까요? 이 작업은 되돌릴 수 없습니다.",
     );
     if (!confirmed) return;
 

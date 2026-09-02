@@ -6,6 +6,9 @@ import {
   BUNDANG_OPTION_LAYOUTS,
   BUNDANG_OPTION_DISPLAY_OVERRIDES,
   BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES,
+  BUNDANG_MINUS_OPTION_PACKAGE_ID,
+  bundangEffectiveKitchenFixtures,
+  bundangHidesInteriorDoorLeaves,
   bundangEditorSelectionPropIds,
   bundangKitchenApplianceAnchor,
   bundangPreciseEditorPickOnly,
@@ -14,6 +17,7 @@ import {
   refineBundangOptionProps,
   replacedBundangOpeningIds,
   secondaryBedroomStoragePlacement,
+  synchronizeBundangMinusOptionGeometryState,
 } from './bundang-option-layout';
 import { applyPlanVariantInteriorOverrides, planVariantDefinition } from './plan-variants';
 import { mergeEditorPropsWithBase, mergeRuntimeAssetCatalogs, STRUCTURAL_PROP_ASSETS } from './three-world';
@@ -58,6 +62,43 @@ function optionProps(
 }
 
 describe('Bunfirvil 디자인 월·인피니티 도어 배치', () => {
+  it('마이너스 패키지는 기본 욕실·주방 마감과 기본 쿡탑/후드만 순수 파생으로 숨긴다', async () => {
+    const apartments = await apartmentsByUnit();
+    for (const [unitType, apartment] of apartments) {
+      const geometry = apartment.geometry;
+      expect(geometry, unitType).toBeTruthy();
+      if (!geometry) continue;
+      const runtimeBase = [
+        ...(geometry.interiorProps || []),
+        { id: `${unitType}-countertop`, assetId: 'kitchen-countertop-default-run', installationRole: 'kitchen-countertop' },
+        { id: `${unitType}-backsplash`, assetId: 'kitchen-backsplash-default-run', installationRole: 'kitchen-backsplash' },
+      ] as ApartmentInteriorProp[];
+      const baseline = optionProps(geometry, unitType, [], runtimeBase);
+      const minus = optionProps(geometry, unitType, [BUNDANG_MINUS_OPTION_PACKAGE_ID], runtimeBase);
+      expect(baseline.some((prop) => prop.installationRole === 'bathroom-base-fixture'), `${unitType}:baseline-bath`).toBe(true);
+      expect(baseline.some((prop) => prop.installationRole === 'kitchen-countertop'), `${unitType}:baseline-countertop`).toBe(true);
+      expect(baseline.some((prop) => prop.installationRole === 'kitchen-backsplash'), `${unitType}:baseline-backsplash`).toBe(true);
+      expect(baseline.some((prop) => prop.installationRole === 'kitchen-cooktop'), `${unitType}:baseline-cooktop`).toBe(true);
+      expect(baseline.some((prop) => prop.installationRole === 'kitchen-range-hood'), `${unitType}:baseline-hood`).toBe(true);
+      expect(minus.some((prop) => ['bathroom-base-fixture', 'kitchen-countertop', 'kitchen-backsplash', 'kitchen-cooktop', 'kitchen-range-hood'].includes(String(prop.installationRole || ''))), `${unitType}:minus`).toBe(false);
+      expect(optionProps(geometry, unitType, [], runtimeBase).some((prop) => prop.installationRole === 'bathroom-base-fixture'), `${unitType}:restore`).toBe(true);
+    }
+  });
+
+  it('마이너스 패키지의 geometry 상태는 저장하지 않고 주방 구조·실내문만 파생으로 숨긴다', () => {
+    const geometry = {
+      kitchenFixtures: [{ id: 'base-kitchen-fixture' }],
+    } as ApartmentGeometry;
+    expect(bundangEffectiveKitchenFixtures(geometry)).toHaveLength(1);
+    expect(bundangHidesInteriorDoorLeaves([])).toBe(false);
+    synchronizeBundangMinusOptionGeometryState(geometry, [BUNDANG_MINUS_OPTION_PACKAGE_ID]);
+    expect(bundangEffectiveKitchenFixtures(geometry)).toEqual([]);
+    expect(bundangHidesInteriorDoorLeaves([BUNDANG_MINUS_OPTION_PACKAGE_ID])).toBe(true);
+    expect(geometry.kitchenFixtures).toHaveLength(1);
+    synchronizeBundangMinusOptionGeometryState(geometry, []);
+    expect(bundangEffectiveKitchenFixtures(geometry)).toHaveLength(1);
+  });
+
   it('기존 옵션 ID를 유지하면서 표시 이름만 정확히 보정한다', () => {
     expect(BUNDANG_OPTION_DISPLAY_OVERRIDES['living-design-wall-panel']?.label)
       .toBe('디자인 월(거실/복도면)');

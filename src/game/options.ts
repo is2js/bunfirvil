@@ -1,4 +1,5 @@
 import type { BOptionEntry, ReviewPayload } from './types';
+import { BUNDANG_MINUS_OPTION_ID, isBundangMinusOption } from './minus-option';
 
 const SYSTEM_AC_ID = /^system-ac-(\d+)-(general|premium)$/;
 
@@ -22,6 +23,21 @@ export interface OptionSelectionIntent {
 export interface OptionChoiceGroup {
   exclusiveGroup: string;
   options: BOptionEntry[];
+}
+
+/**
+ * 마이너스 옵션과 일반 옵션이 동시에 저장된 과거/수동 입력 상태를 정규화한다.
+ * 마이너스 옵션은 일반 유상 옵션과 공존할 수 없으므로, 혼합 상태에서는 마이너스
+ * 옵션을 정본으로 삼는다. 이 규칙은 저장된 상태와 화면 선택 동작에 동일하게 적용한다.
+ */
+export function canonicalizeBundangMinusOptionSelection(
+  options: BOptionEntry[],
+  selected: Iterable<string>,
+): string[] {
+  const byId = new Map(options.map((option) => [option.id, option]));
+  const known = [...new Set(selected)].filter((id) => byId.has(id));
+  if (!known.includes(BUNDANG_MINUS_OPTION_ID)) return known;
+  return [BUNDANG_MINUS_OPTION_ID];
 }
 
 export function groupMutuallyExclusiveOptions(options: BOptionEntry[]): OptionChoiceGroup[] {
@@ -80,6 +96,7 @@ export function resolvedOptionPrice(
   unitType: string,
   selected: Iterable<string>,
 ): { price: number; label?: string } {
+  if (option.quoteMode === 'discount-metadata-only') return { price: 0 };
   const selectedIds = new Set(selected);
   const basePrice = option.prices?.[unitType] ?? option.price;
   const variant = option.priceVariants?.find((candidate) =>
@@ -172,7 +189,7 @@ export function optionSelectionIntent(
   optionId: string,
 ): OptionSelectionIntent {
   const byId = new Map(options.map((option) => [option.id, option]));
-  const selected = new Set([...current].filter((id) => byId.has(id)));
+  const selected = new Set(canonicalizeBundangMinusOptionSelection(options, current));
   const target = byId.get(optionId);
   if (!target) {
     return {
@@ -205,6 +222,33 @@ export function optionSelectionIntent(
     return {
       kind: 'deselect', option: target, nextSelection: [...selected], requiresToAdd: [],
       dependentsToRemove: [...new Set(dependentsToRemove)], exclusivesToRemove: [],
+    };
+  }
+
+  // 마이너스 옵션은 다른 옵션과 함께 견적/렌더 대상이 되지 않는다.
+  // 명시적으로 선택할 때는 모든 일반 옵션을 해제한다.
+  if (isBundangMinusOption(target)) {
+    const exclusivesToRemove = [...selected].filter((id) => !isBundangMinusOption(id));
+    return {
+      kind: 'select',
+      option: target,
+      nextSelection: [BUNDANG_MINUS_OPTION_ID],
+      requiresToAdd: [],
+      dependentsToRemove: [],
+      exclusivesToRemove,
+    };
+  }
+
+  // 마이너스 옵션이 이미 활성화되어 있으면 일반 옵션으로 전환하지 않는다.
+  // 사용자가 먼저 마이너스 옵션을 해제해야 하며, 이때 저장/견적/렌더 상태는 그대로 유지된다.
+  if (selected.has(BUNDANG_MINUS_OPTION_ID)) {
+    return {
+      kind: 'invalid',
+      option: target,
+      nextSelection: [BUNDANG_MINUS_OPTION_ID],
+      requiresToAdd: [],
+      dependentsToRemove: [],
+      exclusivesToRemove: [],
     };
   }
 
@@ -250,6 +294,6 @@ export function applyOptionToggle(
 }
 
 export function calculateOptionPrice(options: BOptionEntry[], selected: Iterable<string>): number {
-  const selectedIds = new Set(selected);
-  return options.reduce((total, option) => total + (selectedIds.has(option.id) ? option.price : 0), 0);
+  const selectedIds = new Set(canonicalizeBundangMinusOptionSelection(options, selected));
+  return options.reduce((total, option) => total + (selectedIds.has(option.id) && option.quoteMode !== 'discount-metadata-only' ? option.price : 0), 0);
 }

@@ -1,4 +1,5 @@
 import type { ApartmentGeometry, ApartmentInteriorProp, BOptionEntry } from './types';
+import { BUNDANG_MINUS_OPTION_ID } from './minus-option';
 
 type UnitTypeId = '51A' | '55A' | '55B' | '59A';
 type Point = [number, number];
@@ -41,6 +42,13 @@ export interface BundangOptionLayoutV1 {
 }
 
 export const BUNDANG_DESIGN_WALL_OPTION_ID = 'living-design-wall-panel';
+/**
+ * A Bunfirvil-only preview switch for the local minus-option configuration.
+ * It never writes to geometry or a local layout; the renderer synchronizes its
+ * transient state for placement and laser queries that only receive geometry.
+ */
+export const BUNDANG_MINUS_OPTION_PACKAGE_ID = BUNDANG_MINUS_OPTION_ID;
+const minusOptionGeometryState = new WeakMap<object, boolean>();
 const BEDROOM_ONE_DOOR_OPTION_ID = 'infinity-door-bedroom-1';
 const ALL_DOORS_OPTION_ID = 'infinity-door-all-bedrooms';
 const DESIGN_WALL_DEPTH_METERS = 0.02;
@@ -103,6 +111,44 @@ const INFINITY_DOOR_ALLOWED_ROOM_IDS = new Set<string>([
   'bedroom-3',
   'alpha-room',
 ]);
+
+/** The selected-option check is deliberately pure so toggling restores the base snapshot. */
+export function hasBundangMinusOptionPackage(selectedIds: Iterable<string>): boolean {
+  return new Set(selectedIds).has(BUNDANG_MINUS_OPTION_PACKAGE_ID);
+}
+
+/**
+ * Placement and laser helpers are called by app code with geometry only. Keep
+ * the active preview state out of serialized geometry and localStorage while
+ * exposing the same derived state to those helpers.
+ */
+export function synchronizeBundangMinusOptionGeometryState(
+  geometry: ApartmentGeometry | undefined,
+  selectedIds: Iterable<string>,
+): boolean {
+  const active = hasBundangMinusOptionPackage(selectedIds);
+  if (geometry && typeof geometry === 'object') minusOptionGeometryState.set(geometry, active);
+  return active;
+}
+
+export function bundangMinusOptionGeometryActive(geometry: ApartmentGeometry | undefined): boolean {
+  return Boolean(geometry && typeof geometry === 'object' && minusOptionGeometryState.get(geometry));
+}
+
+/** Kitchen fixtures are structural source rows, so they need the same derived filter as props. */
+export function bundangEffectiveKitchenFixtures(geometry: ApartmentGeometry): NonNullable<ApartmentGeometry['kitchenFixtures']> {
+  return bundangMinusOptionGeometryActive(geometry) ? [] : geometry.kitchenFixtures || [];
+}
+
+export function bundangHidesInteriorDoorLeaves(selectedIds: Iterable<string>): boolean {
+  return hasBundangMinusOptionPackage(selectedIds);
+}
+
+function isBundangMinusSuppressedProp(prop: ApartmentInteriorProp): boolean {
+  return prop.installationRole === 'bathroom-base-fixture'
+    || prop.installationRole === 'kitchen-countertop'
+    || prop.installationRole === 'kitchen-backsplash';
+}
 
 export const BUNDANG_OPTION_DISPLAY_OVERRIDES: Readonly<Record<string, Partial<Pick<BOptionEntry, 'label' | 'description' | 'previewUrl'>>>> = Object.freeze({
   [OPEN_PREMIUM_SHOE_CABINET_OPTION_ID]: Object.freeze({
@@ -891,6 +937,7 @@ function kitchenCooktopAndHoodProps(
   unitType: UnitTypeId,
   selected: ReadonlySet<string>,
   planVariant?: string,
+  suppressDefaults = false,
 ): ApartmentInteriorProp[] {
   const applianceAnchor = bundangKitchenApplianceAnchor(geometry);
   const cooktopPosition = applianceAnchor?.cooktopPosition || null;
@@ -907,7 +954,7 @@ function kitchenCooktopAndHoodProps(
   const variantYawOffset = planVariantKey(planVariant) === 'B' ? 180 : 0;
   const cooktopYaw = (Number.isFinite(hoodYaw) ? hoodYaw : 0) + variantYawOffset;
   const result: ApartmentInteriorProp[] = [];
-  if (cooktopPosition) {
+  if (cooktopPosition && !(suppressDefaults && !cooktopSourceOptionId)) {
     result.push({
       id: `inspection-${unitType}-kitchen-cooktop`,
       assetId: cooktopAssetId,
@@ -928,6 +975,7 @@ function kitchenCooktopAndHoodProps(
   }
   if (hoodPosition) {
     const silent = selected.has(SILENT_RANGE_HOOD_OPTION_ID);
+    if (suppressDefaults && !silent) return result;
     result.push({
       id: `inspection-${unitType}-kitchen-range-hood`,
       assetId: silent ? SILENT_RANGE_HOOD_OPTION_ID : DEFAULT_RANGE_HOOD_ASSET_ID,
@@ -1199,6 +1247,7 @@ export function refineBundangOptionProps(
   const layout = BUNDANG_OPTION_LAYOUTS[unitType];
   if (!layout) return baseProps;
   const selected = new Set(selectedIds);
+  const suppressMinusOptionPackage = hasBundangMinusOptionPackage(selected);
   const legacyIslandBase = baseProps.find(isLegacyIslandBaseProp);
   const airPlannerRoomUnits = selected.has(AIR_PLANNER_OPTION_ID)
     ? airPlannerRoomUnitProps(geometry, unitType, planVariant)
@@ -1206,6 +1255,7 @@ export function refineBundangOptionProps(
   const props = baseProps
     .filter((prop) => !isLegacyEntryLivingOptionProp(prop)
       && !isLegacyPrecisionStorageProp(prop)
+      && (!suppressMinusOptionPackage || !isBundangMinusSuppressedProp(prop))
       && (!airPlannerRoomUnits.length || !isLegacyAirPlannerUnitProp(prop))
       && !isKitchenCooktopProp(prop)
       && !isKitchenRangeHoodProp(prop)
@@ -1236,7 +1286,7 @@ export function refineBundangOptionProps(
     props.push(...secondaryBedroomStorageProps(geometry, unitType, 'bedroom-3', BEDROOM_THREE_PET_CLOSET_OPTION_ID, false, planVariant));
   }
   if (airPlannerRoomUnits.length) props.push(...airPlannerRoomUnits);
-  props.push(...kitchenCooktopAndHoodProps(geometry, unitType, selected, planVariant));
+  props.push(...kitchenCooktopAndHoodProps(geometry, unitType, selected, planVariant, suppressMinusOptionPackage));
   props.push(...islandApplianceBayProps(geometry, unitType, selected, legacyIslandBase));
   return props;
 }

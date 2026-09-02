@@ -8,6 +8,7 @@ import {
   type ShowcaseCatalogV1,
   type ValidationResult,
 } from "./types";
+import { BUNDANG_MINUS_OPTION_ID } from "../game/minus-option";
 
 const MAX_NOTES_LENGTH = 10_000;
 
@@ -21,6 +22,11 @@ function isReviewStatus(value: unknown): value is ReviewStatus {
 
 function isValidTimestamp(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && Number.isFinite(Date.parse(value));
+}
+
+export function canonicalizeManagedOptionSelection(value: unknown): unknown {
+  if (!Array.isArray(value) || !value.every((id) => typeof id === "string")) return value;
+  return value.includes(BUNDANG_MINUS_OPTION_ID) ? [BUNDANG_MINUS_OPTION_ID] : value;
 }
 
 export function defaultReview(mapId: string, now = new Date()): LocalReviewV1 {
@@ -120,23 +126,30 @@ export function validateReview(
   if (!isValidTimestamp(value.updatedAt)) {
     errors.push(`${prefix}.updatedAt이 올바른 날짜가 아닙니다.`);
   }
+  const canonicalSelectedOptionIds = canonicalizeManagedOptionSelection(value.selectedOptionIds);
   if (map) {
     errors.push(
       ...validateOptionSelection(
-        value.selectedOptionIds,
+        canonicalSelectedOptionIds,
         map.unitType,
         catalog.bOptions,
         prefix,
       ),
     );
-  } else if (!Array.isArray(value.selectedOptionIds)) {
+  } else if (!Array.isArray(canonicalSelectedOptionIds)) {
     errors.push(`${prefix}.selectedOptionIds가 배열이 아닙니다.`);
   }
 
   if (errors.length > 0) {
     return { ok: false, errors };
   }
-  return { ok: true, value: value as unknown as LocalReviewV1 };
+  return {
+    ok: true,
+    value: {
+      ...(value as unknown as LocalReviewV1),
+      selectedOptionIds: canonicalSelectedOptionIds as string[],
+    },
+  };
 }
 
 export function validateReviewBundle(
@@ -148,6 +161,7 @@ export function validateReviewBundle(
   }
 
   const errors: string[] = [];
+  const normalizedReviews: LocalReviewV1[] = [];
   if (value.schemaVersion !== REVIEW_SCHEMA_VERSION) {
     errors.push("지원하지 않는 review schemaVersion입니다.");
   }
@@ -161,6 +175,8 @@ export function validateReviewBundle(
       const result = validateReview(review, catalog, `reviews[${index}]`);
       if (!result.ok) {
         errors.push(...result.errors);
+      } else {
+        normalizedReviews.push(result.value);
       }
     });
 
@@ -176,7 +192,13 @@ export function validateReviewBundle(
   if (errors.length > 0) {
     return { ok: false, errors: [...new Set(errors)] };
   }
-  return { ok: true, value: value as unknown as LocalReviewBundleV1 };
+  return {
+    ok: true,
+    value: {
+      ...(value as unknown as LocalReviewBundleV1),
+      reviews: normalizedReviews,
+    },
+  };
 }
 
 export interface SelectionChange {
@@ -198,7 +220,7 @@ export function changeOptionSelection(
   const target = optionById.get(optionId);
 
   if (!target) {
-    throw new Error(`알 수 없는 B옵션입니다: ${optionId}`);
+    throw new Error(`알 수 없는 옵션입니다: ${optionId}`);
   }
   if (
     target.compatibleUnitTypes.length > 0 &&
@@ -208,48 +230,57 @@ export function changeOptionSelection(
   }
 
   if (checked) {
-    const adding = new Set<string>();
-    const visiting = new Set<string>();
-    const addWithRequirements = (id: string): void => {
-      if (adding.has(id)) return;
-      if (visiting.has(id)) {
-        throw new Error(`B옵션 필수 조건이 순환합니다: ${id}`);
-      }
-      const option = optionById.get(id);
-      if (!option) {
-        throw new Error(`${id} 필수 옵션을 catalog에서 찾을 수 없습니다.`);
-      }
-      if (
-        option.compatibleUnitTypes.length > 0 &&
-        !option.compatibleUnitTypes.includes(unitType)
-      ) {
-        throw new Error(`${option.label} 필수 옵션은 ${unitType} 세대형과 호환되지 않습니다.`);
-      }
-      visiting.add(id);
-      option.requires.forEach(addWithRequirements);
-      if (
-        option.requiresAny.length > 0 &&
-        !option.requiresAny.some((alternative) => selected.has(alternative) || adding.has(alternative))
-      ) {
-        addWithRequirements(option.requiresAny[0]);
-      }
-      visiting.delete(id);
-      adding.add(id);
-    };
-    addWithRequirements(optionId);
-
-    for (const id of adding) {
-      const option = optionById.get(id)!;
-      for (const existingId of [...selected]) {
-        const existing = optionById.get(existingId);
-        if (
-          option.excludes.includes(existingId) ||
-          existing?.excludes.includes(id)
-        ) {
-          selected.delete(existingId);
+    if (optionId === BUNDANG_MINUS_OPTION_ID) {
+      selected.clear();
+      selected.add(BUNDANG_MINUS_OPTION_ID);
+    } else if (selected.has(BUNDANG_MINUS_OPTION_ID)) {
+      throw new Error("다른 옵션을 선택하려면 마이너스 옵션을 먼저 해제해 주세요.");
+    } else {
+      const adding = new Set<string>();
+      const visiting = new Set<string>();
+      const addWithRequirements = (id: string): void => {
+        if (adding.has(id)) return;
+        if (visiting.has(id)) {
+          throw new Error(`옵션 필수 조건이 순환합니다: ${id}`);
         }
+        const option = optionById.get(id);
+        if (!option) {
+          throw new Error(`${id} 필수 옵션을 catalog에서 찾을 수 없습니다.`);
+        }
+        if (
+          option.compatibleUnitTypes.length > 0 &&
+          !option.compatibleUnitTypes.includes(unitType)
+        ) {
+          throw new Error(`${option.label} 필수 옵션은 ${unitType} 세대형과 호환되지 않습니다.`);
+        }
+        visiting.add(id);
+        option.requires.forEach(addWithRequirements);
+        if (
+          option.requiresAny.length > 0 &&
+          !option.requiresAny.some(
+            (alternative) => selected.has(alternative) || adding.has(alternative),
+          )
+        ) {
+          addWithRequirements(option.requiresAny[0]);
+        }
+        visiting.delete(id);
+        adding.add(id);
+      };
+      addWithRequirements(optionId);
+
+      for (const id of adding) {
+        const option = optionById.get(id)!;
+        for (const existingId of [...selected]) {
+          const existing = optionById.get(existingId);
+          if (
+            option.excludes.includes(existingId) ||
+            existing?.excludes.includes(id)
+          ) {
+            selected.delete(existingId);
+          }
+        }
+        selected.add(id);
       }
-      selected.add(id);
     }
   } else {
     selected.delete(optionId);

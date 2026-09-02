@@ -20,6 +20,7 @@ import { interiorSelectionName } from './interior-selection-name';
 import { optionPropsForSelection, optionSourceIdForProp } from './option-prop-selection';
 import { centeredScrollTop } from './palette-scroll';
 import { isMapPanDrag } from './pointer-gesture';
+import { BUNDANG_MINUS_OPTION_ID, isBundangMinusOption } from './minus-option';
 import { COOKTOP_OPTION_IDS } from './bundang-option-layout';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import { stageOptionChipActionFromPath } from './stage-option-chip-action';
@@ -59,6 +60,7 @@ import {
 import {
   adjustSystemAcSelection,
   calculateOptionPrice,
+  canonicalizeBundangMinusOptionSelection,
   compatibleOptions,
   groupMutuallyExclusiveOptions,
   optionSelectionIntent,
@@ -86,7 +88,15 @@ import type {
   WorldData,
   WorldObject,
 } from './types';
-import { IsometricWorldRenderer, canTraverse, isWalkable, livingRoomSpawnCells, loadWorld, nearestWalkable } from './world';
+import {
+  IsometricWorldRenderer,
+  canTraverse,
+  isWalkable,
+  livingRoomSpawnCells,
+  loadWorld,
+  nearestWalkable,
+  synchronizeBundangMinusOptionWorldCollision,
+} from './world';
 
 const numberFormat = new Intl.NumberFormat('ko-KR');
 // 원본 RPG의 기본 walk/movement duration과 동일한 한 cell cadence.
@@ -512,8 +522,8 @@ export class ShowcaseApp {
                     <kbd>J</kbd><b>레이저 실측</b>
                   </button>
                 </div>
-                <div class="stage-option-quote" aria-label="선택 B옵션과 합계">
-                  <div class="stage-option-title"><b>B</b><span>선택 옵션</span><em id="stage-option-count">0개</em><button type="button" id="stage-option-clear" class="stage-option-clear" hidden>전체 옵션 해제</button></div>
+                <div class="stage-option-quote" aria-label="선택 옵션과 합계">
+                  <div class="stage-option-title"><span>선택 옵션</span><em id="stage-option-count">0개</em><button type="button" id="stage-option-clear" class="stage-option-clear" hidden>전체 옵션 해제</button></div>
                   <div class="stage-option-chips" id="stage-option-chips"><span>기본 마감</span></div>
                   <strong id="stage-option-total">0<small>원</small></strong>
                 </div>
@@ -530,11 +540,11 @@ export class ShowcaseApp {
             </div>
           </section>
 
-          <aside class="option-panel" aria-label="B 옵션 팔레트">
+          <aside class="option-panel" aria-label="옵션 팔레트">
             <header class="option-header">
               <div>
                 <p class="eyebrow">LOCAL INTERIOR PREVIEW</p>
-                <h2><span>B</span> 옵션 팔레트</h2>
+                <h2>옵션 팔레트</h2>
               </div>
               <div class="option-head-actions">
                 <button type="button" id="open-storage-manager" class="option-storage-button">저장 관리</button>
@@ -543,19 +553,14 @@ export class ShowcaseApp {
               </div>
             </header>
             <div class="palette-tabs" role="tablist" aria-label="인테리어 도구">
-              <button type="button" class="is-active" data-palette-tab="options">B 옵션</button>
+              <button type="button" class="is-active" data-palette-tab="options">옵션</button>
               <button type="button" data-palette-tab="furniture">가구 배치</button>
             </div>
             <div class="palette-viewbar">
-              <span id="palette-view-label">전체 B옵션</span>
+              <span id="palette-view-label">전체 옵션</span>
               <button type="button" id="palette-applied-only" aria-pressed="false">적용만 보기</button>
             </div>
             <div id="option-palette-body">
-              <div class="option-context">
-                <span id="option-unit">${escapeHtml(this.currentMap.unitType)}</span>
-                <div><b>세대 옵션 구성</b><small>선택 즉시 맵 프롭에 반영</small></div>
-                <span class="saved-indicator"><i></i>로컬 저장</span>
-              </div>
               <div id="option-categories" class="option-categories"></div>
               <div id="option-list" class="option-list"></div>
               <div class="option-summary">
@@ -594,7 +599,7 @@ export class ShowcaseApp {
 
       <dialog id="option-confirm-dialog" class="option-confirm-dialog">
         <form method="dialog">
-          <p class="eyebrow">B OPTION DEPENDENCY</p>
+          <p class="eyebrow">OPTION DEPENDENCY</p>
           <h2 id="option-confirm-title">옵션 선택 확인</h2>
           <p id="option-confirm-message" class="option-confirm-message"></p>
           <div class="option-confirm-actions">
@@ -612,7 +617,7 @@ export class ShowcaseApp {
           <div class="help-grid">
             <div><span class="help-icon">⌨</span><b>캐릭터 이동</b><p>WASD 또는 방향키로 8방향 이동합니다. 정적 chunk의 막힌 셀은 통과하지 않습니다.</p></div>
             <div><span class="help-icon">1–6</span><b>스킬 재생</b><p>1번 또는 휠 클릭은 현재 커서 위치로 텔레포트합니다. 2–4번은 전투 모션과 효과를 재생하며 5–6번은 빈 슬롯입니다.</p></div>
-            <div><span class="help-icon">B</span><b>옵션 프리뷰</b><p>B팔레트 선택은 맵의 미리보기 프롭과 견적에 반영되고 이 브라우저에 저장됩니다.</p></div>
+            <div><span class="help-icon">옵션</span><b>옵션 프리뷰</b><p>옵션 팔레트 선택은 맵의 미리보기 프롭과 견적에 반영되고 이 브라우저에 저장됩니다.</p></div>
             <div><span class="help-icon">GHOST</span><b>가구 설치·이동</b><p>가구 목록을 누르거나 재배치를 시작하면 반투명 GHOST가 마우스를 따라갑니다. 초록은 설치 가능, 빨강은 벽·문·구조물·가구와 겹친 불가 위치입니다. 좌클릭으로 확정하고 우클릭 또는 Esc로 취소합니다.</p></div>
             <div><span class="help-icon">L</span><b>벽 자석·회전</b><p>GHOST 상태에서 L을 누르면 가까운 벽·코너 자석을 켜거나 끕니다. Shift+휠로 90도 회전하며, 빈 맵은 손바닥 드래그로 이동하고 Ctrl+휠로 확대·축소합니다.</p></div>
             <div><span class="help-icon">J</span><b>레이저 자동·2점 실측</b><p>첫 J는 자동 실측을 켜고, 이후 J마다 자동 ↔ 2점 실측을 전환합니다. 2점 실측은 벽·설비·가구 면에 붙는 시작점 고스트를 클릭한 뒤 원하는 공간 방향을 가리켜 처음 닿는 반대편 마감면까지 잽니다. 내부벽은 커서가 향한 방 쪽 마감면에서 시작하며 L은 마우스 방향에 가까운 X/Y축 직선 자석, Shift+휠은 수동 축 전환, Esc는 종료입니다.</p></div>
@@ -805,7 +810,6 @@ export class ShowcaseApp {
         return;
       }
       if (this.inspectionLaser.active) {
-        if (key === 'b') return;
         event.preventDefault();
         if (key === 'l' && !event.repeat) this.toggleInspectionLaserLineSnap();
         if (key === 'escape' || key === 'esc') this.stopInspectionLaser('escape');
@@ -1435,8 +1439,8 @@ export class ShowcaseApp {
       ? this.selectedOptionIds.length
       : this.localInteriorProps.filter((prop) => prop.localDeleted !== true).length;
     label.textContent = this.paletteAppliedOnly
-      ? `${this.paletteTab === 'options' ? '적용 B옵션' : '배치 가구'} ${count}개`
-      : this.paletteTab === 'options' ? '전체 B옵션' : '전체 가구·가전';
+      ? `${this.paletteTab === 'options' ? '적용 옵션' : '배치 가구'} ${count}개`
+      : this.paletteTab === 'options' ? '전체 옵션' : '전체 가구·가전';
     button.textContent = this.paletteAppliedOnly ? '전체 보기' : '적용만 보기';
     button.setAttribute('aria-pressed', String(this.paletteAppliedOnly));
     button.classList.toggle('is-active', this.paletteAppliedOnly);
@@ -2040,9 +2044,18 @@ export class ShowcaseApp {
       this.renderer = this.canvasRenderer;
     }
     this.resetActors();
-    this.selectedOptionIds = readSelectedOptions(map.id).filter((id) =>
-      compatibleOptions(this.catalog.bOptions, map.unitType).some((option) => option.id === id),
+    const compatibleMapOptions = compatibleOptions(this.catalog.bOptions, map.unitType);
+    const storedSelectedOptionIds = readSelectedOptions(map.id).filter((id) =>
+      compatibleMapOptions.some((option) => option.id === id),
     );
+    this.selectedOptionIds = canonicalizeBundangMinusOptionSelection(
+      compatibleMapOptions,
+      storedSelectedOptionIds,
+    );
+    if (this.selectedOptionIds.join('\u0000') !== storedSelectedOptionIds.join('\u0000')) {
+      writeSelectedOptions(map.id, this.selectedOptionIds);
+    }
+    synchronizeBundangMinusOptionWorldCollision(world, this.selectedOptionIds);
     this.renderer.setSelectedOptions(this.selectedOptionIds);
     this.localInteriorProps = readLayout(map.id, new Set(this.interiorAssets.map((asset) => asset.assetId))).props;
     this.selectedLocalPropId = '';
@@ -2060,7 +2073,6 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#map-title').textContent = map.label;
     this.get<HTMLElement>('#map-revision').textContent = map.revision;
     this.paintPlanVariant(planDefinition);
-    this.get<HTMLElement>('#option-unit').textContent = map.unitType;
     const storageMap = this.mount.querySelector<HTMLElement>('#storage-current-map');
     if (storageMap) storageMap.textContent = `${map.unitType} · A/B 공통`;
     this.get<HTMLElement>('#metric-chunks').textContent = `${world.loadedChunkCount}/${world.requestedChunkCount}`;
@@ -2333,10 +2345,11 @@ export class ShowcaseApp {
       const resolved = resolvedOptionPrice(option, this.currentMap.unitType, this.selectedOptionIds);
       return { ...option, price: resolved.price, activePriceVariantLabel: resolved.label };
     });
-    const allowedIds = new Set(options.map((option) => option.id));
-    this.selectedOptionIds = this.selectedOptionIds.filter((id) => allowedIds.has(id));
+    this.selectedOptionIds = canonicalizeBundangMinusOptionSelection(options, this.selectedOptionIds);
+    const minusOptionActive = this.selectedOptionIds.includes(BUNDANG_MINUS_OPTION_ID);
     const sourceCategories = [...new Set(options.map((option) => option.category))];
     const categoryPriority = (category: string): number => {
+      if (category === '마이너스 옵션') return -1;
       if (category === '시스템에어컨') return 0;
       if (category.includes('주방')) return 1;
       if (category.includes('현관') || category.includes('거실')) return 2;
@@ -2373,7 +2386,7 @@ export class ShowcaseApp {
       const ac = systemAcChoice(option.id);
       return ac ? this.systemAcCard(ac.tier, options) : this.optionCard(option, options);
     };
-    this.get<HTMLElement>('#option-list').innerHTML = renderedOptions.length
+    const renderedOptionCards = renderedOptions.length
       ? groupMutuallyExclusiveOptions(renderedOptions).map((group) => {
           const baseline = !this.paletteAppliedOnly && COOKTOP_OPTION_IDS.some((id) => group.options.some((option) => option.id === id))
             ? this.defaultCooktopCard()
@@ -2387,6 +2400,10 @@ export class ShowcaseApp {
             </section>`;
         }).join('')
       : '<div class="empty-options"><b>이 세대형의 옵션이 없습니다.</b><span>기본 마감 렌더를 확인해 주세요.</span></div>';
+    const minusOptionLockNotice = minusOptionActive
+      ? '<div class="minus-option-lock-note" role="status"><b>마이너스 옵션 적용 중</b><span>다른 옵션을 선택하려면 마이너스 옵션을 먼저 해제해 주세요.</span></div>'
+      : '';
+    this.get<HTMLElement>('#option-list').innerHTML = `${minusOptionLockNotice}${renderedOptionCards}`;
 
     this.get<HTMLElement>('#option-list').querySelectorAll<HTMLInputElement>('input[data-option-id]').forEach((input) => {
       input.addEventListener('change', () => {
@@ -2408,14 +2425,14 @@ export class ShowcaseApp {
     const total = calculateOptionPrice(options, this.selectedOptionIds);
     this.get<HTMLElement>('#option-total').innerHTML = `${numberFormat.format(total)}<small>원</small>`;
     this.get<HTMLElement>('#selected-option-chips').innerHTML = selectedOptions.length
-      ? selectedOptions.map((option) => `<span>${escapeHtml(option.label)}</span>`).join('')
+      ? selectedOptions.map((option) => `<span>${escapeHtml(option.label)}${isBundangMinusOption(option) ? ' · 감액 별도' : ''}</span>`).join('')
       : '<span>기본 마감</span>';
     this.get<HTMLElement>('#stage-option-count').textContent = `${selectedOptions.length}개`;
     this.get<HTMLButtonElement>('#stage-option-clear').hidden = selectedOptions.length === 0;
     this.get<HTMLElement>('#stage-option-total').innerHTML = `${numberFormat.format(total)}<small>원</small>`;
     this.get<HTMLElement>('#stage-option-chips').innerHTML = selectedOptions.length
       ? selectedOptions.map((option) => `<span class="stage-option-chip ${this.selectedStageOptionId === option.id ? 'is-world-selected' : ''}" data-stage-option-select="${escapeHtml(option.id)}">
-          <button type="button" class="stage-option-select" data-stage-option-select="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 인게임 구성 선택"><b>${escapeHtml(option.label)}</b><em>+${numberFormat.format(option.price)}원</em></button>
+          <button type="button" class="stage-option-select" data-stage-option-select="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 인게임 구성 선택"><b>${escapeHtml(option.label)}</b><em>${isBundangMinusOption(option) ? '감액 별도' : `+${numberFormat.format(option.price)}원`}</em></button>
           <button type="button" class="stage-option-remove" data-stage-option-remove="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 바로 삭제">×</button>
         </span>`).join('')
       : '<span><b>기본 마감</b><em>+0원</em></span>';
@@ -2477,11 +2494,12 @@ export class ShowcaseApp {
       this.furnitureContextMenuOpen = false;
       this.threeRenderer?.setEditorSelection('');
     }
+    if (this.world) synchronizeBundangMinusOptionWorldCollision(this.world, this.selectedOptionIds);
     writeSelectedOptions(this.currentMap.id, this.selectedOptionIds);
     this.canvasRenderer.setSelectedOptions(this.selectedOptionIds);
     this.threeRenderer?.setSelectedOptions(this.selectedOptionIds);
     this.renderOptions();
-    this.toast('B옵션 프리뷰를 로컬에 저장했습니다.', 'success');
+    this.toast('옵션 프리뷰를 로컬에 저장했습니다.', 'success');
   }
 
   private selectStageOptionInWorld(optionId: string): void {
@@ -2492,6 +2510,11 @@ export class ShowcaseApp {
       const button = chip.querySelector<HTMLButtonElement>('[data-stage-option-select]');
       chip.classList.toggle('is-world-selected', button?.dataset.stageOptionSelect === optionId);
     });
+    if (isBundangMinusOption(optionId)) {
+      this.focusOptionInPalette(optionId);
+      this.toast('마이너스 옵션의 기본 제공 제외 상태를 표시하고 있습니다.', 'notice');
+      return;
+    }
     const props = this.threeRenderer?.getRenderedProps() || [];
     const optionProps = optionPropsForSelection(props, optionId);
     const prop = optionProps[0];
@@ -2517,6 +2540,14 @@ export class ShowcaseApp {
       this.renderOptions();
       return;
     }
+    if (
+      this.selectedOptionIds.includes(BUNDANG_MINUS_OPTION_ID)
+      && optionId !== BUNDANG_MINUS_OPTION_ID
+    ) {
+      this.renderOptions();
+      this.toast('다른 옵션을 선택하려면 마이너스 옵션을 먼저 해제해 주세요.', 'notice');
+      return;
+    }
     const intent = optionSelectionIntent(options, this.selectedOptionIds, optionId);
     if (!intent.option || intent.kind === 'invalid') {
       this.renderOptions();
@@ -2524,6 +2555,22 @@ export class ShowcaseApp {
     }
     this.optionChangePending = true;
     try {
+      if (
+        intent.kind === 'select'
+        && isBundangMinusOption(intent.option)
+        && intent.exclusivesToRemove.length > 0
+      ) {
+        const accepted = await this.confirmOptionChange({
+          title: '마이너스 옵션 적용',
+          message: '기존 선택 옵션을 모두 해제하고 마이너스 옵션을 적용하시겠습니까?',
+          highlightText: '마이너스 옵션',
+          confirmLabel: '모두 해제 후 적용',
+        });
+        if (!accepted) {
+          this.renderOptions();
+          return;
+        }
+      }
       if (intent.requiresToAdd.length) {
         const labels = intent.requiresToAdd
           .map((id) => options.find((option) => option.id === id)?.label || id)
@@ -2591,7 +2638,7 @@ export class ShowcaseApp {
     try {
       const accepted = await this.confirmOptionChange({
         title: '전체 옵션 해제',
-        message: `선택한 B옵션 ${this.selectedOptionIds.length}개를 모두 해제하시겠습니까?`,
+        message: `선택한 옵션 ${this.selectedOptionIds.length}개를 모두 해제하시겠습니까?`,
         confirmLabel: '전체 해제',
       });
       if (!accepted) return;
@@ -2639,8 +2686,9 @@ export class ShowcaseApp {
     const preview = option?.previewUrl
       ? `<img src="${escapeHtml(resolveProjectUrl(option.previewUrl))}" alt="" loading="lazy" />`
       : '';
+    const minusOptionLocked = this.selectedOptionIds.includes(BUNDANG_MINUS_OPTION_ID);
     return `
-      <article class="option-card system-ac-card ${active ? 'is-selected' : ''} ${active?.id === this.selectedStageOptionId ? 'is-world-linked' : ''}" data-system-ac-tier="${tier}" data-option-card-id="${escapeHtml(active?.id || option?.id || '')}">
+      <article class="option-card system-ac-card ${active ? 'is-selected' : ''} ${active?.id === this.selectedStageOptionId ? 'is-world-linked' : ''} ${minusOptionLocked ? 'is-option-locked' : ''}" data-system-ac-tier="${tier}" data-option-card-id="${escapeHtml(active?.id || option?.id || '')}" ${minusOptionLocked ? 'aria-disabled="true"' : ''}>
         <span class="option-preview ${option?.previewUrl ? '' : 'is-fallback'}">${preview}<i>空</i><em>${active ? '적용됨' : '2대부터'}</em></span>
         <span class="option-copy">
           <span class="option-category">시스템에어컨</span>
@@ -2649,15 +2697,17 @@ export class ShowcaseApp {
           <strong>${active && option ? `+ ${numberFormat.format(option.price)}원` : '2대부터 선택'}</strong>
         </span>
         <span class="system-ac-stepper" aria-label="${tier === 'premium' ? '고급형' : '일반형'} 설치 대수">
-          <button type="button" data-system-ac-adjust="decrease" data-system-ac-tier="${tier}" ${active ? '' : 'disabled'} aria-label="설치 대수 1 감소">−</button>
+          <button type="button" data-system-ac-adjust="decrease" data-system-ac-tier="${tier}" ${active && !minusOptionLocked ? '' : 'disabled'} aria-label="설치 대수 1 감소">−</button>
           <output>${count ? `${count}대` : '미적용'}</output>
-          <button type="button" data-system-ac-adjust="increase" data-system-ac-tier="${tier}" ${canIncrease ? '' : 'disabled'} aria-label="설치 대수 1 증가">＋</button>
+          <button type="button" data-system-ac-adjust="increase" data-system-ac-tier="${tier}" ${canIncrease && !minusOptionLocked ? '' : 'disabled'} aria-label="설치 대수 1 증가">＋</button>
         </span>
       </article>`;
   }
 
   private optionCard(option: BOptionEntry, allOptions: BOptionEntry[]): string {
     const selected = this.selectedOptionIds.includes(option.id);
+    const minusOptionLocked = this.selectedOptionIds.includes(BUNDANG_MINUS_OPTION_ID)
+      && !isBundangMinusOption(option);
     const dependencyLabels = option.requires
       .map((required) => allOptions.find((candidate) => candidate.id === required)?.label || required)
       .join(', ');
@@ -2668,35 +2718,40 @@ export class ShowcaseApp {
     const preview = option.previewUrl
       ? `<img src="${escapeHtml(resolveProjectUrl(option.previewUrl))}" alt="" loading="lazy" onerror="this.closest('.option-preview')?.classList.add('is-fallback')" />`
       : '';
+    const discountMetadata = option.discountMetadataByUnitType?.[this.currentMap.unitType];
+    const priceMarkup = option.quoteMode === 'discount-metadata-only' && discountMetadata
+      ? `<strong class="minus-option-discounts"><span>공급가 감액 −${numberFormat.format(discountMetadata.supplyPriceWon)}원</span><span>발코니 감액 −${numberFormat.format(discountMetadata.balconyExtensionWon)}원</span><em>현재 옵션 합계 제외</em></strong>`
+      : `<strong>+ ${numberFormat.format(option.price)}원${option.activePriceVariantLabel ? `<em class="price-variant-label">${escapeHtml(option.activePriceVariantLabel)}</em>` : ''}</strong>`;
     return `
-      <label class="option-card ${selected ? 'is-selected' : ''} ${this.selectedStageOptionId === option.id ? 'is-world-linked' : ''}" data-option-card-id="${escapeHtml(option.id)}">
+      <label class="option-card ${selected ? 'is-selected' : ''} ${this.selectedStageOptionId === option.id ? 'is-world-linked' : ''} ${minusOptionLocked ? 'is-option-locked' : ''}" data-option-card-id="${escapeHtml(option.id)}" ${minusOptionLocked ? 'aria-disabled="true"' : ''}>
         <span class="option-preview ${option.previewUrl ? '' : 'is-fallback'}">${preview}<i>${escapeHtml(option.category.slice(0, 1))}</i><em>${selected ? '적용됨' : 'PREVIEW'}</em></span>
         <span class="option-copy">
           <span class="option-category">${escapeHtml(option.category)}</span>
           <b>${escapeHtml(option.label)}</b>
           <small>${escapeHtml(option.description)}</small>
           ${dependencyCopy ? `<span class="dependency">+ ${escapeHtml(dependencyCopy)} 필요</span>` : ''}
-          <strong>+ ${numberFormat.format(option.price)}원${option.activePriceVariantLabel ? `<em class="price-variant-label">${escapeHtml(option.activePriceVariantLabel)}</em>` : ''}</strong>
+          ${priceMarkup}
         </span>
-        <input type="checkbox" data-option-id="${escapeHtml(option.id)}" ${selected ? 'checked' : ''} />
+        <input type="checkbox" data-option-id="${escapeHtml(option.id)}" ${selected ? 'checked' : ''} ${minusOptionLocked ? 'disabled' : ''} />
         <span class="check-ui" aria-hidden="true"></span>
       </label>
     `;
   }
 
   private defaultCooktopCard(): string {
-    const active = !COOKTOP_OPTION_IDS.some((id) => this.selectedOptionIds.includes(id));
+    const minusOptionActive = this.selectedOptionIds.includes(BUNDANG_MINUS_OPTION_ID);
+    const active = !minusOptionActive && !COOKTOP_OPTION_IDS.some((id) => this.selectedOptionIds.includes(id));
     const previewUrl = resolveProjectUrl('assets/options/previews/cooktop-gas-3burner-default-v2.png');
     return `
       <article class="option-card option-default-card ${active ? 'is-default-active' : ''}" aria-label="미선택 시 기본 제공 나비엔 매직 3구 가스쿡탑">
-        <span class="option-preview"><img src="${escapeHtml(previewUrl)}" alt="" loading="lazy" /><em>${active ? '기본 설치' : '대체됨'}</em></span>
+        <span class="option-preview"><img src="${escapeHtml(previewUrl)}" alt="" loading="lazy" /><em>${minusOptionActive ? '제외됨' : active ? '기본 설치' : '대체됨'}</em></span>
         <span class="option-copy">
           <span class="option-category">기본 제공 · 미선택 시</span>
           <b>나비엔 매직 3구 가스쿡탑</b>
-          <small>유상 전기쿡탑을 선택하지 않으면 주방 상판에 기본 설치됩니다.</small>
+          <small>${minusOptionActive ? '마이너스 옵션 적용 중에는 기본 가스쿡탑을 설치하지 않습니다.' : '유상 전기쿡탑을 선택하지 않으면 주방 상판에 기본 설치됩니다.'}</small>
           <strong>+ 0원</strong>
         </span>
-        <span class="default-option-state" aria-hidden="true">${active ? '기본' : 'ALT 선택'}</span>
+        <span class="default-option-state" aria-hidden="true">${minusOptionActive ? '제외' : active ? '기본' : 'ALT 선택'}</span>
       </article>`;
   }
 

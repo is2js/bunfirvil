@@ -1587,8 +1587,6 @@ input:focus-visible {
   letter-spacing: -0.02em;
 }
 
-.option-header h2 span { color: var(--gold); font-family: Georgia, serif; }
-
 .option-head-actions {
   display: flex;
   align-items: center;
@@ -1626,49 +1624,9 @@ input:focus-visible {
   font: 700 10px ui-monospace, monospace;
 }
 
-.option-context {
-  margin: 11px 13px 8px;
-  padding: 9px;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(151, 195, 188, 0.12);
-  border-radius: 6px;
-  background: rgba(5, 16, 20, 0.58);
-}
-
-.option-context > span:first-child {
-  min-width: 34px;
-  height: 34px;
-  padding: 0 5px;
-  display: grid;
-  place-items: center;
-  border-radius: 5px;
-  color: var(--gold);
-  background: rgba(225, 185, 99, 0.1);
-  font: 800 9px ui-monospace, monospace;
-}
-
-.option-context > div { display: flex; flex-direction: column; gap: 2px; }
-.option-context b { font-size: 11px; }
-.option-context small { color: #637b77; font-size: 9px; }
-
-.saved-indicator {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #688f88;
-  font-size: 9px;
-  white-space: nowrap;
-}
-
-.saved-indicator i { width: 5px; height: 5px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 6px var(--mint); }
-
 .option-categories {
   min-height: 42px;
-  padding: 0 13px 11px;
+  padding: 11px 13px;
   flex: 0 0 auto;
   display: flex;
   gap: 4px;
@@ -1707,6 +1665,22 @@ input:focus-visible {
   scrollbar-width: thin;
 }
 
+.minus-option-lock-note {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(225, 185, 99, .28);
+  border-radius: 6px;
+  color: #a7b9b5;
+  background: rgba(225, 185, 99, .07);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.minus-option-lock-note b { color: #f0d18b; font-size: 9px; white-space: nowrap; }
+
 .option-card {
   flex: 0 0 auto;
   height: max-content;
@@ -1726,6 +1700,8 @@ input:focus-visible {
 .option-card:hover { border-color: rgba(139, 183, 176, 0.25); background: rgba(14, 33, 37, 0.72); transform: translateX(-2px); }
 .option-card.is-selected { border-color: rgba(225, 185, 99, 0.35); background: linear-gradient(90deg, rgba(225, 185, 99, 0.09), rgba(8, 23, 27, 0.7)); }
 .option-card.is-world-linked { border-color: rgba(93, 216, 192, .74); background: linear-gradient(90deg, rgba(67, 183, 161, .15), rgba(8, 23, 27, .76)); box-shadow: inset 3px 0 rgba(119, 239, 215, .72), 0 0 14px rgba(56, 181, 157, .1); }
+.option-card.is-option-locked { opacity: .48; cursor: not-allowed; filter: saturate(.55); }
+.option-card.is-option-locked:hover { border-color: rgba(139, 183, 176, .1); background: rgba(6, 18, 22, .62); transform: none; }
 
 .option-default-card { cursor: default; }
 .option-default-card:hover { border-color: rgba(139, 183, 176, .16); background: rgba(6, 18, 22, .62); transform: none; }
@@ -1825,6 +1801,9 @@ input:focus-visible {
 .option-copy b { max-width: 100%; overflow: hidden; color: #dbe7e4; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .option-copy > small { max-width: 100%; margin: 3px 0 5px; overflow: hidden; color: #6c817e; font-size: 9px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .option-copy strong { margin-top: auto; color: #d8bb76; font-size: 10px; }
+.option-copy .minus-option-discounts { display: flex; flex-wrap: wrap; gap: 2px 7px; line-height: 1.35; }
+.minus-option-discounts span { white-space: nowrap; }
+.minus-option-discounts em { padding: 1px 4px; border: 1px solid rgba(225, 185, 99, .25); border-radius: 8px; color: #9d8e68; font: normal 700 7px/1.35 ui-monospace, monospace; }
 .dependency { margin: -2px 0 4px; color: #88a7a1; font-size: 8px; }
 
 .option-card input { position: absolute; opacity: 0; pointer-events: none; }
@@ -1896,7 +1875,6 @@ input:focus-visible {
 }
 
 .stage-option-title { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.stage-option-title b { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid #a98a47; color: #f0d18b; background: #332b1b; font: 800 12px Georgia, serif; }
 .stage-option-title span { color: #ddd2b8; font-size: 10px; font-weight: 800; }
 .stage-option-title em { color: #776e5b; font: normal 650 9px ui-monospace, monospace; }
 .stage-option-clear { margin-left: auto; padding: 2px 0 2px 8px; border: 0; color: #617974; background: transparent; font-family: inherit; font-size: 7px; font-weight: 650; line-height: 1.15; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }

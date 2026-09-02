@@ -5,6 +5,22 @@ import {
   BUNDANG_OPTION_PRICE_VARIANT_OVERRIDES,
   COOKTOP_OPTION_IDS,
 } from './bundang-option-layout';
+import {
+  BUNDANG_MINUS_OPTION_DISCOUNT_METADATA,
+  BUNDANG_MINUS_OPTION_CATEGORY,
+  BUNDANG_MINUS_OPTION_DESCRIPTION,
+  BUNDANG_MINUS_OPTION_ID,
+  BUNDANG_MINUS_OPTION_LABEL,
+  BUNDANG_MINUS_OPTION_PREVIEW_URL,
+  BUNDANG_MINUS_OPTION_UNIT_TYPES,
+  isBundangMinusOption,
+} from './minus-option';
+
+export {
+  BUNDANG_MINUS_OPTION_DISCOUNT_METADATA,
+  BUNDANG_MINUS_OPTION_ID,
+  isBundangMinusOption,
+} from './minus-option';
 
 const MAP_IDS = [
   'bundang-first-village-51a-prototype',
@@ -14,6 +30,26 @@ const MAP_IDS = [
 ] as const;
 
 const FALLBACK_MAP_LABELS = ['51A 세대 검수맵', '55A 세대 검수맵', '55B 세대 검수맵', '59A 세대 검수맵'];
+
+export const BUNDANG_MINUS_OPTION_ENTRY: Readonly<BOptionEntry> = Object.freeze({
+  id: BUNDANG_MINUS_OPTION_ID,
+  label: BUNDANG_MINUS_OPTION_LABEL,
+  category: BUNDANG_MINUS_OPTION_CATEGORY,
+  price: 0,
+  description: BUNDANG_MINUS_OPTION_DESCRIPTION,
+  compatibleUnitTypes: [...BUNDANG_MINUS_OPTION_UNIT_TYPES],
+  requires: [],
+  excludes: [],
+  quoteMode: 'discount-metadata-only',
+  discountMetadataByUnitType: BUNDANG_MINUS_OPTION_DISCOUNT_METADATA,
+  palettePlacement: 'all-first',
+  previewUrl: `/${BUNDANG_MINUS_OPTION_PREVIEW_URL}`,
+});
+
+/** 생성 snapshot의 실제 옵션을 변경하지 않고, 런타임에서 안내 전용 항목을 항상 첫 카드로 합성한다. */
+export function withBundangMinusOption(options: BOptionEntry[]): BOptionEntry[] {
+  return [BUNDANG_MINUS_OPTION_ENTRY, ...options.filter((option) => !isBundangMinusOption(option))];
+}
 
 function fallbackMap(id: string, label: string, index: number): StaticMapEntry {
   const unitType = id.match(/-(51a|55a|55b|59a)-/i)?.[1]?.toUpperCase() || '55B';
@@ -73,7 +109,7 @@ export function createFallbackCatalog(): ShowcaseCatalog {
       },
     ],
     defaultHotbar: ['common-teleport', 'basic-attack', 'warrior-shock-stun', 'common-double-arrow', null, null],
-    bOptions: fallbackOptions(),
+    bOptions: withBundangMinusOption(fallbackOptions()),
     renderAssets: undefined,
   };
 }
@@ -188,7 +224,7 @@ async function normalizeExternalOptions(catalogUrl: string): Promise<BOptionEntr
         label: option.paletteLabel || option.label || option.assetId,
         category: groups.get(option.groupId || '') || option.groupId || '기타',
         price: 0,
-        description: option.description || option.label || option.visualMode || 'B옵션 렌더 프리뷰',
+        description: option.description || option.label || option.visualMode || '옵션 렌더 프리뷰',
         compatibleUnitTypes,
         requires: Array.isArray(option.requires) ? option.requires.filter((id): id is string => typeof id === 'string') : [],
         requiresAny: Array.isArray(option.requiresAny) ? option.requiresAny.filter((id): id is string => typeof id === 'string') : [],
@@ -276,7 +312,7 @@ async function normalizeCatalog(raw: unknown): Promise<ShowcaseCatalog> {
       : '';
     bOptions = await normalizeExternalOptions(reference);
   }
-  bOptions = applyBOptionDisplayOverrides(bOptions);
+  bOptions = withBundangMinusOption(applyBOptionDisplayOverrides(bOptions));
 
   return {
     schemaVersion: 1,

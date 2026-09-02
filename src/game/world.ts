@@ -1,5 +1,6 @@
 import { fetchJson, resolveProjectUrl, resolveReferencedUrl } from './base';
-import { apartmentUnitWorldPoint } from './apartment-transform';
+import { apartmentUnitWorldPoint, apartmentWorldPointToLocalMeters } from './apartment-transform';
+import { isBundangMinusOption } from './minus-option';
 import type {
   ActorState,
   ProjectedPoint,
@@ -19,6 +20,127 @@ const DEFAULT_PALETTE = new Map([
 
 function cellKey(x: number, y: number): string {
   return `${x},${y}`;
+}
+
+const optionCollisionBaselines = new WeakMap<WorldData, Set<string>>();
+
+function finitePoint(value: unknown): [number, number] | null {
+  if (!Array.isArray(value) || value.length < 2) return null;
+  const x = Number(value[0]);
+  const y = Number(value[1]);
+  return Number.isFinite(x) && Number.isFinite(y) ? [x, y] : null;
+}
+
+function pointToSegmentDistance(point: [number, number], start: [number, number], end: [number, number]): number {
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared <= 1e-9) return Math.hypot(point[0] - start[0], point[1] - start[1]);
+  const ratio = Math.max(0, Math.min(1, ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / lengthSquared));
+  return Math.hypot(point[0] - (start[0] + dx * ratio), point[1] - (start[1] + dy * ratio));
+}
+
+function rowBounds(row: Record<string, unknown>): [number, number, number, number] | null {
+  const bounds = Array.isArray(row.boundsMeters) ? row.boundsMeters.map(Number) : [];
+  if (bounds.length === 4 && bounds.every(Number.isFinite)) return bounds as [number, number, number, number];
+  const polygon = Array.isArray(row.footprintPolygonMeters) ? row.footprintPolygonMeters : row.polygon;
+  const points = Array.isArray(polygon) ? polygon.map(finitePoint).filter((point): point is [number, number] => Boolean(point)) : [];
+  if (points.length < 3) return null;
+  return [
+    Math.min(...points.map(([x]) => x)),
+    Math.min(...points.map(([, y]) => y)),
+    Math.max(...points.map(([x]) => x)),
+    Math.max(...points.map(([, y]) => y)),
+  ];
+}
+
+function pointInsidePropFootprint(
+  point: [number, number],
+  prop: Record<string, unknown>,
+  padding: number,
+): boolean {
+  const position = finitePoint(prop.positionMeters);
+  const sourceDimensions = Array.isArray(prop.renderDimensionsMeters)
+    ? prop.renderDimensionsMeters
+    : prop.dimensionsMeters;
+  const dimensions = Array.isArray(sourceDimensions)
+    ? sourceDimensions.slice(0, 2).map(Number)
+    : [];
+  if (!position || dimensions.length < 2 || !dimensions.every(Number.isFinite)) return false;
+  const width = Math.max(0, dimensions[0]);
+  const depth = Math.max(0, dimensions[1]);
+  const radians = -(Number(prop.yawDeg) || 0) * Math.PI / 180;
+  const dx = point[0] - position[0];
+  const dy = point[1] - position[1];
+  const localX = dx * Math.cos(radians) - dy * Math.sin(radians);
+  const localY = dx * Math.sin(radians) + dy * Math.cos(radians);
+  return Math.abs(localX) <= width / 2 + padding && Math.abs(localY) <= depth / 2 + padding;
+}
+
+function insideExpandedBounds(point: [number, number], bounds: [number, number, number, number], padding: number): boolean {
+  return point[0] >= bounds[0] - padding && point[0] <= bounds[2] + padding
+    && point[1] >= bounds[1] - padding && point[1] <= bounds[3] + padding;
+}
+
+function isStructuralApartmentPoint(apartment: WorldObject, point: [number, number], cellSize: number): boolean {
+  const geometry = apartment.geometry;
+  const wallPadding = cellSize * 0.42;
+  for (const value of geometry?.wallSegments || []) {
+    const wall = value as Record<string, unknown>;
+    const start = finitePoint(wall.a);
+    const end = finitePoint(wall.b);
+    if (!start || !end) continue;
+    const thickness = Math.max(0.04, Number(wall.thicknessMeters) || 0.12);
+    if (pointToSegmentDistance(point, start, end) <= thickness / 2 + wallPadding) return true;
+  }
+  for (const value of geometry?.solidBlocks || []) {
+    const bounds = rowBounds(value as Record<string, unknown>);
+    if (bounds && insideExpandedBounds(point, bounds, cellSize * 0.25)) return true;
+  }
+  return false;
+}
+
+/**
+ * Restores the immutable map collision snapshot, then releases only cells that
+ * belonged to hidden base kitchen or bathroom fixtures. Walls and service blocks win when
+ * a footprint overlaps, so the minus-option preview cannot open a wall hole.
+ */
+export function synchronizeBundangMinusOptionWorldCollision(
+  world: WorldData,
+  selectedOptionIds: Iterable<string>,
+): void {
+  let baseline = optionCollisionBaselines.get(world);
+  if (!baseline) {
+    baseline = new Set(world.blocked);
+    optionCollisionBaselines.set(world, baseline);
+  }
+  world.blocked.clear();
+  baseline.forEach((key) => world.blocked.add(key));
+  if (![...selectedOptionIds].some(isBundangMinusOption)) return;
+
+  for (const apartment of world.objects.filter((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry)) {
+    const geometry = apartment.geometry;
+    const kitchenFixtureBounds = (geometry?.kitchenFixtures || [])
+      .map((fixture) => rowBounds(fixture as Record<string, unknown>))
+      .filter((bounds): bounds is [number, number, number, number] => Boolean(bounds));
+    const bathroomFixtures = (geometry?.interiorProps || [])
+      .filter((prop) => prop.installationRole === 'bathroom-base-fixture'
+        && !prop.sourceOptionId
+        && prop.collisionMode !== 'visual-only');
+    if (!kitchenFixtureBounds.length && !bathroomFixtures.length) continue;
+    const cellSize = Math.max(0.05, Number(geometry?.cellSizeMeters) || 0.5);
+    for (const cell of apartment.blockedCells || []) {
+      const localPoint = apartmentWorldPointToLocalMeters(apartment, cell);
+      const isHiddenFixtureCell = kitchenFixtureBounds.some((bounds) =>
+        insideExpandedBounds(localPoint, bounds, cellSize * 0.52),
+      ) || bathroomFixtures.some((prop) =>
+        pointInsidePropFootprint(localPoint, prop as Record<string, unknown>, cellSize * 0.52),
+      );
+      if (!isHiddenFixtureCell) continue;
+      if (isStructuralApartmentPoint(apartment, localPoint, cellSize)) continue;
+      world.blocked.delete(cellKey(cell.x, cell.y));
+    }
+  }
 }
 
 function isServerRoute(value: string): boolean {
