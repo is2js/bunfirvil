@@ -16,6 +16,7 @@ export default defineConfig({
         interiorAdmin: resolve(__dirname, "interior-admin/index.html"),
         guides: resolve(__dirname, "guides/index.html"),
         households: resolve(__dirname, "households/index.html"),
+        calculator: resolve(__dirname, "calculator/index.html"),
       },
     },
   },

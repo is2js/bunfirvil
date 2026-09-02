@@ -9,6 +9,13 @@ import {
   writeHouseholdVerificationSession,
   type HouseholdVerificationConfigV1,
 } from './household-verification';
+import {
+  clearSaleCalculatorContext,
+  readSaleCalculatorHouseholdContext,
+  writeSaleCalculatorHouseholdContext,
+  writeSaleCalculatorLaunchContext,
+  type SaleCalculatorApplicantRoute,
+} from './sale-calculator-context';
 import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { ManifestEffectPlayer } from './effect-player';
 import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
@@ -287,6 +294,8 @@ export class ShowcaseApp {
       const verification = await waitForHouseholdSelection(this.mount, catalog, fallback, verificationConfig);
       const selection = verification.selection;
       writeHouseholdVerificationSession(verification.role);
+      // 계산기는 인증 세대의 타입과 가격 층 구간만 사용한다. 동·호·닉네임은 저장하지 않는다.
+      writeSaleCalculatorHouseholdContext(selection.unitType, selection.floor);
       if (requestedDeepLink) {
         requestedDeepLink.hash = '';
         history.replaceState(null, '', requestedDeepLink);
@@ -526,6 +535,7 @@ export class ShowcaseApp {
                   <div class="stage-option-title"><span>선택 옵션</span><em id="stage-option-count">0개</em><button type="button" id="stage-option-clear" class="stage-option-clear" hidden>전체 옵션 해제</button></div>
                   <div class="stage-option-chips" id="stage-option-chips"><span>기본 마감</span></div>
                   <strong id="stage-option-total">0<small>원</small></strong>
+                  <button type="button" id="open-sale-calculator" class="stage-option-clear" disabled>분양가 계산기</button>
                 </div>
               </div>
 
@@ -605,6 +615,23 @@ export class ShowcaseApp {
           <div class="option-confirm-actions">
             <button type="submit" value="cancel">취소</button>
             <button type="submit" value="confirm" id="option-confirm-accept" class="is-primary">확인</button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="sale-calculator-dialog" class="option-confirm-dialog">
+        <form method="dialog">
+          <p class="eyebrow">SALE CALCULATOR</p>
+          <h2>분양가 계산 기준 선택</h2>
+          <p class="option-confirm-message">선택 옵션과 인증 세대의 타입·가격 층 구간을 계산기에 전달합니다. 동·호·닉네임은 저장하거나 전달하지 않습니다.</p>
+          <fieldset>
+            <legend>청약 구분</legend>
+            <label><input type="radio" name="sale-calculator-route" value="pre-subscription" checked /> 사전청약 당첨자</label>
+            <label><input type="radio" name="sale-calculator-route" value="main-subscription" /> 본청약 신규신청자</label>
+          </fieldset>
+          <div class="option-confirm-actions">
+            <button type="submit" value="cancel">취소</button>
+            <button type="submit" value="confirm" class="is-primary">계산기 열기</button>
           </div>
         </form>
       </dialog>
@@ -767,7 +794,40 @@ export class ShowcaseApp {
     this.get<HTMLButtonElement>('#open-help').addEventListener('click', () => dialog.showModal(), { signal });
     this.get<HTMLButtonElement>('#choose-household').addEventListener('click', () => {
       clearHouseholdVerificationSession();
+      clearSaleCalculatorContext();
       window.location.assign(resolveProjectUrl(''));
+    }, { signal });
+    const saleCalculatorDialog = this.get<HTMLDialogElement>('#sale-calculator-dialog');
+    const saleCalculatorButton = this.get<HTMLButtonElement>('#open-sale-calculator');
+    saleCalculatorButton.addEventListener('click', () => {
+      if (saleCalculatorButton.disabled) return;
+      const householdContext = readSaleCalculatorHouseholdContext();
+      if (householdContext?.unitType !== this.currentMap.unitType) {
+        const approved = window.confirm('분양가 계산을 위해 세대를 다시 선택하고 인증해야 합니다.');
+        if (!approved) return;
+        clearHouseholdVerificationSession();
+        clearSaleCalculatorContext();
+        window.location.assign(resolveProjectUrl(''));
+        return;
+      }
+      saleCalculatorDialog.returnValue = 'cancel';
+      saleCalculatorDialog.showModal();
+    }, { signal });
+    saleCalculatorDialog.addEventListener('close', () => {
+      if (saleCalculatorDialog.returnValue !== 'confirm') return;
+      const route = saleCalculatorDialog.querySelector<HTMLInputElement>('input[name="sale-calculator-route"]:checked')?.value as SaleCalculatorApplicantRoute | undefined;
+      if (route !== 'pre-subscription' && route !== 'main-subscription') return;
+      const written = writeSaleCalculatorLaunchContext({
+        schemaVersion: 1,
+        applicantRoute: route,
+        optionIds: this.selectedOptionIds,
+        returnUrl: window.location.href,
+      });
+      if (!written) {
+        this.toast('계산기 전달 정보를 준비하지 못했습니다. 세대를 다시 선택해 주세요.', 'notice');
+        return;
+      }
+      window.location.assign(resolveProjectUrl('calculator/'));
     }, { signal });
     const storageDialog = this.get<HTMLDialogElement>('#storage-dialog');
     this.get<HTMLButtonElement>('#open-storage-manager').addEventListener('click', () => storageDialog.showModal(), { signal });
@@ -786,6 +846,7 @@ export class ShowcaseApp {
     this.get<HTMLButtonElement>('#reset-all-storage').addEventListener('click', () => {
       if (!window.confirm('Bunfirvil의 모든 평형 옵션·가구, 검수 메모, 건축 기록과 핫바를 초기화할까요? 이 작업은 되돌릴 수 없습니다.')) return;
       resetAllBunfirvilLocalData();
+      clearSaleCalculatorContext();
       window.location.assign(resolveProjectUrl(''));
     }, { signal });
     const optionDialog = this.get<HTMLDialogElement>('#option-confirm-dialog');
@@ -2430,6 +2491,15 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#stage-option-count').textContent = `${selectedOptions.length}개`;
     this.get<HTMLButtonElement>('#stage-option-clear').hidden = selectedOptions.length === 0;
     this.get<HTMLElement>('#stage-option-total').innerHTML = `${numberFormat.format(total)}<small>원</small>`;
+    const saleCalculatorContext = readSaleCalculatorHouseholdContext();
+    const saleCalculatorButton = this.get<HTMLButtonElement>('#open-sale-calculator');
+    const calculatorMatchesMap = saleCalculatorContext?.unitType === this.currentMap.unitType;
+    saleCalculatorButton.disabled = selectedOptions.length === 0;
+    saleCalculatorButton.title = selectedOptions.length === 0
+      ? '옵션을 하나 이상 선택하면 분양가 계산기를 열 수 있습니다.'
+      : calculatorMatchesMap
+        ? '선택 옵션을 반영해 분양가 계산기를 엽니다.'
+        : '세대를 다시 선택하고 인증하면 분양가 계산을 계속할 수 있습니다.';
     this.get<HTMLElement>('#stage-option-chips').innerHTML = selectedOptions.length
       ? selectedOptions.map((option) => `<span class="stage-option-chip ${this.selectedStageOptionId === option.id ? 'is-world-selected' : ''}" data-stage-option-select="${escapeHtml(option.id)}">
           <button type="button" class="stage-option-select" data-stage-option-select="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 인게임 구성 선택"><b>${escapeHtml(option.label)}</b><em>${isBundangMinusOption(option) ? '감액 별도' : `+${numberFormat.format(option.price)}원`}</em></button>
