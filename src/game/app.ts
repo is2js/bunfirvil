@@ -536,8 +536,10 @@ export class ShowcaseApp {
                 <div class="stage-option-quote" aria-label="선택 옵션과 합계">
                   <div class="stage-option-title"><span>선택 옵션</span><em id="stage-option-count">0개</em><button type="button" id="stage-option-clear" class="stage-option-clear" hidden>전체 옵션 해제</button></div>
                   <div class="stage-option-chips" id="stage-option-chips"><span>기본 마감</span></div>
-                  <strong id="stage-option-total">0<small>원</small></strong>
-                  <button type="button" id="open-sale-calculator" class="stage-option-clear" disabled>분양가 계산기</button>
+                  <div class="stage-option-footer">
+                    <span>옵션 합계</span><strong id="stage-option-total">0<small>원</small></strong>
+                    <button type="button" id="open-sale-calculator" disabled>분양가 계산기 <span aria-hidden="true">›</span></button>
+                  </div>
                 </div>
               </div>
 

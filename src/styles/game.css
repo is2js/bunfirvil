@@ -1877,8 +1877,8 @@ input:focus-visible {
   max-height: min(188px, 34vh);
   padding: 7px 12px 8px 9px;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-rows: 24px minmax(28px, auto) 24px;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 24px minmax(28px, auto) 35px;
   align-items: center;
   column-gap: 9px;
   border: 1px solid rgba(213, 183, 112, .26);
@@ -1893,7 +1893,7 @@ input:focus-visible {
 .stage-option-clear { margin-left: auto; padding: 2px 0 2px 8px; border: 0; color: #617974; background: transparent; font-family: inherit; font-size: 7px; font-weight: 650; line-height: 1.15; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .stage-option-clear:hover, .stage-option-clear:focus-visible { color: #a2b9b4; outline: none; }
 .stage-option-clear[hidden] { display: none; }
-.stage-option-chips { min-width: 0; max-height: min(132px, 27vh); grid-column: 1 / 3; display: flex; align-content: flex-start; flex-wrap: wrap; gap: 4px; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(213, 183, 112, .34) transparent; }
+.stage-option-chips { min-width: 0; max-height: min(132px, 27vh); grid-column: 1 / -1; display: flex; align-content: flex-start; flex-wrap: wrap; gap: 4px; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(213, 183, 112, .34) transparent; }
 .stage-option-chips::-webkit-scrollbar { width: 5px; }
 .stage-option-chips::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(213, 183, 112, .34); }
 .stage-option-chips > span:not(.stage-option-chip) { min-width: max-content; height: 22px; display: inline-flex; align-items: center; gap: 6px; padding: 0 7px; border: 1px solid rgba(179, 167, 137, .14); background: rgba(255, 255, 255, .025); }
@@ -1913,15 +1913,15 @@ input:focus-visible {
 .stage-option-chips b { color: #aca38e; font-size: 9px; }
 .stage-option-chips em { color: #d5b96f; font: normal 650 8px ui-monospace, monospace; }
 .price-variant-label { display: inline-flex; margin-left: 6px; padding: 2px 5px; border: 1px solid rgba(225, 185, 99, .34); border-radius: 8px; color: #f0d18b; background: rgba(225, 185, 99, .1); font: normal 750 7px/1 inherit; vertical-align: middle; }
-.stage-option-quote > strong { min-width: 128px; min-height: 100%; grid-column: 3; grid-row: 1 / 3; padding-left: 11px; display: flex; align-items: center; justify-content: center; border-left: 1px solid rgba(213, 183, 112, .14); color: #f0d18b; font: 800 22px ui-monospace, monospace; text-align: center; white-space: nowrap; }
-.stage-option-quote > strong small { margin-left: 3px; color: #ad965f; font-size: 11px; }
+.stage-option-footer { min-width: 0; grid-column: 1 / -1; display: grid; grid-template-columns:auto minmax(90px,1fr) auto; align-items:center; gap:9px; padding-top:7px; border-top:1px solid rgba(213,183,112,.15); }
+.stage-option-footer > span { color:#776e5b; font-size:9px; font-weight:750; white-space:nowrap; }
+.stage-option-footer > strong { color:#f0d18b; font:800 18px ui-monospace,monospace; letter-spacing:-.04em; white-space:nowrap; }
+.stage-option-footer > strong small { margin-left:3px; color:#ad965f; font-size:9px; }
 #open-sale-calculator {
-  width: 100%;
-  min-height: 27px;
+  min-width: 130px;
+  min-height: 28px;
   margin: 0;
-  padding: 3px 6px;
-  grid-column: 3;
-  grid-row: 3;
+  padding: 4px 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1935,9 +1935,16 @@ input:focus-visible {
   text-align: center;
   text-decoration: none;
 }
+#open-sale-calculator > span { margin-left:7px; color:#8fdbc9; font-size:17px; line-height:.7; }
 #open-sale-calculator:hover,
 #open-sale-calculator:focus-visible { color: #e1fff8; border-color: rgba(153, 239, 218, .82); background: rgba(64, 142, 126, .28); outline: none; }
 #open-sale-calculator:disabled { border-color: rgba(126, 137, 132, .22); color: #596560; background: rgba(255, 255, 255, .02); cursor: not-allowed; }
+
+@media (max-width: 620px) {
+  .stage-option-footer { grid-template-columns: auto 1fr; }
+  .stage-option-footer #open-sale-calculator { min-height: 30px; grid-column: 1 / -1; }
+  .stage-option-quote { grid-template-rows: 24px minmax(28px, auto) 69px; }
+}
 
 .app-footer {
   min-height: 34px;
