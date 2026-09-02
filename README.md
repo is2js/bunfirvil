@@ -3,19 +3,21 @@
 분당 퍼스트빌리지 검수맵과 PVP RPG 프론트엔드 렌더링 성능을 공개하는 서버리스 데모입니다.
 
 - 공개 주소: <https://is2js.github.io/bunfirvil/>
-- 검수 관리: <https://is2js.github.io/bunfirvil/manage/>
-- 건축물 관리: <https://is2js.github.io/bunfirvil/building-admin/>
-- 인테리어 관리: <https://is2js.github.io/bunfirvil/interior-admin/>
+- 검수 관리(운영자): <https://is2js.github.io/bunfirvil/manage/>
+- 건축물 관리(운영자): <https://is2js.github.io/bunfirvil/building-admin/>
+- 인테리어 관리(운영자): <https://is2js.github.io/bunfirvil/interior-admin/>
 - Markdown 가이드: <https://is2js.github.io/bunfirvil/guides/>
 - 저장 방식: 브라우저 `localStorage`와 JSON 가져오기·내보내기
-- 세대 인증: 비공개 Google Sheet를 읽는 Google Apps Script 웹앱과 동·호수·닉네임을 정확히 대조하며, 성공 표식만 현재 탭의 `sessionStorage`에 저장
+- 세대 인증: 비공개 Google Sheet의 동·타입·닉네임·상태를 Google Apps Script로 확인하며, 성공 역할만 현재 탭의 `sessionStorage`에 저장
 - 자체 서버 기능: 없음 — DB, Socket.IO, 전투 판정, 원본 게시 기능을 포함하지 않습니다.
 
 ## Google Sheet 세대 인증
 
-루트 위저드와 `map + variant` 딥링크는 Google Apps Script 인증을 통과해야 쇼케이스로 진입합니다. 관리자, 가이드, 전체 동·호 현황은 공개 페이지입니다. GitHub Pages의 정적 파일 자체는 계속 공개되므로 이 절차는 비공개 자산 접근통제가 아닌 사이트 UI 인증입니다.
+루트 위저드와 `map + variant` 딥링크는 Google Apps Script 인증을 통과해야 쇼케이스로 진입합니다. 사용자가 선택한 세대의 층·호수는 전송하지 않고, 카탈로그에서 계산한 동·타입과 입력한 닉네임만 대조합니다. `인증됨`은 쇼케이스를, `운영자`는 검수맵 관리·건축물 관리·인테리어 관리·전체 동호 현황까지 허용합니다. 일반 가이드는 공개되지만 인증 설치 가이드는 운영자 세션에만 목록으로 표시됩니다.
 
-인증 설정 전에는 `public/config/household-verification.v1.json`을 비활성 상태로 유지합니다. Sheet 작성, `setupVerificationSheet()` 실행, 웹앱 배포와 `/exec` 연결 방법은 [`backend/apps-script/README.md`](backend/apps-script/README.md)에 정리되어 있습니다. Spreadsheet ID와 명단은 저장소 및 배포 산출물에 넣지 않습니다.
+GitHub Pages의 정적 파일 자체는 계속 공개되므로 이 절차는 비공개 자산 접근통제가 아닌 사이트 UI 인증입니다. 시트 상태를 바꾼 뒤에는 사용자가 **인증 확인**을 다시 눌러야 현재 탭의 역할이 갱신됩니다.
+
+Sheet의 네 열, `요청 → 인증됨/운영자` 운영 절차, `setupVerificationSheet()` 실행, 웹앱 재배포와 `/exec` 연결 방법은 [`backend/apps-script/README.md`](backend/apps-script/README.md)에 정리되어 있습니다. Spreadsheet ID와 명단은 저장소 및 배포 산출물에 넣지 않습니다.
 
 ## 포함 범위
 

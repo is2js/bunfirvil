@@ -1,6 +1,7 @@
 import { loadCatalog } from './manage/catalog';
 import { InteriorEditor } from './manage/interior-editor';
 import { loadReview } from './manage/review-store';
+import { guardOperatorPage } from './shared/operator-access';
 
 async function start(): Promise<void> {
   const status = document.getElementById('editorStatus');
@@ -14,4 +15,4 @@ async function start(): Promise<void> {
   }
 }
 
-void start();
+if (guardOperatorPage('인테리어 관리')) void start();

@@ -6,6 +6,7 @@ import { loadWorld } from './game/world';
 import { loadCatalog } from './manage/catalog';
 import { loadReview } from './manage/review-store';
 import type { ShowcaseCatalogV1 } from './manage/types';
+import { guardOperatorPage } from './shared/operator-access';
 
 interface StructureItem {
   key: string;
@@ -298,6 +299,8 @@ class BuildingAdmin {
   }
 }
 
-void new BuildingAdmin().initialize().catch((error) => {
-  element('buildingStatus').textContent = error instanceof Error ? error.message : '건축물 관리자 초기화에 실패했습니다.';
-});
+if (guardOperatorPage('건축물 관리')) {
+  void new BuildingAdmin().initialize().catch((error) => {
+    element('buildingStatus').textContent = error instanceof Error ? error.message : '건축물 관리자 초기화에 실패했습니다.';
+  });
+}

@@ -8,6 +8,7 @@ export interface GuideDocument {
   summary: string;
   updatedAt: string;
   order: number;
+  operatorOnly: boolean;
   body: string;
   sourcePath: string;
   raw: string;
@@ -142,6 +143,7 @@ export function parseGuideDocument(raw: string, sourcePath: string): GuideDocume
     summary: String(meta.summary || ''),
     updatedAt: String(meta.updatedAt || ''),
     order: Number.isFinite(Number(meta.order)) ? Number(meta.order) : 999,
+    operatorOnly: String(meta.operatorOnly || '').toLowerCase() === 'true',
     body: normalized.slice(match[0].length).trim(),
     sourcePath,
     raw: normalized,

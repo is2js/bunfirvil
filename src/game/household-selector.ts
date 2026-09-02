@@ -8,9 +8,12 @@ import {
   type HouseholdSelectionV1,
 } from './household-catalog';
 import {
+  householdVerificationIsOperator,
   householdVerificationConfigured,
+  requestHouseholdVerification,
   verifyHousehold,
   type HouseholdVerificationConfigV1,
+  type HouseholdVerificationRole,
 } from './household-verification';
 import { resetAllBunfirvilLocalData } from '../shared/storage';
 
@@ -106,7 +109,13 @@ export function bindHouseholdStorageControls(mount: HTMLElement): void {
   });
 }
 
+export interface HouseholdSelectionResultV1 {
+  selection: HouseholdSelectionV1;
+  role: HouseholdVerificationRole;
+}
+
 export function householdShellHeader(exportId: string, fallback = false, overview = false): string {
+  const operator = householdVerificationIsOperator();
   const householdHref = overview ? resolveProjectUrl('') : resolveProjectUrl('households/');
   const householdLabel = overview ? '세대 선택' : '전체 동·호 현황';
   return `<header class="topbar household-topbar">
@@ -116,13 +125,13 @@ export function householdShellHeader(exportId: string, fallback = false, overvie
     </a>
     <nav class="topnav" aria-label="주요 메뉴">
       <a class="is-active" href="${resolveProjectUrl('')}"><span>LIVE</span> 렌더 쇼케이스</a>
-      <a href="${resolveProjectUrl('manage/')}">검수맵 관리</a>
+      ${operator ? `<a href="${resolveProjectUrl('manage/')}">검수맵 관리</a>
       <a href="${resolveProjectUrl('building-admin/')}">건축물 관리</a>
-      <a href="${resolveProjectUrl('interior-admin/')}">인테리어 관리</a>
+      <a href="${resolveProjectUrl('interior-admin/')}">인테리어 관리</a>` : ''}
       <a href="${resolveProjectUrl('guides/')}">가이드</a>
     </nav>
     <div class="household-header-actions" aria-label="세대 메뉴">
-      <a class="household-header-action" href="${householdHref}" aria-label="${householdLabel}"><span>${householdLabel}</span><small aria-hidden="true">${overview ? '선택' : '현황'}</small></a>
+      ${operator ? `<a class="household-header-action" href="${householdHref}" aria-label="${householdLabel}"><span>${householdLabel}</span><small aria-hidden="true">${overview ? '선택' : '현황'}</small></a>` : ''}
       <button type="button" id="selector-open-storage" class="household-header-action" aria-label="저장 관리"><span>저장 관리</span><small aria-hidden="true">저장</small></button>
       <div class="build-chip" title="현재 정적 자산 스냅샷">
         <span class="status-dot ${fallback ? 'is-amber' : ''}"></span>
@@ -144,7 +153,7 @@ export function waitForHouseholdSelection(
   catalog: ShowcaseCatalog,
   fallback: boolean,
   verificationConfig: HouseholdVerificationConfigV1,
-): Promise<HouseholdSelectionV1> {
+): Promise<HouseholdSelectionResultV1> {
   return new Promise((resolve) => {
     let selected: HouseholdSelectionV1 | null = null;
     mount.innerHTML = `<div class="household-selector-shell app-shell">
@@ -153,11 +162,11 @@ export function waitForHouseholdSelection(
         <section class="household-selector-intro" id="household-selector-intro">
           <div class="household-selector-intro-copy">
             <nav class="household-wizard-progress" aria-label="세대 선택 단계">
-              <span id="household-step-building" class="is-current" aria-current="step"><i>1</i><b>동 선택</b></span>
+              <button type="button" id="household-step-building" class="is-current" aria-current="step"><i>1</i><b>동 선택</b></button>
               <em aria-hidden="true"></em>
-              <span id="household-step-unit"><i>2</i><b>세대 선택</b></span>
+              <button type="button" id="household-step-unit" disabled><i>2</i><b>세대 선택</b></button>
               <em aria-hidden="true"></em>
-              <span id="household-step-nickname"><i>3</i><b>닉네임 입력</b></span>
+              <button type="button" id="household-step-nickname" disabled><i>3</i><b>닉네임 입력</b></button>
             </nav>
             <p class="eyebrow">BUNDANG FIRST VILLAGE</p>
             <h1 id="household-selector-title">분당퍼스트빌리지 동 선택</h1>
@@ -184,10 +193,13 @@ export function waitForHouseholdSelection(
           </header>
           <div class="household-nickname-card">
             <p class="eyebrow">HOUSEHOLD NICKNAME</p>
-            <p>선택한 세대에서 사용할 닉네임을 입력해 주세요. 동·호수·닉네임은 Google 인증 서비스로 전송되어 비공개 명단과 일치 여부만 확인합니다.</p>
+            <p>선택한 세대에서 사용할 닉네임을 입력해 주세요. 선택한 세대에서 계산한 동·타입과 닉네임만 Google 인증 서비스로 전송하며 층·호수는 전송하지 않습니다.</p>
             <div class="household-nickname-controls">
               <label><span>닉네임</span><input id="household-nickname" type="text" maxlength="20" autocomplete="off" placeholder="닉네임 입력" /></label>
-              <button type="button" id="household-verify-nickname" disabled>인증 확인</button>
+              <div class="household-nickname-actions">
+                <button type="button" id="household-request-verification" class="is-secondary" disabled>인증 요청</button>
+                <button type="button" id="household-verify-nickname" disabled>인증 확인</button>
+              </div>
             </div>
             <output id="household-nickname-status" aria-live="polite"></output>
           </div>
@@ -207,9 +219,9 @@ export function waitForHouseholdSelection(
     const title = mount.querySelector<HTMLElement>('#household-selector-title');
     const description = mount.querySelector<HTMLElement>('#household-selector-description');
     const legend = mount.querySelector<HTMLElement>('#household-selector-legend');
-    const buildingStep = mount.querySelector<HTMLElement>('#household-step-building');
-    const unitStep = mount.querySelector<HTMLElement>('#household-step-unit');
-    const nicknameStep = mount.querySelector<HTMLElement>('#household-step-nickname');
+    const buildingStep = mount.querySelector<HTMLButtonElement>('#household-step-building');
+    const unitStep = mount.querySelector<HTMLButtonElement>('#household-step-unit');
+    const nicknameStep = mount.querySelector<HTMLButtonElement>('#household-step-nickname');
     const selectedBuilding = mount.querySelector<HTMLElement>('#household-selected-building');
     const nicknameBuilding = mount.querySelector<HTMLElement>('#household-nickname-building');
     const dock = mount.querySelector<HTMLElement>('#household-selection-dock');
@@ -217,11 +229,13 @@ export function waitForHouseholdSelection(
     const enter = mount.querySelector<HTMLButtonElement>('#household-enter');
     const nicknameInput = mount.querySelector<HTMLInputElement>('#household-nickname');
     const verifyNickname = mount.querySelector<HTMLButtonElement>('#household-verify-nickname');
+    const requestVerification = mount.querySelector<HTMLButtonElement>('#household-request-verification');
     const nicknameStatus = mount.querySelector<HTMLOutputElement>('#household-nickname-status');
-    if (!picker || !detail || !nicknameStage || !rows || !title || !description || !legend || !buildingStep || !unitStep || !nicknameStep || !selectedBuilding || !nicknameBuilding || !dock || !summary || !enter || !nicknameInput || !verifyNickname || !nicknameStatus) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
+    if (!picker || !detail || !nicknameStage || !rows || !title || !description || !legend || !buildingStep || !unitStep || !nicknameStep || !selectedBuilding || !nicknameBuilding || !dock || !summary || !enter || !nicknameInput || !verifyNickname || !requestVerification || !nicknameStatus) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
     let chosenBuildingId: string | null = null;
     let nickname = '';
     let nicknameVerified = false;
+    let verifiedRole: HouseholdVerificationRole | null = null;
     let verificationAttempt = 0;
 
     const paintBuildingChoice = (): void => {
@@ -252,13 +266,17 @@ export function waitForHouseholdSelection(
     const resetNicknameVerification = (clearNickname: boolean): void => {
       verificationAttempt += 1;
       nicknameVerified = false;
+      verifiedRole = null;
       if (clearNickname) {
         nickname = '';
         nicknameInput.value = '';
       }
       verifyNickname.textContent = '인증 확인';
+      requestVerification.textContent = '인증 요청';
       verifyNickname.disabled = nickname.trim().length === 0 || !householdVerificationConfigured(verificationConfig);
+      requestVerification.disabled = verifyNickname.disabled;
       verifyNickname.removeAttribute('aria-busy');
+      requestVerification.removeAttribute('aria-busy');
       nicknameStatus.textContent = householdVerificationConfigured(verificationConfig)
         ? ''
         : '인증 서비스 연결 주소가 아직 설정되지 않았습니다.';
@@ -294,8 +312,10 @@ export function waitForHouseholdSelection(
       unitStep.classList.remove('is-current');
       unitStep.classList.remove('is-complete');
       unitStep.removeAttribute('aria-current');
+      unitStep.disabled = !chosenBuildingId;
       nicknameStep.classList.remove('is-current', 'is-complete');
       nicknameStep.removeAttribute('aria-current');
+      nicknameStep.disabled = true;
       paintBuildingChoice();
       animatePanel(picker);
       enter.disabled = true;
@@ -314,7 +334,7 @@ export function waitForHouseholdSelection(
       legend.hidden = false;
       rows.innerHTML = `<section class="household-building-row is-single" data-line-count="${building.lines.length}" style="--building-count:1" aria-label="${building.buildingId}동 세대">${floorRail()}${householdBuildingCard(building)}</section>`;
       title.textContent = `${building.buildingId}동 세대 선택`;
-      description.textContent = '층과 호를 선택하면 평형과 향을 확인한 뒤 쇼케이스로 이동할 수 있습니다.';
+      description.innerHTML = '<strong class="household-selection-privacy">선택한 세대는 저장되지 않으며</strong> 층/타입을 구분하여 인증에 사용됩니다.';
       selectedBuilding.textContent = `${building.buildingId}동 선택됨`;
       buildingStep.classList.remove('is-current');
       buildingStep.classList.add('is-complete');
@@ -322,8 +342,10 @@ export function waitForHouseholdSelection(
       unitStep.classList.add('is-current');
       unitStep.classList.remove('is-complete');
       unitStep.setAttribute('aria-current', 'step');
+      unitStep.disabled = false;
       nicknameStep.classList.remove('is-current', 'is-complete');
       nicknameStep.removeAttribute('aria-current');
+      nicknameStep.disabled = true;
       paintBuildingChoice();
       animatePanel(detail);
       updateSelectionSummary();
@@ -350,6 +372,7 @@ export function waitForHouseholdSelection(
       nicknameStep.classList.add('is-current');
       nicknameStep.classList.remove('is-complete');
       nicknameStep.setAttribute('aria-current', 'step');
+      nicknameStep.disabled = false;
       animatePanel(nicknameStage);
       updateSelectionSummary();
       requestAnimationFrame(() => {
@@ -361,6 +384,22 @@ export function waitForHouseholdSelection(
     picker.addEventListener('click', (event) => {
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-choose-building]');
       if (button?.dataset.chooseBuilding) showBuilding(button.dataset.chooseBuilding, true);
+    });
+
+    buildingStep.addEventListener('click', () => {
+      if (!picker.hidden) return;
+      history.pushState({ householdStep: 'building' }, '', `${window.location.pathname}${window.location.search}`);
+      showBuildingPicker();
+    });
+
+    unitStep.addEventListener('click', () => {
+      if (!chosenBuildingId || !detail.hidden) return;
+      showBuilding(chosenBuildingId, false);
+    });
+
+    nicknameStep.addEventListener('click', () => {
+      if (!selected || !nicknameStage.hidden) return;
+      showNicknameStage();
     });
 
     rows.addEventListener('click', (event) => {
@@ -381,9 +420,13 @@ export function waitForHouseholdSelection(
       verificationAttempt += 1;
       nickname = nicknameInput.value;
       nicknameVerified = false;
+      verifiedRole = null;
       verifyNickname.textContent = '인증 확인';
+      requestVerification.textContent = '인증 요청';
       verifyNickname.disabled = nickname.trim().length === 0 || !householdVerificationConfigured(verificationConfig);
+      requestVerification.disabled = verifyNickname.disabled;
       verifyNickname.removeAttribute('aria-busy');
+      requestVerification.removeAttribute('aria-busy');
       nicknameStatus.textContent = householdVerificationConfigured(verificationConfig)
         ? (nickname.trim() ? '인증 확인이 필요합니다.' : '')
         : '인증 서비스 연결 주소가 아직 설정되지 않았습니다.';
@@ -393,38 +436,91 @@ export function waitForHouseholdSelection(
     verifyNickname.addEventListener('click', async () => {
       const candidate = nickname.trim();
       if (!candidate || !selected || !householdVerificationConfigured(verificationConfig)) return;
-      const selectedKey = `${selected.buildingId}:${selected.householdNumber}`;
+      const selectedKey = `${selected.buildingId}:${selected.unitType}`;
       const attempt = ++verificationAttempt;
       verifyNickname.disabled = true;
+      requestVerification.disabled = true;
       verifyNickname.setAttribute('aria-busy', 'true');
       nicknameStatus.textContent = '닉네임을 확인하고 있습니다.';
       try {
         const response = await verifyHousehold(verificationConfig, {
           buildingId: selected.buildingId,
-          householdNumber: selected.householdNumber,
+          unitType: selected.unitType,
           nickname: candidate,
         });
         if (attempt !== verificationAttempt
           || nickname.trim() !== candidate
           || !selected
-          || `${selected.buildingId}:${selected.householdNumber}` !== selectedKey) return;
+          || `${selected.buildingId}:${selected.unitType}` !== selectedKey) return;
         nicknameVerified = response.verified;
+        verifiedRole = response.operator ? 'operator' : response.verified ? 'verified' : null;
         verifyNickname.textContent = response.verified ? '인증 완료' : '다시 확인';
-        nicknameStatus.textContent = response.verified
-          ? '세대 및 닉네임 인증이 완료되었습니다.'
-          : '선택한 세대와 닉네임을 확인할 수 없습니다.';
+        nicknameStatus.textContent = response.operator
+          ? '운영자 인증이 완료되었습니다. 관리 메뉴를 사용할 수 있습니다.'
+          : response.verified
+            ? '세대 및 닉네임 인증이 완료되었습니다.'
+            : response.status === 'requested'
+              ? '인증 요청이 확인 대기 중입니다.'
+              : '선택한 동·타입과 닉네임을 확인할 수 없습니다.';
       } catch {
         if (attempt !== verificationAttempt) return;
         nicknameVerified = false;
+        verifiedRole = null;
         verifyNickname.textContent = '다시 확인';
         nicknameStatus.textContent = '인증 서비스를 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
       } finally {
         if (attempt === verificationAttempt) {
           verifyNickname.removeAttribute('aria-busy');
           verifyNickname.disabled = false;
+          requestVerification.disabled = false;
           updateSelectionSummary();
         }
       }
+    });
+
+    requestVerification.addEventListener('click', async () => {
+      const candidate = nickname.trim();
+      if (!candidate || !selected || !householdVerificationConfigured(verificationConfig)) return;
+      const selectedKey = `${selected.buildingId}:${selected.unitType}`;
+      const attempt = ++verificationAttempt;
+      verifyNickname.disabled = true;
+      requestVerification.disabled = true;
+      requestVerification.setAttribute('aria-busy', 'true');
+      nicknameStatus.textContent = '인증 요청을 등록하고 있습니다.';
+      try {
+        const response = await requestHouseholdVerification(verificationConfig, {
+          buildingId: selected.buildingId,
+          unitType: selected.unitType,
+          nickname: candidate,
+        });
+        if (attempt !== verificationAttempt || nickname.trim() !== candidate || !selected
+          || `${selected.buildingId}:${selected.unitType}` !== selectedKey) return;
+        nicknameVerified = response.verified;
+        verifiedRole = response.operator ? 'operator' : response.verified ? 'verified' : null;
+        nicknameStatus.textContent = response.operator
+          ? '이미 운영자로 인증되어 있습니다.'
+          : response.verified
+            ? '이미 인증된 정보입니다. 쇼케이스로 이동할 수 있습니다.'
+            : '인증 요청이 등록되었습니다. 운영자가 상태를 인증됨으로 바꾼 뒤 인증 확인을 눌러 주세요.';
+      } catch {
+        if (attempt !== verificationAttempt) return;
+        nicknameVerified = false;
+        verifiedRole = null;
+        nicknameStatus.textContent = '인증 요청 서비스를 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
+      } finally {
+        if (attempt === verificationAttempt) {
+          requestVerification.removeAttribute('aria-busy');
+          verifyNickname.disabled = false;
+          requestVerification.disabled = false;
+          updateSelectionSummary();
+        }
+      }
+    });
+
+    nicknameInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || event.isComposing) return;
+      event.preventDefault();
+      if (!verifyNickname.disabled) verifyNickname.click();
     });
 
     const onPopState = (): void => {
@@ -442,9 +538,9 @@ export function waitForHouseholdSelection(
     });
 
     enter.addEventListener('click', () => {
-      if (!selected || !nicknameVerified) return;
+      if (!selected || !nicknameVerified || !verifiedRole) return;
       window.removeEventListener('popstate', onPopState);
-      resolve(selected);
+      resolve({ selection: selected, role: verifiedRole });
     });
 
     bindHouseholdStorageControls(mount);

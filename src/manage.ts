@@ -17,6 +17,7 @@ import type {
   ShowcaseCatalogV1,
   StaticMapEntryV1,
 } from "./manage/types";
+import { guardOperatorPage } from './shared/operator-access';
 
 const STATUS_LABELS: Record<ReviewStatus, string> = {
   unreviewed: "미검수",
@@ -559,5 +560,7 @@ class ReviewWorkspace {
   }
 }
 
-const workspace = new ReviewWorkspace();
-void workspace.initialize();
+if (guardOperatorPage('검수맵 관리')) {
+  const workspace = new ReviewWorkspace();
+  void workspace.initialize();
+}

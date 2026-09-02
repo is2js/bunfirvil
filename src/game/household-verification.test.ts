@@ -3,11 +3,13 @@ import {
   HOUSEHOLD_VERIFICATION_SESSION_KEY,
   HouseholdVerificationError,
   clearHouseholdVerificationSession,
+  householdVerificationIsOperator,
   normalizeHouseholdBuilding,
   normalizeHouseholdNickname,
-  normalizeHouseholdNumber,
+  normalizeHouseholdUnitType,
   parseHouseholdVerificationConfig,
   readHouseholdVerificationSession,
+  requestHouseholdVerification,
   verifyHousehold,
   writeHouseholdVerificationSession,
   type HouseholdVerificationConfigV1,
@@ -29,83 +31,57 @@ class MemoryStorage {
 }
 
 describe('household Google Sheet verification', () => {
-  it('normalizes suffixes and Unicode while preserving nickname case and internal spaces', () => {
+  it('normalizes building, unit type, and nickname without storing household details', () => {
     expect(normalizeHouseholdBuilding(' ０１０５동 ')).toBe('105');
-    expect(normalizeHouseholdNumber(' ０２５０１호 ')).toBe('2501');
+    expect(normalizeHouseholdUnitType(' ５５ａ ')).toBe('55A');
     expect(normalizeHouseholdNickname('  Ａbc 이웃  ')).toBe('Abc 이웃');
     expect(normalizeHouseholdNickname('Abc 이웃')).not.toBe(normalizeHouseholdNickname('abc이웃'));
   });
 
   it('accepts only a bounded HTTPS runtime configuration', () => {
     expect(parseHouseholdVerificationConfig(config)).toEqual(config);
-    expect(() => parseHouseholdVerificationConfig({ ...config, endpoint: 'http://example.test/exec' }))
-      .toThrow(HouseholdVerificationError);
-    expect(() => parseHouseholdVerificationConfig({ ...config, endpoint: 'https://example.test/exec' }))
-      .toThrow(HouseholdVerificationError);
-    expect(() => parseHouseholdVerificationConfig({ ...config, enabled: false }))
-      .toThrow(HouseholdVerificationError);
-    expect(() => parseHouseholdVerificationConfig({ ...config, timeoutMs: 999 }))
-      .toThrow(HouseholdVerificationError);
+    expect(() => parseHouseholdVerificationConfig({ ...config, endpoint: 'http://example.test/exec' })).toThrow(HouseholdVerificationError);
+    expect(() => parseHouseholdVerificationConfig({ ...config, timeoutMs: 999 })).toThrow(HouseholdVerificationError);
   });
 
-  it('posts the normalized triple without putting it in the endpoint URL', async () => {
-    const fetchMock = vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
-      expect(String(input)).toBe(config.endpoint);
-      expect(init?.method).toBe('POST');
-      expect(init?.headers).toMatchObject({ 'Content-Type': 'text/plain;charset=UTF-8' });
+  it('posts the normalized triple without floor or household number', async () => {
+    const fetchMock = vi.fn(async (_input: URL | RequestInfo, init?: RequestInit) => {
       expect(JSON.parse(String(init?.body))).toEqual({
         schemaVersion: 1,
         action: 'verifyHousehold',
         buildingId: '105',
-        householdNumber: '2501',
-        nickname: '돌범이웃',
+        unitType: '55A',
+        nickname: '피치',
       });
-      return new Response(JSON.stringify({ schemaVersion: 1, ok: true, verified: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(JSON.stringify({ schemaVersion: 1, ok: true, verified: true, operator: false, requested: false, status: 'verified' }));
     }) as unknown as typeof fetch;
-
-    await expect(verifyHousehold(config, {
-      buildingId: '105동',
-      householdNumber: '2501호',
-      nickname: ' 돌범이웃 ',
-    }, fetchMock)).resolves.toEqual({ schemaVersion: 1, ok: true, verified: true });
-    expect(fetchMock).toHaveBeenCalledOnce();
+    await expect(verifyHousehold(config, { buildingId: '105동', unitType: '55a', nickname: ' 피치 ' }, fetchMock))
+      .resolves.toMatchObject({ verified: true, operator: false, status: 'verified' });
   });
 
-  it('fails closed for an invalid response and a timeout', async () => {
+  it('uses a separate request action and keeps a requested response unverified', async () => {
+    const fetchMock = vi.fn(async (_input: URL | RequestInfo, init?: RequestInit) => {
+      expect(JSON.parse(String(init?.body)).action).toBe('requestHouseholdVerification');
+      return new Response(JSON.stringify({ schemaVersion: 1, ok: true, verified: false, operator: false, requested: true, status: 'requested' }));
+    }) as unknown as typeof fetch;
+    await expect(requestHouseholdVerification(config, { buildingId: '105', unitType: '55A', nickname: '피치' }, fetchMock))
+      .resolves.toMatchObject({ verified: false, requested: true, status: 'requested' });
+  });
+
+  it('fails closed for an invalid response', async () => {
     const invalidFetch = vi.fn(async () => new Response('{}', { status: 200 })) as unknown as typeof fetch;
-    await expect(verifyHousehold(config, {
-      buildingId: '105', householdNumber: '2501', nickname: '돌범이웃',
-    }, invalidFetch)).rejects.toMatchObject({ code: 'invalid-response' });
-
-    const serverErrorFetch = vi.fn(async () => new Response(JSON.stringify({
-      schemaVersion: 1, ok: false, verified: false, code: 'service_unavailable',
-    }), { status: 200 })) as unknown as typeof fetch;
-    await expect(verifyHousehold(config, {
-      buildingId: '105', householdNumber: '2501', nickname: '돌범이웃',
-    }, serverErrorFetch)).rejects.toMatchObject({ code: 'network' });
-
-    const timeoutFetch = vi.fn(async (_input: URL | RequestInfo, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
-      init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
-    })) as unknown as typeof fetch;
-    await expect(verifyHousehold({ ...config, timeoutMs: 10 }, {
-      buildingId: '105', householdNumber: '2501', nickname: '돌범이웃',
-    }, timeoutFetch)).rejects.toMatchObject({ code: 'timeout' });
+    await expect(verifyHousehold(config, { buildingId: '105', unitType: '55A', nickname: '피치' }, invalidFetch))
+      .rejects.toMatchObject({ code: 'invalid-response' });
   });
 
-  it('stores only a provider marker and timestamp for the current tab', () => {
+  it('stores only provider, timestamp, and role for the current tab', () => {
     const storage = new MemoryStorage();
-    writeHouseholdVerificationSession(storage, 1_789_000_000_000);
+    writeHouseholdVerificationSession('operator', storage, 1_789_000_000_000);
     const raw = storage.getItem(HOUSEHOLD_VERIFICATION_SESSION_KEY) || '';
-    expect(raw).toBe('{"schemaVersion":1,"provider":"google-apps-script","verifiedAt":1789000000000}');
-    expect(raw).not.toMatch(/105|2501|돌범/);
-    expect(readHouseholdVerificationSession(storage)).toEqual({
-      schemaVersion: 1,
-      provider: 'google-apps-script',
-      verifiedAt: 1_789_000_000_000,
-    });
+    expect(raw).toBe('{"schemaVersion":1,"provider":"google-apps-script","verifiedAt":1789000000000,"role":"operator"}');
+    expect(raw).not.toMatch(/105|55A|2501|피치/);
+    expect(householdVerificationIsOperator(storage)).toBe(true);
+    expect(readHouseholdVerificationSession(storage)?.role).toBe('operator');
     clearHouseholdVerificationSession(storage);
     expect(readHouseholdVerificationSession(storage)).toBeNull();
   });

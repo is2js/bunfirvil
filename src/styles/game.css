@@ -2421,6 +2421,7 @@ button.household-cell:focus-visible { z-index: 2; outline: 2px solid #183d62; ou
   font-size: 11px;
   line-height: 1.55;
 }
+.household-selection-privacy { color: var(--mint-bright); font-weight: 900; }
 .household-selector-tools { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
 .household-selector-tools button,
 .household-selector-tools .selector-overview-link {
@@ -2464,14 +2465,18 @@ button.household-cell:focus-visible { z-index: 2; outline: 2px solid #183d62; ou
 .household-legend .is-pilotis i { color: #071116; }
 
 .household-wizard-progress { margin: 0 0 17px; display: grid; grid-template-columns: auto minmax(28px, 82px) auto minmax(28px, 82px) auto; align-items: center; justify-content: start; gap: 10px; }
-.household-wizard-progress span { display: inline-flex; align-items: center; gap: 8px; color: #667a77; font-size: 10px; line-height: 1; }
-.household-wizard-progress span i { width: 30px; height: 30px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: #7d918e; background: rgba(255, 255, 255, .025); font: 800 10px/1 ui-monospace, monospace; font-style: normal; }
-.household-wizard-progress span b { font-size: 10px; line-height: 1; }
+.household-wizard-progress button { padding: 2px; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 6px; color: #667a77; background: transparent; font-size: 10px; line-height: 1; cursor: pointer; }
+.household-wizard-progress button:hover:not(:disabled),
+.household-wizard-progress button:focus-visible { color: #b7d8d1; background: rgba(92, 211, 189, .055); outline: none; }
+.household-wizard-progress button:disabled { cursor: default; opacity: .58; }
+.household-wizard-progress button i { width: 30px; height: 30px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: #7d918e; background: rgba(255, 255, 255, .025); font: 800 10px/1 ui-monospace, monospace; font-style: normal; }
+.household-wizard-progress button b { font-size: 10px; line-height: 1; }
 .household-wizard-progress em { height: 1px; background: var(--line); }
-.household-wizard-progress span.is-current { color: #c9e5df; }
-.household-wizard-progress span.is-current i { border-color: rgba(92, 211, 189, .65); color: #061411; background: var(--mint); box-shadow: 0 0 0 3px rgba(92, 211, 189, .08), 0 0 12px rgba(92, 211, 189, .25); }
-.household-wizard-progress span.is-complete i { border-color: rgba(92, 211, 189, .3); color: transparent; background: rgba(92, 211, 189, .08); }
-.household-wizard-progress span.is-complete i::after { content: '✓'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--mint); font-size: 14px; line-height: 1; }
+.household-wizard-progress button.is-current { color: #c9e5df; opacity: 1; }
+.household-wizard-progress button.is-current i { border-color: rgba(92, 211, 189, .65); color: #061411; background: var(--mint); box-shadow: 0 0 0 3px rgba(92, 211, 189, .08), 0 0 12px rgba(92, 211, 189, .25); }
+.household-wizard-progress button.is-complete { opacity: 1; }
+.household-wizard-progress button.is-complete i { border-color: rgba(92, 211, 189, .3); color: transparent; background: rgba(92, 211, 189, .08); }
+.household-wizard-progress button.is-complete i::after { content: '✓'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--mint); font-size: 14px; line-height: 1; }
 
 .household-building-picker-panel {
   max-width: 960px;
@@ -2526,11 +2531,12 @@ button.household-cell:focus-visible { z-index: 2; outline: 2px solid #183d62; ou
 .household-building-row.is-single .household-building-card { grid-template-rows: 42px auto 32px; }
 .household-building-row.is-single .household-unit-grid,
 .household-building-row.is-single .household-building-card footer { grid-template-columns: repeat(var(--line-count), var(--single-cell-width)); }
+.household-building-row.is-single .household-building-card footer { gap: 0; }
 .household-building-row.is-single .household-cell { margin: 2px; padding: 3px 2px; border-radius: 6px; font-size: 12px; }
 .household-building-row.is-single .household-floor-rail > div span { font-size: 9.5px; }
 .household-building-row.is-single .household-building-card header b { font-size: 17px; }
 .household-building-row.is-single .household-building-card header small { margin-top: 2px; font-size: 8px; }
-.household-building-row.is-single .household-building-card footer span { padding: 6px 2px; border-radius: 5px; font-size: 10.5px; }
+.household-building-row.is-single .household-building-card footer span { margin: 2px; padding: 4px 1px; box-sizing: border-box; border-radius: 5px; font-size: 10px; }
 
 .household-building-rows { display: grid; gap: 12px; }
 .household-building-row {
@@ -2594,12 +2600,14 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 .household-nickname-card .eyebrow { margin: 0 0 5px; color: var(--mint); font-size: 8px; font-weight: 850; letter-spacing: .16em; }
 .household-nickname-card > p:not(.eyebrow) { margin: 8px 0 17px; color: var(--muted); font-size: 10px; line-height: 1.55; }
 .household-nickname-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 7px; }
+.household-nickname-actions { display: flex; gap: 7px; }
 .household-nickname-controls label { min-width: 0; display: grid; gap: 5px; }
 .household-nickname-controls label span { color: #819591; font-size: 8px; font-weight: 750; }
 .household-nickname-controls input { width: 100%; height: 40px; padding: 0 12px; border: 1px solid rgba(151, 193, 187, .2); border-radius: 6px; color: #e9f5f2; background: rgba(4, 13, 17, .72); font-size: 13px; outline: none; }
 .household-nickname-controls input:focus { border-color: rgba(92, 211, 189, .65); box-shadow: 0 0 0 3px rgba(92, 211, 189, .08); }
-.household-nickname-controls > button { height: 40px; padding: 0 14px; border: 1px solid rgba(92, 211, 189, .5); border-radius: 6px; color: #061411; background: var(--mint); font-size: 10px; font-weight: 850; cursor: pointer; white-space: nowrap; }
-.household-nickname-controls > button:disabled { border-color: var(--line); color: #627672; background: #102328; cursor: default; }
+.household-nickname-actions > button { height: 40px; padding: 0 14px; border: 1px solid rgba(92, 211, 189, .5); border-radius: 6px; color: #061411; background: var(--mint); font-size: 10px; font-weight: 850; cursor: pointer; white-space: nowrap; }
+.household-nickname-actions > button.is-secondary { color: #b9d8d1; background: rgba(26, 57, 61, .76); }
+.household-nickname-actions > button:disabled { border-color: var(--line); color: #627672; background: #102328; cursor: default; }
 .household-nickname-card output { min-height: 16px; margin-top: 7px; display: block; color: #8bcdbf; font-size: 9px; }
 
 .household-selection-dock {
@@ -2652,8 +2660,8 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
   .household-selector-tools button,
   .household-selector-tools .selector-overview-link { min-height: 32px; max-width: none; padding: 7px 9px; font-size: 9px; }
   .household-wizard-progress { margin-bottom: 14px; grid-template-columns: auto minmax(12px, 36px) auto minmax(12px, 36px) auto; gap: 6px; }
-  .household-wizard-progress span i { width: 28px; height: 28px; }
-  .household-wizard-progress span b { font-size: 9.5px; }
+  .household-wizard-progress button i { width: 28px; height: 28px; }
+  .household-wizard-progress button b { font-size: 9.5px; }
   .household-building-picker-panel { padding: 12px; border-radius: 8px; }
   .household-building-picker { gap: 8px; }
   .household-building-choice { min-height: 62px; padding: 10px 6px; }
@@ -2672,7 +2680,7 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
   .household-building-row.is-single .household-cell { margin: 1px; padding: 3px 1px; border-radius: 5px; font-size: 10.5px; }
   .household-building-row.is-single .household-floor-rail > div span { font-size: 8.5px; }
   .household-building-row.is-single .household-building-card header b { font-size: 15px; }
-  .household-building-row.is-single .household-building-card footer span { padding: 5px 1px; font-size: 9.5px; }
+  .household-building-row.is-single .household-building-card footer span { padding: 4px 1px; font-size: 9px; }
   .household-nickname-stage { margin-bottom: 28px; padding: 12px; gap: 11px; border-radius: 8px; }
   .household-nickname-stage-head { align-items: center; }
   .household-nickname-card { padding: 22px 18px 18px; }
@@ -2685,11 +2693,12 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 @media (max-width: 520px) {
   .household-building-picker { gap: 7px; }
   .household-building-choice { min-height: 60px; }
-  .household-wizard-progress span { gap: 5px; }
-  .household-wizard-progress span b { font-size: 8.5px; }
-  .household-wizard-progress span i { width: 27px; height: 27px; }
+  .household-wizard-progress button { gap: 5px; }
+  .household-wizard-progress button b { font-size: 8.5px; }
+  .household-wizard-progress button i { width: 27px; height: 27px; }
   .household-nickname-controls { grid-template-columns: 1fr; }
-  .household-nickname-controls > button { width: 100%; }
+  .household-nickname-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .household-nickname-actions > button { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

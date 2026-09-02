@@ -6,10 +6,12 @@ import {
   householdShellHeader,
   householdStorageDialogMarkup,
 } from './game/household-selector';
+import { guardOperatorPage } from './shared/operator-access';
 
-const mount = document.querySelector<HTMLElement>('#householdOverview');
+const operatorAccess = guardOperatorPage('전체 동·호 현황');
+const mount = operatorAccess ? document.querySelector<HTMLElement>('#householdOverview') : null;
 
-if (!mount) throw new Error('Missing #householdOverview mount point');
+if (operatorAccess && !mount) throw new Error('Missing #householdOverview mount point');
 
 function columnCount(): number {
   return window.matchMedia('(min-width: 900px)').matches ? 4 : 3;
@@ -18,6 +20,7 @@ function columnCount(): number {
 let columns = columnCount();
 let resizeFrame = 0;
 
+if (mount) {
 mount.innerHTML = `<div class="household-selector-shell household-overview-shell app-shell">
   ${householdShellHeader('HOUSEHOLD CATALOG V1', false, true)}
   <main class="household-selector-main">
@@ -48,3 +51,4 @@ window.addEventListener('resize', () => {
     rows.innerHTML = householdBuildingRows(BUNDANG_HOUSEHOLD_CATALOG.buildings, columns, false);
   });
 });
+}

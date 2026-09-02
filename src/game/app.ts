@@ -274,8 +274,9 @@ export class ShowcaseApp {
           timeoutMs: 8_000,
         };
       }
-      const selection = await waitForHouseholdSelection(this.mount, catalog, fallback, verificationConfig);
-      writeHouseholdVerificationSession();
+      const verification = await waitForHouseholdSelection(this.mount, catalog, fallback, verificationConfig);
+      const selection = verification.selection;
+      writeHouseholdVerificationSession(verification.role);
       if (requestedDeepLink) {
         requestedDeepLink.hash = '';
         history.replaceState(null, '', requestedDeepLink);
@@ -367,6 +368,7 @@ export class ShowcaseApp {
   }
 
   private renderShell(fallback: boolean): void {
+    const operator = readHouseholdVerificationSession()?.role === 'operator';
     const mapOptions = this.catalog.maps
       .map(
         (map) => `<option value="${escapeHtml(map.id)}" ${map.id === this.currentMap.id ? 'selected' : ''}>${escapeHtml(map.unitType)} · ${escapeHtml(map.label)}</option>`,
@@ -387,9 +389,9 @@ export class ShowcaseApp {
           </a>
           <nav class="topnav" aria-label="주요 메뉴">
             <a class="is-active" href="${resolveProjectUrl('')}"><span>LIVE</span> 렌더 쇼케이스</a>
-            <a href="${resolveProjectUrl('manage/')}">검수맵 관리</a>
+            ${operator ? `<a href="${resolveProjectUrl('manage/')}">검수맵 관리</a>
             <a href="${resolveProjectUrl('building-admin/')}">건축물 관리</a>
-            <a href="${resolveProjectUrl('interior-admin/')}">인테리어 관리</a>
+            <a href="${resolveProjectUrl('interior-admin/')}">인테리어 관리</a>` : ''}
             <a href="${resolveProjectUrl('guides/')}">가이드</a>
           </nav>
           <div class="build-chip" title="현재 정적 자산 스냅샷">

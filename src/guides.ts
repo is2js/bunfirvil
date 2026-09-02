@@ -2,11 +2,15 @@ import './styles/guides.css';
 import { escapeHtml } from './game/base';
 import { guideDocuments } from './guides/catalog';
 import { renderGuideMarkdown } from './guides/markdown';
+import { householdVerificationIsOperator } from './game/household-verification';
 
-const guides = guideDocuments();
+const operator = householdVerificationIsOperator();
+const guides = guideDocuments().filter((guide) => !guide.operatorOnly || operator);
 const query = new URLSearchParams(window.location.search);
 const requestedId = query.get('guide') || 'b-option';
 const active = guides.find((guide) => guide.id === requestedId) || guides[0];
+
+document.querySelectorAll<HTMLElement>('[data-operator-only]').forEach((element) => { element.hidden = !operator; });
 
 function get<T extends HTMLElement>(selector: string): T {
   const element = document.querySelector<T>(selector);
