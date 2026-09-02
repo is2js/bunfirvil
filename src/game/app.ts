@@ -2302,9 +2302,16 @@ export class ShowcaseApp {
       return;
     }
     if (index === 1) {
+      const transformationWasActive = this.pigmyTransformationActive;
+      this.pigmyTransformationActive = false;
       const next: CharacterKey = this.activeActor === '100' ? '200' : '100';
       this.setActiveActor(next);
-      this.toast(`${CHARACTER_DISPLAY_NAMES[next]}로 전환했습니다.`, 'success');
+      this.toast(
+        transformationWasActive
+          ? `${CHARACTER_DISPLAY_NAMES[next]}로 전환하고 변신을 해제했습니다.`
+          : `${CHARACTER_DISPLAY_NAMES[next]}로 전환했습니다.`,
+        'success',
+      );
       return;
     }
     if (index === 2) {

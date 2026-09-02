@@ -1109,7 +1109,7 @@ input:focus-visible {
   min-width: 310px;
   position: absolute;
   left: 18px;
-  right: 249px;
+  right: 265px;
   bottom: 18px;
   z-index: 2009;
   display: flex;
@@ -1135,7 +1135,7 @@ input:focus-visible {
   scrollbar-width: none;
   white-space: nowrap;
   color: rgba(174, 194, 190, 0.66);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .stage-tip::-webkit-scrollbar { display: none; }
@@ -1161,7 +1161,7 @@ input:focus-visible {
 .stage-tip .shortcut-keys i { color: #71817e; font: normal 800 9px ui-monospace, monospace; }
 .stage-tip .shortcut-divider { color: rgba(174, 194, 190, .48); }
 
-.stage-tip b { color: #88bbb2; margin-left: 2px; }
+.stage-tip b { color: #a6e1d7; margin-left: 2px; font-weight: 900; }
 .istarpark-laser-toggle.is-active b { color: #e9d5ff; }
 
 .combat-dock {
@@ -1350,8 +1350,8 @@ input:focus-visible {
   left: auto;
   right: 22px;
   bottom: 22px;
-  width: 215px;
-  height: 62px;
+  width: 231px;
+  height: 66px;
   padding: 4px 0 8px;
   border: 0;
   border-radius: 0;
@@ -1364,24 +1364,24 @@ input:focus-visible {
 .active-actor-card { display: none; }
 
 .hotbar {
-  width: 215px;
-  height: 62px;
+  width: 231px;
+  height: 66px;
   display: grid;
-  grid-template-columns: repeat(4, 50px);
+  grid-template-columns: repeat(4, 54px);
   gap: 5px;
   overflow: visible;
 }
 
 .hotbar-slot-wrap {
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   position: relative;
   display: block;
 }
 
 .hotbar-slot {
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   min-height: 0;
   padding: 0;
   overflow: hidden;
@@ -1524,11 +1524,11 @@ input:focus-visible {
 }
 
 .pigmy-hotbar-icon {
-  width: 126px;
-  height: 126px;
+  width: 84px;
+  height: 84px;
   position: absolute;
   left: 50%;
-  bottom: -2px;
+  bottom: -1px;
   z-index: 1;
   border-radius: 3px;
   background-image: url("/bunfirvil/assets/transformations/pigmy/sheets/walk/normal.png");
@@ -2154,9 +2154,9 @@ input:focus-visible {
   .topbar { grid-template-columns: 220px 1fr 170px; }
   .topnav { justify-content: center; }
   .showcase-layout { grid-template-columns: minmax(0, 1fr) 320px; }
-  .hotbar-slot { width: 49px; }
+  .hotbar-slot { width: 54px; }
   .active-actor-card { min-width: 132px; }
-  .combat-dock { padding-inline: 10px; }
+  .combat-dock { padding-inline: 0; }
 }
 
 @media (max-width: 1050px) {
@@ -2165,9 +2165,9 @@ input:focus-visible {
   .showcase-layout { display: flex; flex-direction: column; }
   .option-panel { height: auto; max-height: 720px; }
   .option-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .combat-dock { width: 215px; justify-content: flex-end; }
+  .combat-dock { width: 231px; justify-content: flex-end; }
   .hotbar { min-width: 0; justify-content: flex-end; }
-  .hotbar-slot { width: 50px; }
+  .hotbar-slot { width: 54px; }
 }
 
 @media (max-width: 720px) {
@@ -2195,10 +2195,10 @@ input:focus-visible {
   .map-identity { left: 8px; top: 8px; max-width: calc(100% - 155px); }
   .map-identity > div { max-width: 145px; }
   .active-actor-card { display: none; }
-  .combat-dock { right: 8px; width: 203px; height: 62px; bottom: 8px; padding: 4px 0 8px; overflow: visible; justify-content: flex-end; }
-  .hotbar { width: 203px; min-width: 203px; grid-template-columns: repeat(4, 47px); }
-  .hotbar-slot-wrap { width: 47px; }
-  .hotbar-slot { width: 47px; height: 50px; }
+  .combat-dock { right: 8px; width: 215px; height: 64px; bottom: 8px; padding: 4px 0 8px; overflow: visible; justify-content: flex-end; }
+  .hotbar { width: 215px; min-width: 215px; height: 64px; grid-template-columns: repeat(4, 50px); }
+  .hotbar-slot-wrap { width: 50px; height: 52px; }
+  .hotbar-slot { width: 50px; height: 52px; }
   .stage-bottom-left { left: 8px; bottom: 84px; width: calc(100% - 16px); min-width: 0; }
   .istarpark-laser-hud { top: 68px; left: 8px; max-width: calc(100% - 16px); }
   .option-list { display: flex; }
