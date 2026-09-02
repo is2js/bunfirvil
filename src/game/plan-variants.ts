@@ -21,8 +21,8 @@ const SOURCE_TRANSFORM = Object.freeze({ rotationDeg: 0, mirrorX: false, mirrorY
 const RPG_VARIANT_B: Record<string, Omit<ApartmentPlanVariantDefinition, 'variant' | 'label' | 'sourcePlan'>> = {
   '51A': {
     targetPlan: '51A-B',
-    transform: { rotationDeg: 0, mirrorX: true, mirrorY: false },
-    operations: ['좌우반전'],
+    transform: { rotationDeg: -90, mirrorX: true, mirrorY: false },
+    operations: ['좌우반전', '반시계 90° 회전'],
   },
   '55A': {
     targetPlan: '55A-B',

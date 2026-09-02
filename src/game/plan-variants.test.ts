@@ -10,7 +10,7 @@ import {
 import type { StaticMapEntry, WorldData, WorldObject } from './types';
 
 const expectedB = {
-  '51A': { rotationDeg: 0, mirrorX: true, mirrorY: false },
+  '51A': { rotationDeg: -90, mirrorX: true, mirrorY: false },
   '55A': { rotationDeg: -90, mirrorX: true, mirrorY: false },
   '55B': { rotationDeg: -180, mirrorX: false, mirrorY: true },
   '59A': { rotationDeg: 0, mirrorX: true, mirrorY: false },

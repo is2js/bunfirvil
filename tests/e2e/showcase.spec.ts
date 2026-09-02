@@ -9,7 +9,7 @@ const MAPS = [
 ] as const;
 
 const VARIANT_B_TRANSFORMS: Record<string, string> = {
-  '51A': '좌우반전',
+  '51A': '좌우반전 + 반시계 90° 회전',
   '55A': '좌우반전 + 반시계 90° 회전',
   '55B': '상하반전 + 반시계 180° 회전',
   '59A': '좌우반전',

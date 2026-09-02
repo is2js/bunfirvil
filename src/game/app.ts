@@ -112,6 +112,10 @@ const CHARACTER_DISPLAY_NAMES: Record<CharacterKey, string> = {
   '200': '피치',
 };
 
+function planFacingLabel(variant: ApartmentPlanVariant): '남서향' | '남동향' {
+  return variant === 'B' ? '남동향' : '남서향';
+}
+
 interface WorldRendererPort {
   setWorld(world: WorldData): void;
   setSelectedOptions(optionIds: string[]): void;
@@ -2257,14 +2261,13 @@ export class ShowcaseApp {
     const controls = [
       { id: 'common-teleport', label: '텔레포트', icon: teleport.iconUrl ? `<img src="${escapeHtml(resolveProjectUrl(teleport.iconUrl))}" alt="" onerror="this.hidden=true" />` : '', glyph: teleport.glyph, state: '', active: false },
       { id: 'showcase-gender-toggle', label: '성별전환', icon: `<img src="${escapeHtml(resolveProjectUrl('assets/showcase-controls/lk-custom-023.png'))}" alt="" />`, glyph: '↺', state: CHARACTER_DISPLAY_NAMES[this.activeActor], active: this.activeActor === '200' },
-      { id: 'showcase-plan-toggle', label: '방향전환', icon: '', glyph: 'A↔B', state: `${this.planVariant}형`, active: this.planVariant === 'B' },
+      { id: 'showcase-plan-toggle', label: '방향전환', icon: '', glyph: 'A↔B', state: planFacingLabel(this.planVariant).replace('향', ''), active: this.planVariant === 'B' },
       { id: 'showcase-pigmy-toggle', label: '피그미', icon: '<span class="pigmy-hotbar-icon" aria-hidden="true"></span>', glyph: '', state: this.pigmyTransformationActive ? 'ON' : '', active: this.pigmyTransformationActive },
     ];
     element.innerHTML = controls.map((control, index) => `
       <button type="button" class="hotbar-slot hotbar-control ${control.active ? 'is-active' : ''}" data-slot="${index}" data-hotbar-action="${control.id}" ${control.id === 'common-teleport' ? 'data-skill-id="common-teleport"' : ''} aria-label="${index + 1}번 ${escapeHtml(control.label)}">
         <span class="slot-number">${index + 1}</span>
         ${control.icon}<span class="skill-glyph">${escapeHtml(control.glyph)}</span>
-        <span class="hotbar-control-name">${escapeHtml(control.label)}</span>
         ${control.state ? `<span class="hotbar-control-state">${escapeHtml(control.state)}</span>` : ''}
         ${control.id === 'common-teleport' ? '<span class="cooldown-sweep"></span><span class="cooldown-number"></span>' : ''}
       </button>
@@ -2305,7 +2308,7 @@ export class ShowcaseApp {
       const next: ApartmentPlanVariant = this.planVariant === 'A' ? 'B' : 'A';
       void this.selectPlanVariant(next).then(() => {
         this.renderHotbar();
-        this.toast(`${next}형 평면 방향으로 전환했습니다.`, 'success');
+        this.toast(`${planFacingLabel(next)}으로 전환했습니다.`, 'success');
       });
       return;
     }

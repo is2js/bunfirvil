@@ -529,6 +529,12 @@ input:focus-visible {
 
 .rpg-actor[hidden] { display: none; }
 .rpg-actor.is-transformed .actor-name { color: #d9ead1; }
+.rpg-actor.is-transformed .actor-sprite {
+  width: 204px;
+  height: 204px;
+  left: -68px;
+  top: -121px;
+}
 
 .actor-sprite {
   width: 68px;
@@ -1449,23 +1455,6 @@ input:focus-visible {
 
 .skill-name { display: none; }
 
-.hotbar-control-name {
-  max-width: 44px;
-  position: relative;
-  z-index: 7;
-  align-self: flex-end;
-  padding: 1px 2px;
-  overflow: hidden;
-  color: #f3ead2;
-  background: rgba(0, 0, 0, .62);
-  font-size: 7px;
-  font-weight: 800;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  text-shadow: 0 1px 2px #000;
-  white-space: nowrap;
-}
-
 .hotbar-control-state {
   position: absolute;
   top: 4px;
@@ -1482,6 +1471,10 @@ input:focus-visible {
 .hotbar-control.is-active {
   border-color: #63d7be;
   box-shadow: 0 0 0 1px rgba(99, 215, 190, .24), 0 0 12px rgba(72, 205, 177, .22), inset 0 0 8px rgba(64, 187, 161, .12);
+}
+
+.hotbar-control[data-hotbar-action="showcase-pigmy-toggle"].is-active {
+  animation: hotbar-persistent-aura 1.25s ease-in-out infinite;
 }
 
 .hotbar-control[data-hotbar-action="showcase-plan-toggle"] .skill-glyph {
@@ -1945,8 +1938,8 @@ input:focus-visible {
 
 .stage-option-title { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .stage-option-title span { color: #ddd2b8; font-size: 11px; font-weight: 800; }
-.stage-option-title em { color: #95886e; font: normal 700 10px ui-monospace, monospace; }
-.stage-option-clear { margin-left: auto; padding: 2px 0 2px 8px; border: 0; color: #cf786f; background: transparent; font-family: inherit; font-size: 10px; font-weight: 700; line-height: 1.15; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; transition: color 120ms ease, font-weight 120ms ease; }
+.stage-option-title em { color: #95886e; font: normal 750 12px ui-monospace, monospace; }
+.stage-option-clear { margin-left: auto; padding: 2px 0 2px 8px; border: 0; color: #cf786f; background: transparent; font-family: inherit; font-size: 11px; font-weight: 700; line-height: 1.15; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; transition: color 120ms ease, font-weight 120ms ease; }
 .stage-option-clear:hover, .stage-option-clear:focus-visible { color: #ff9a8f; font-size: 11px; font-weight: 900; outline: none; }
 .stage-option-clear[hidden] { display: none; }
 .stage-option-content { min-width: 0; min-height: 35px; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(168px, 190px); overflow: hidden; border-top: 1px solid rgba(213,183,112,.15); }
@@ -1967,8 +1960,8 @@ input:focus-visible {
 .stage-option-remove { width: 17px; min-width: 17px; padding: 0; display: inline-grid; place-items: center; align-self: stretch; color: #837c6e !important; background: transparent !important; font: 700 12px/1 ui-sans-serif, sans-serif !important; }
 .stage-option-remove:hover,
 .stage-option-remove:focus-visible { color: #d8b66a !important; background: transparent !important; outline: none; }
-.stage-option-chips b { color: #aca38e; font-size: 10px; }
-.stage-option-chips em { color: #d5b96f; font: normal 650 9px ui-monospace, monospace; }
+.stage-option-chips b { color: #aca38e; font-size: 11px; }
+.stage-option-chips em { color: #d5b96f; font: normal 650 10px ui-monospace, monospace; }
 .price-variant-label { display: inline-flex; margin-left: 6px; padding: 2px 5px; border: 1px solid rgba(225, 185, 99, .34); border-radius: 8px; color: #f0d18b; background: rgba(225, 185, 99, .1); font: normal 750 7px/1 inherit; vertical-align: middle; }
 .stage-option-footer { min-width: 0; padding: 7px 0 0 12px; display: grid; grid-template-columns:auto 1fr; align-content:center; align-items:center; gap:3px 8px; border-left:1px solid rgba(213,183,112,.18); background:linear-gradient(90deg,rgba(213,183,112,.035),transparent); }
 .stage-option-footer > span { color:#776e5b; font-size:9px; font-weight:750; white-space:nowrap; }
@@ -2095,6 +2088,10 @@ input:focus-visible {
 .game-stage.hit-boundary { animation: boundary-hit 180ms ease; }
 
 @keyframes status-pulse { 50% { opacity: .55; transform: scale(.8); } }
+@keyframes hotbar-persistent-aura {
+  0%, 100% { border-color: #5ed7c0; box-shadow: 0 0 0 1px rgba(94,215,192,.2), 0 0 8px rgba(72,205,177,.2), inset 0 0 7px rgba(64,187,161,.1); }
+  50% { border-color: #d9f8ef; box-shadow: 0 0 0 2px rgba(103,236,207,.42), 0 0 18px rgba(72,229,195,.5), inset 0 0 13px rgba(81,222,191,.25); }
+}
 @keyframes actor-bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2px); }
