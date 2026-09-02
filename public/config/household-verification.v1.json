@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "provider": "google-apps-script",
+  "endpoint": "https://script.google.com/macros/s/AKfycbybGVTwRhbgCc7AqQnb85D8h1AvCdEjJvgMO8AAIGS7B1AqrjRqxAi4g4noR-EsQyFH/exec",
+  "timeoutMs": 8000
+}

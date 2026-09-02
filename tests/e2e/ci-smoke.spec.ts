@@ -10,6 +10,36 @@ const MAPS = [
 test('smokes household selection, deployed maps, living-room spawn, and B palette', async ({ page }) => {
   const forbiddenRequests: string[] = [];
   const consoleErrors: string[] = [];
+  let verificationMode: 'match' | 'mismatch' | 'error' = 'match';
+  await page.route('**/config/household-verification.v1.json', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schemaVersion: 1,
+        enabled: true,
+        provider: 'google-apps-script',
+        endpoint: 'https://script.google.com/macros/s/mock-bunfirvil-verification/exec',
+        timeoutMs: 8_000,
+      }),
+    });
+  });
+  await page.route('https://script.google.com/macros/s/mock-bunfirvil-verification/exec', async (route) => {
+    if (verificationMode === 'error') {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ schemaVersion: 1, ok: false, verified: false, code: 'service_unavailable' }),
+      });
+      return;
+    }
+    const request = JSON.parse(route.request().postData() || '{}') as Record<string, unknown>;
+    expect(route.request().method()).toBe('POST');
+    expect(route.request().headers()['content-type']).toContain('text/plain');
+    expect(request).toMatchObject({ schemaVersion: 1, action: 'verifyHousehold', buildingId: '105', householdNumber: '2501' });
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ schemaVersion: 1, ok: true, verified: verificationMode === 'match' }),
+    });
+  });
   page.on('request', (request) => {
     const url = request.url();
     if (/^wss?:/i.test(url) || /socket\.io/i.test(url) || new URL(url).pathname.includes('/api/')) forbiddenRequests.push(url);
@@ -72,17 +102,50 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(page.locator('#household-building-detail')).toBeVisible();
   await household.click();
   await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeDisabled();
+  verificationMode = 'error';
+  await page.getByPlaceholder('닉네임 입력').fill('통신오류');
+  await page.getByRole('button', { name: '인증 확인' }).click();
+  await expect(page.locator('#household-nickname-status')).toHaveText('인증 서비스를 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+  await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeDisabled();
+  verificationMode = 'mismatch';
+  await page.getByPlaceholder('닉네임 입력').fill('잘못된닉네임');
+  await page.getByRole('button', { name: '인증 확인' }).click();
+  await expect(page.locator('#household-nickname-status')).toHaveText('선택한 세대와 닉네임을 확인할 수 없습니다.');
+  await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeDisabled();
+  verificationMode = 'match';
   await page.getByPlaceholder('닉네임 입력').fill('돌범이웃');
   await expect(page.locator('#household-selection-summary')).toHaveText('105동 2501호 · 25층 · 51A · 돌범이웃 · 남동향');
   await expect(page.locator('#household-selection-summary')).not.toContainText('A형');
   await page.getByRole('button', { name: '인증 확인' }).click();
   await expect(page.locator('#household-nickname-stage')).toBeVisible();
-  await expect(page.locator('#household-nickname-status')).toHaveText('입력 확인이 완료되었습니다.');
+  await expect(page.locator('#household-nickname-status')).toHaveText('세대 및 닉네임 인증이 완료되었습니다.');
   await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeEnabled();
   await page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' }).click();
   await expect(page).toHaveURL(/map=bundang-first-village-51a-prototype/);
   await expect(page).toHaveURL(/variant=A/);
   await expect(page.locator('#stage-loader')).toHaveClass(/is-hidden/, { timeout: 30_000 });
+  expect(await page.evaluate(() => {
+    const parsed = JSON.parse(sessionStorage.getItem('bunfirvil:household-verification:v1') || '{}') as Record<string, unknown>;
+    return { keys: Object.keys(parsed).sort(), schemaVersion: parsed.schemaVersion, provider: parsed.provider };
+  })).toEqual({ keys: ['provider', 'schemaVersion', 'verifiedAt'], schemaVersion: 1, provider: 'google-apps-script' });
+
+  await page.evaluate(() => sessionStorage.removeItem('bunfirvil:household-verification:v1'));
+  await page.goto('./?map=bundang-first-village-55b-prototype&actor=200&variant=B');
+  await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
+  await page.locator('[data-choose-building="105"]').click();
+  await page.locator('.household-cell[data-building="105"][data-floor="25"][data-line="1"]').click();
+  await page.getByPlaceholder('닉네임 입력').fill('돌범이웃');
+  await page.getByRole('button', { name: '인증 확인' }).click();
+  await expect(page.locator('#household-nickname-status')).toHaveText('세대 및 닉네임 인증이 완료되었습니다.');
+  await page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' }).click();
+  await expect(page).toHaveURL(/map=bundang-first-village-55b-prototype/);
+  await expect(page).toHaveURL(/actor=200/);
+  await expect(page).toHaveURL(/variant=B/);
+  await expect(page.locator('#stage-loader')).toHaveClass(/is-hidden/, { timeout: 30_000 });
+  await page.reload();
+  await expect(page.locator('#household-nickname-stage')).toHaveCount(0);
+  await expect(page.locator('#stage-loader')).toHaveClass(/is-hidden/, { timeout: 30_000 });
+
   const mapSelect = page.getByLabel('검수맵 선택');
   for (const [mapId, unitType] of MAPS) {
     await mapSelect.selectOption(mapId);
@@ -132,6 +195,11 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await page.goto('manage/');
   await expect(page.locator('#loadingState')).toBeHidden();
   await expect(page.locator('.map-card')).toHaveCount(4);
+  await page.goto('./?map=bundang-first-village-55a-prototype&actor=100&variant=A');
+  await expect(page.locator('#stage-loader')).toHaveClass(/is-hidden/, { timeout: 30_000 });
+  await page.locator('#choose-household').click();
+  await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem('bunfirvil:household-verification:v1'))).toBeNull();
   expect(forbiddenRequests).toEqual([]);
   expect(consoleErrors).toEqual([]);
 });

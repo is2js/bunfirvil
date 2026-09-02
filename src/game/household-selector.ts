@@ -7,6 +7,11 @@ import {
   type BundangHouseholdLineV1,
   type HouseholdSelectionV1,
 } from './household-catalog';
+import {
+  householdVerificationConfigured,
+  verifyHousehold,
+  type HouseholdVerificationConfigV1,
+} from './household-verification';
 import { resetAllBunfirvilLocalData } from '../shared/storage';
 
 export const HOUSEHOLD_FLOORS = Array.from({ length: 25 }, (_, index) => 25 - index);
@@ -134,15 +139,11 @@ export function householdShellHeader(exportId: string, fallback = false, overvie
   </div>`;
 }
 
-async function verifyHouseholdNickname(nickname: string): Promise<boolean> {
-  await new Promise((resolve) => window.setTimeout(resolve, 160));
-  return nickname.trim().length > 0;
-}
-
 export function waitForHouseholdSelection(
   mount: HTMLElement,
   catalog: ShowcaseCatalog,
   fallback: boolean,
+  verificationConfig: HouseholdVerificationConfigV1,
 ): Promise<HouseholdSelectionV1> {
   return new Promise((resolve) => {
     let selected: HouseholdSelectionV1 | null = null;
@@ -183,7 +184,7 @@ export function waitForHouseholdSelection(
           </header>
           <div class="household-nickname-card">
             <p class="eyebrow">HOUSEHOLD NICKNAME</p>
-            <p>선택한 세대에서 사용할 닉네임을 입력해 주세요. 현재 서버리스 데모에서는 입력 형식만 확인합니다.</p>
+            <p>선택한 세대에서 사용할 닉네임을 입력해 주세요. 동·호수·닉네임은 Google 인증 서비스로 전송되어 비공개 명단과 일치 여부만 확인합니다.</p>
             <div class="household-nickname-controls">
               <label><span>닉네임</span><input id="household-nickname" type="text" maxlength="20" autocomplete="off" placeholder="닉네임 입력" /></label>
               <button type="button" id="household-verify-nickname" disabled>인증 확인</button>
@@ -221,6 +222,7 @@ export function waitForHouseholdSelection(
     let chosenBuildingId: string | null = null;
     let nickname = '';
     let nicknameVerified = false;
+    let verificationAttempt = 0;
 
     const paintBuildingChoice = (): void => {
       picker.querySelectorAll<HTMLButtonElement>('[data-choose-building]').forEach((button) => {
@@ -248,15 +250,18 @@ export function waitForHouseholdSelection(
     };
 
     const resetNicknameVerification = (clearNickname: boolean): void => {
+      verificationAttempt += 1;
       nicknameVerified = false;
       if (clearNickname) {
         nickname = '';
         nicknameInput.value = '';
       }
       verifyNickname.textContent = '인증 확인';
-      verifyNickname.disabled = nickname.trim().length === 0;
+      verifyNickname.disabled = nickname.trim().length === 0 || !householdVerificationConfigured(verificationConfig);
       verifyNickname.removeAttribute('aria-busy');
-      nicknameStatus.textContent = '';
+      nicknameStatus.textContent = householdVerificationConfigured(verificationConfig)
+        ? ''
+        : '인증 서비스 연결 주소가 아직 설정되지 않았습니다.';
       updateSelectionSummary();
     };
 
@@ -373,29 +378,53 @@ export function waitForHouseholdSelection(
     });
 
     nicknameInput.addEventListener('input', () => {
+      verificationAttempt += 1;
       nickname = nicknameInput.value;
       nicknameVerified = false;
       verifyNickname.textContent = '인증 확인';
-      verifyNickname.disabled = nickname.trim().length === 0;
+      verifyNickname.disabled = nickname.trim().length === 0 || !householdVerificationConfigured(verificationConfig);
       verifyNickname.removeAttribute('aria-busy');
-      nicknameStatus.textContent = nickname.trim() ? '인증 확인이 필요합니다.' : '';
+      nicknameStatus.textContent = householdVerificationConfigured(verificationConfig)
+        ? (nickname.trim() ? '인증 확인이 필요합니다.' : '')
+        : '인증 서비스 연결 주소가 아직 설정되지 않았습니다.';
       updateSelectionSummary();
     });
 
     verifyNickname.addEventListener('click', async () => {
       const candidate = nickname.trim();
-      if (!candidate) return;
+      if (!candidate || !selected || !householdVerificationConfigured(verificationConfig)) return;
+      const selectedKey = `${selected.buildingId}:${selected.householdNumber}`;
+      const attempt = ++verificationAttempt;
       verifyNickname.disabled = true;
       verifyNickname.setAttribute('aria-busy', 'true');
       nicknameStatus.textContent = '닉네임을 확인하고 있습니다.';
-      const verified = await verifyHouseholdNickname(candidate);
-      if (nickname.trim() !== candidate || !selected) return;
-      nicknameVerified = verified;
-      verifyNickname.removeAttribute('aria-busy');
-      verifyNickname.textContent = verified ? '인증 완료' : '다시 확인';
-      verifyNickname.disabled = false;
-      nicknameStatus.textContent = verified ? '입력 확인이 완료되었습니다.' : '닉네임을 다시 확인해 주세요.';
-      updateSelectionSummary();
+      try {
+        const response = await verifyHousehold(verificationConfig, {
+          buildingId: selected.buildingId,
+          householdNumber: selected.householdNumber,
+          nickname: candidate,
+        });
+        if (attempt !== verificationAttempt
+          || nickname.trim() !== candidate
+          || !selected
+          || `${selected.buildingId}:${selected.householdNumber}` !== selectedKey) return;
+        nicknameVerified = response.verified;
+        verifyNickname.textContent = response.verified ? '인증 완료' : '다시 확인';
+        nicknameStatus.textContent = response.verified
+          ? '세대 및 닉네임 인증이 완료되었습니다.'
+          : '선택한 세대와 닉네임을 확인할 수 없습니다.';
+      } catch {
+        if (attempt !== verificationAttempt) return;
+        nicknameVerified = false;
+        verifyNickname.textContent = '다시 확인';
+        nicknameStatus.textContent = '인증 서비스를 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
+      } finally {
+        if (attempt === verificationAttempt) {
+          verifyNickname.removeAttribute('aria-busy');
+          verifyNickname.disabled = false;
+          updateSelectionSummary();
+        }
+      }
     });
 
     const onPopState = (): void => {

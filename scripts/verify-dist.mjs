@@ -24,6 +24,7 @@ const REQUIRED_STABLE_PROVENANCE = new Map([
   ["generated/catalog.v1.json", "generated:stable-showcase-catalog"],
   ["generated/current.json", "generated:current-export-pointer"],
 ]);
+const VERIFICATION_CONFIG_KEYS = new Set(["schemaVersion", "enabled", "provider", "endpoint", "timeoutMs"]);
 
 function parseArgs(argv) {
   const result = { directory: "dist" };
@@ -528,6 +529,32 @@ async function verifyCatalog(distRoot, failures) {
   if (sourceExportPath) await verifySourceExport(sourceExportPath, current, distRoot, exportRoot, failures);
 }
 
+async function verifyHouseholdVerificationConfig(distRoot, failures) {
+  const configPath = path.join(distRoot, "config", "household-verification.v1.json");
+  const config = await readJson(configPath, "household verification config", failures);
+  if (!config || typeof config !== "object" || Array.isArray(config)) return;
+
+  const keys = Object.keys(config);
+  const unexpectedKeys = keys.filter((key) => !VERIFICATION_CONFIG_KEYS.has(key));
+  const missingKeys = [...VERIFICATION_CONFIG_KEYS].filter((key) => !keys.includes(key));
+  if (unexpectedKeys.length || missingKeys.length) {
+    failures.push(`household verification config 필드가 계약과 다릅니다 (누락: ${missingKeys.join(", ") || "없음"}, 추가: ${unexpectedKeys.join(", ") || "없음"}).`);
+  }
+  if (config.schemaVersion !== 1) failures.push("household verification config schemaVersion은 1이어야 합니다.");
+  if (config.provider !== "google-apps-script") failures.push("household verification provider는 google-apps-script여야 합니다.");
+  if (typeof config.enabled !== "boolean") failures.push("household verification enabled는 boolean이어야 합니다.");
+  if (!Number.isInteger(config.timeoutMs) || config.timeoutMs < 1_000 || config.timeoutMs > 30_000) {
+    failures.push("household verification timeoutMs는 1,000~30,000 사이 정수여야 합니다.");
+  }
+  if (typeof config.endpoint !== "string") {
+    failures.push("household verification endpoint는 문자열이어야 합니다.");
+  } else if (config.enabled && !/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/u.test(config.endpoint)) {
+    failures.push("활성 household verification endpoint는 Google Apps Script /exec URL이어야 합니다.");
+  } else if (!config.enabled && config.endpoint !== "") {
+    failures.push("비활성 household verification config에는 endpoint를 두지 않습니다.");
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const distRoot = path.resolve(PROJECT_ROOT, args.directory);
@@ -553,6 +580,7 @@ async function main() {
     failures.push(`dist 크기 ${(totalBytes / 1024 / 1024).toFixed(2)} MiB가 50 MiB 제한을 초과했습니다.`);
   }
   await verifyCatalog(distRoot, failures);
+  await verifyHouseholdVerificationConfig(distRoot, failures);
 
   const summary = {
     files: files.length,

@@ -8,7 +8,14 @@
 - 인테리어 관리: <https://is2js.github.io/bunfirvil/interior-admin/>
 - Markdown 가이드: <https://is2js.github.io/bunfirvil/guides/>
 - 저장 방식: 브라우저 `localStorage`와 JSON 가져오기·내보내기
-- 서버 기능: 없음 — 인증, DB, Socket.IO, 전투 판정, 원본 게시 기능을 포함하지 않습니다.
+- 세대 인증: 비공개 Google Sheet를 읽는 Google Apps Script 웹앱과 동·호수·닉네임을 정확히 대조하며, 성공 표식만 현재 탭의 `sessionStorage`에 저장
+- 자체 서버 기능: 없음 — DB, Socket.IO, 전투 판정, 원본 게시 기능을 포함하지 않습니다.
+
+## Google Sheet 세대 인증
+
+루트 위저드와 `map + variant` 딥링크는 Google Apps Script 인증을 통과해야 쇼케이스로 진입합니다. 관리자, 가이드, 전체 동·호 현황은 공개 페이지입니다. GitHub Pages의 정적 파일 자체는 계속 공개되므로 이 절차는 비공개 자산 접근통제가 아닌 사이트 UI 인증입니다.
+
+인증 설정 전에는 `public/config/household-verification.v1.json`을 비활성 상태로 유지합니다. Sheet 작성, `setupVerificationSheet()` 실행, 웹앱 배포와 `/exec` 연결 방법은 [`backend/apps-script/README.md`](backend/apps-script/README.md)에 정리되어 있습니다. Spreadsheet ID와 명단은 저장소 및 배포 산출물에 넣지 않습니다.
 
 ## 포함 범위
 

@@ -2,6 +2,13 @@ import { escapeHtml, formatBytes, resolveProjectUrl, resolveReferencedUrl } from
 import { loadCatalog, mapFromQuery } from './catalog';
 import { hasValidMapQuery } from './household-catalog';
 import { waitForHouseholdSelection } from './household-selector';
+import {
+  clearHouseholdVerificationSession,
+  loadHouseholdVerificationConfig,
+  readHouseholdVerificationSession,
+  writeHouseholdVerificationSession,
+  type HouseholdVerificationConfigV1,
+} from './household-verification';
 import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { ManifestEffectPlayer } from './effect-player';
 import { readHotbar, reorderHotbar, writeHotbar } from './hotbar';
@@ -252,12 +259,32 @@ export class ShowcaseApp {
   async start(): Promise<void> {
     const { catalog, fallback } = await loadCatalog();
     this.catalog = catalog;
-    if (!hasValidMapQuery(catalog.maps, window.location.search)) {
-      const selection = await waitForHouseholdSelection(this.mount, catalog, fallback);
-      const url = new URL(resolveProjectUrl(''));
-      url.searchParams.set('map', selection.mapId);
-      url.searchParams.set('variant', selection.planVariant);
-      history.replaceState(null, '', url);
+    const hasRequestedMap = hasValidMapQuery(catalog.maps, window.location.search);
+    const requestedDeepLink = hasRequestedMap ? new URL(window.location.href) : null;
+    if (!hasRequestedMap || !readHouseholdVerificationSession()) {
+      let verificationConfig: HouseholdVerificationConfigV1;
+      try {
+        verificationConfig = await loadHouseholdVerificationConfig();
+      } catch {
+        verificationConfig = {
+          schemaVersion: 1,
+          enabled: false,
+          provider: 'google-apps-script',
+          endpoint: '',
+          timeoutMs: 8_000,
+        };
+      }
+      const selection = await waitForHouseholdSelection(this.mount, catalog, fallback, verificationConfig);
+      writeHouseholdVerificationSession();
+      if (requestedDeepLink) {
+        requestedDeepLink.hash = '';
+        history.replaceState(null, '', requestedDeepLink);
+      } else {
+        const url = new URL(resolveProjectUrl(''));
+        url.searchParams.set('map', selection.mapId);
+        url.searchParams.set('variant', selection.planVariant);
+        history.replaceState(null, '', url);
+      }
     }
     this.currentMap = mapFromQuery(catalog, window.location.search);
     this.planVariant = planVariantFromQuery(window.location.search);
@@ -732,6 +759,7 @@ export class ShowcaseApp {
     const dialog = this.get<HTMLDialogElement>('#help-dialog');
     this.get<HTMLButtonElement>('#open-help').addEventListener('click', () => dialog.showModal(), { signal });
     this.get<HTMLButtonElement>('#choose-household').addEventListener('click', () => {
+      clearHouseholdVerificationSession();
       window.location.assign(resolveProjectUrl(''));
     }, { signal });
     const storageDialog = this.get<HTMLDialogElement>('#storage-dialog');
