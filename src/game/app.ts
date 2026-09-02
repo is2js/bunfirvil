@@ -433,6 +433,9 @@ export class ShowcaseApp {
 
         <main class="showcase-layout">
           <section class="play-column" aria-label="RPG 렌더링 쇼케이스">
+            ${operator ? '' : `<div class="viewer-household-actions">
+              <button type="button" id="choose-household" class="deck-text-button">세대 다시 선택</button>
+            </div>`}
             <div class="control-deck ${operator ? '' : 'is-user-hidden'}">
               <label class="select-field">
                 <span>INSPECTION MAP</span>
@@ -453,7 +456,7 @@ export class ShowcaseApp {
                 </div>
               </div>
               <div class="deck-actions">
-                <button type="button" id="choose-household" class="deck-text-button" title="동·층·호 다시 선택">세대 다시 선택</button>
+                <button type="button" id="${operator ? 'choose-household' : 'operator-choose-household'}" class="deck-text-button">세대 다시 선택</button>
                 <button type="button" id="reset-position" class="icon-button" title="스폰 위치로 돌아가기" aria-label="스폰 위치로 돌아가기">↺</button>
                 <button type="button" id="open-help" class="icon-button" title="조작 도움말" aria-label="조작 도움말">?</button>
               </div>
@@ -568,7 +571,7 @@ export class ShowcaseApp {
               </div>
               <div class="option-head-actions">
                 <button type="button" id="open-storage-manager" class="option-storage-button">저장 관리</button>
-                <a class="option-guide-link" href="${resolveProjectUrl('guides/?guide=b-option')}">옵션 가이드</a>
+                <a class="option-guide-link" href="${resolveProjectUrl('guides/?guide=b-option')}" target="_blank" rel="noopener noreferrer">옵션 가이드</a>
                 <span class="option-count" id="option-count">0</span>
               </div>
             </header>
