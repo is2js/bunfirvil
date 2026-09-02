@@ -199,7 +199,7 @@ export function waitForHouseholdSelection(
             </div>
             <output id="household-nickname-status" aria-live="polite"></output>
             <div class="household-registration-request">
-              <button type="button" id="household-request-verification" disabled>등록 요청</button>
+              <button type="button" id="household-request-verification" disabled>해당 닉네임으로 등록 요청</button>
             </div>
           </div>
         </section>
@@ -283,7 +283,7 @@ export function waitForHouseholdSelection(
         nicknameInput.value = '';
       }
       verifyNickname.textContent = '인증 확인';
-      requestVerification.textContent = '등록 요청';
+      requestVerification.textContent = '해당 닉네임으로 등록 요청';
       nicknameInput.disabled = false;
       verifyNickname.disabled = nickname.trim().length === 0 || !householdVerificationConfigured(verificationConfig);
       requestVerification.disabled = verifyNickname.disabled;
@@ -371,7 +371,8 @@ export function waitForHouseholdSelection(
       picker.hidden = true;
       detail.hidden = true;
       nicknameStage.hidden = false;
-      dock.hidden = !nicknameVerified;
+      dock.hidden = false;
+      dock.classList.toggle('is-authenticated', nicknameVerified);
       legend.hidden = true;
       title.textContent = '닉네임 입력';
       description.textContent = '선택한 세대에서 사용할 닉네임을 입력하고 인증을 확인해 주세요.';
@@ -435,7 +436,7 @@ export function waitForHouseholdSelection(
       nicknameVerified = false;
       verifiedRole = null;
       verifyNickname.textContent = '인증 확인';
-      requestVerification.textContent = '등록 요청';
+      requestVerification.textContent = '해당 닉네임으로 등록 요청';
       verifyNickname.disabled = nickname.trim().length === 0 || !householdVerificationConfigured(verificationConfig);
       requestVerification.disabled = verifyNickname.disabled;
       verifyNickname.removeAttribute('aria-busy');

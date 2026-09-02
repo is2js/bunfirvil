@@ -2607,10 +2607,10 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 .household-nickname-controls > button { height: 40px; padding: 0 15px; border: 1px solid rgba(92, 211, 189, .5); border-radius: 6px; color: #061411; background: var(--mint); font-size: 10px; font-weight: 850; cursor: pointer; white-space: nowrap; }
 .household-nickname-controls > button:disabled { border-color: var(--line); color: #627672; background: #102328; cursor: default; }
 .household-nickname-card output { min-height: 16px; margin-top: 7px; display: block; color: #8bcdbf; font-size: 9px; }
-.household-registration-request { margin-top: 10px; padding-top: 10px; display: flex; justify-content: flex-end; border-top: 1px solid rgba(151, 193, 187, .1); }
-.household-registration-request button { min-height: 31px; padding: 6px 11px; border: 1px solid rgba(151, 193, 187, .24); border-radius: 5px; color: #a8c0bb; background: rgba(20, 44, 48, .68); font-size: 9px; font-weight: 800; cursor: pointer; }
-.household-registration-request button:hover:not(:disabled) { border-color: rgba(92, 211, 189, .45); color: #d9f3ed; background: rgba(36, 76, 76, .76); }
-.household-registration-request button:disabled { color: #5f7470; border-color: var(--line); background: rgba(13, 29, 33, .66); cursor: default; }
+.household-registration-request { margin-top: 1px; display: flex; justify-content: flex-start; }
+.household-registration-request button { min-height: 0; padding: 2px 0; border: 0; border-radius: 0; color: var(--mint-bright); background: transparent; font-size: 9.5px; font-weight: 850; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: pointer; }
+.household-registration-request button:hover:not(:disabled) { color: #f1fffc; background: transparent; text-decoration-thickness: 2px; }
+.household-registration-request button:disabled { color: #607a75; background: transparent; text-decoration-color: rgba(96, 122, 117, .55); cursor: default; }
 
 .household-selection-dock {
   min-height: 72px;
@@ -2622,10 +2622,10 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
   align-items: center;
   justify-content: center;
   gap: clamp(14px, 4vw, 44px);
-  border-top: 1px solid rgba(92, 211, 189, .18);
+  border-top: 1px solid rgba(112, 191, 207, .48);
   color: var(--ink);
-  background: rgba(6, 16, 21, .93);
-  box-shadow: 0 -12px 34px rgba(0, 0, 0, .32);
+  background: linear-gradient(118deg, rgba(13, 35, 45, .97), rgba(8, 25, 33, .98) 58%, rgba(11, 39, 43, .97));
+  box-shadow: 0 -3px 0 rgba(112, 191, 207, .08), 0 -14px 38px rgba(0, 0, 0, .42);
   backdrop-filter: blur(18px);
 }
 .household-selection-dock > div { min-width: min(560px, 56vw); display: flex; flex-direction: column; gap: 2px; }
@@ -2635,9 +2635,9 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 .household-selection-dock button:hover:not(:disabled) { background: var(--mint-bright); }
 .household-selection-dock button:disabled { border-color: var(--line); color: #657975; background: #102328; cursor: default; }
 .household-selection-dock.is-authenticated {
-  border-top-color: rgba(107, 233, 205, .75);
-  background: linear-gradient(120deg, rgba(28, 93, 82, .97), rgba(10, 43, 47, .98) 55%, rgba(19, 63, 62, .98));
-  box-shadow: 0 -4px 0 rgba(92, 211, 189, .1), 0 -18px 46px rgba(21, 119, 101, .3);
+  border-top-color: rgba(157, 255, 232, .92);
+  background: linear-gradient(120deg, rgba(34, 113, 97, .98), rgba(13, 58, 61, .99) 55%, rgba(26, 81, 76, .99));
+  box-shadow: 0 -4px 0 rgba(128, 244, 217, .16), 0 -20px 50px rgba(21, 119, 101, .4);
   animation: household-dock-rise 420ms cubic-bezier(.2, .8, .2, 1) both;
 }
 .household-selection-dock.is-authenticated small { color: #a6e8da; }

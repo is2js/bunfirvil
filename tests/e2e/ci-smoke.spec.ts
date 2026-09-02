@@ -116,8 +116,9 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(page.getByRole('heading', { name: '105동 세대 선택' })).toBeVisible();
   await expect(page.locator('#household-building-detail')).toBeVisible();
   await household.click();
-  await expect(page.locator('#household-selection-dock')).toBeHidden();
+  await expect(page.locator('#household-selection-dock')).toBeVisible();
   await expect(page.locator('#household-enter')).toBeDisabled();
+  await expect(page.getByRole('button', { name: '해당 닉네임으로 등록 요청' })).toBeVisible();
   verificationMode = 'error';
   await page.getByPlaceholder('닉네임 입력').fill('통신오류');
   await page.getByRole('button', { name: '인증 확인' }).click();
