@@ -73,6 +73,7 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await taxDetails.locator('.relief-options label').filter({ hasText: '생애최초' }).click();
   await expect(page.locator('#calculator-tax-details')).toContainText('−2,000,000원');
   await expect(page.locator('#calculator-tax-details')).toContainText('지방교육세');
+  await expect(page.locator('#calculator-tax-details .calculation-total')).toContainText('원');
   const interimDetails = page.locator('#calculator-interim-loan-details');
   await interimDetails.locator('summary').click();
   await page.getByLabel('이자후불제 추정 활성화').check();
@@ -81,12 +82,16 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(interimDetails).toContainText('기타 옵션 중도금 · 자납');
   await page.getByRole('button', { name: '금리 0.5%포인트 높이기' }).click();
   await expect(interimDetails).toContainText('4.5%');
+  await expect(interimDetails).toHaveAttribute('open', '');
+  await expect(interimDetails.locator('.calculation-total')).toContainText('원');
   const mortgageDetails = page.locator('#calculator-mortgage-details');
   await mortgageDetails.locator('summary').click();
   await page.getByLabel('대출 추정 활성화').check();
   await expect(page.locator('#calculator-mortgage-details')).toHaveAttribute('open', '');
   await expect(page.locator('#calculator-mortgage-details')).toContainText('월 원리금');
   await expect(page.locator('#calculator-mortgage-details')).toContainText('1.3% 고정');
+  await expect(page.locator('#calculator-mortgage-details')).toContainText('상환 만기');
+  await expect(page.locator('#calculator-mortgage-details')).toContainText('정산 시 대출 유지기간');
   await page.locator('#calculator-children').selectOption('2');
   await page.locator('#calculator-settlement-period').selectOption('1-9');
   await expect(page.locator('#calculator-mortgage-details')).toContainText('향후 매각차익 기금 정산비율30%');
