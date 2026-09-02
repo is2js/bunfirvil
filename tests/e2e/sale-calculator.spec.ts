@@ -44,7 +44,10 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
 
   await expect(page.getByRole('heading', { name: '내 자금 계획' })).toBeVisible();
   await expect(page.locator('#calculator-context-header')).toContainText('55A · 5층 이상');
+  await expect(page.locator('.context-highlight')).toContainText('55A · 5층 이상 · 본청약 기준');
   await expect(page.getByLabel('본청약(신규신청자)')).toBeChecked();
+  await expect(page.locator('#calculator-option-details')).not.toHaveAttribute('open', '');
+  await page.locator('#calculator-option-details summary').click();
   await expect(page.locator('[data-option-tier="option-ii"]')).toContainText('시스템에어컨 2대 · 일반형');
   await expect(page.locator('[data-option-tier="option-ii"]')).toContainText('3,600,000원');
   await expect(page.locator('[data-option-tier="option-iii"]')).toContainText('광폭 강마루');
@@ -54,7 +57,7 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
 
   await page.locator('.plan-switch label').filter({ hasText: '사전청약 당첨자' }).click();
   await expect(page.getByLabel('사전청약 당첨자')).toBeChecked();
-  await expect(page.locator('.mode-notice')).toContainText('사전청약 당첨자 기준');
+  await expect(page.locator('.context-highlight')).toContainText('사전청약 당첨자 기준');
   await expect(page.locator('.schedule-table tbody')).toContainText('계약금');
   await expect(page.locator('.schedule-table tbody')).toContainText('31,825,500원');
   await expect(page.locator('.schedule-table tbody')).toContainText('중도금');
@@ -64,7 +67,15 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await taxDetails.locator('summary').click();
   await page.getByLabel('취득세 추정 활성화').check();
   await expect(page.locator('#calculator-tax-details')).toHaveAttribute('open', '');
+  await taxDetails.locator('.relief-options label').filter({ hasText: '생애최초' }).click();
+  await expect(page.locator('#calculator-tax-details')).toContainText('−2,000,000원');
   await expect(page.locator('#calculator-tax-details')).toContainText('지방교육세');
+  const interimDetails = page.locator('#calculator-interim-loan-details');
+  await interimDetails.locator('summary').click();
+  await page.getByLabel('이자후불제 추정 활성화').check();
+  await expect(interimDetails).toContainText('4.0%');
+  await page.getByRole('button', { name: '금리 0.5%포인트 높이기' }).click();
+  await expect(interimDetails).toContainText('4.5%');
   const mortgageDetails = page.locator('#calculator-mortgage-details');
   await mortgageDetails.locator('summary').click();
   await page.getByLabel('대출 추정 활성화').check();

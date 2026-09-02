@@ -3,6 +3,7 @@ import {
   BUNDANG_SALE_FINANCE_CATALOG_V1,
   bundangMortgageFundSharePercent,
   calculateBundangAcquisitionTax,
+  calculateBundangInterimLoanInterest,
   calculateBundangMortgage,
   calculateMoveInRequiredCash,
   calculateBundangPaymentSchedule,
@@ -62,6 +63,23 @@ describe('Bundang sale finance', () => {
   it('keeps the housing-city-fund metadata out of the supply schedule', () => {
     const schedule = calculateBundangPaymentSchedule(555_310_000, 'pre-subscription', 'supply');
     expect(schedule.installments.map((line) => line.amountWon)).toEqual([27_765_500, 111_062_000, 416_482_500]);
+  });
+
+  it('estimates only the 20% supply interim loan with each official execution date', () => {
+    const pre = calculateBundangInterimLoanInterest({
+      adjustedSupplyPriceWon: 600_000_000,
+      paymentPlanKind: 'pre-subscription',
+    });
+    const main = calculateBundangInterimLoanInterest({
+      adjustedSupplyPriceWon: 600_000_000,
+      paymentPlanKind: 'main-subscription',
+    });
+    expect(pre.totalPrincipalWon).toBe(120_000_000);
+    expect(pre.tranches.map((line) => line.executionDate)).toEqual(['2028-02-14']);
+    expect(main.totalPrincipalWon).toBe(120_000_000);
+    expect(main.tranches.map((line) => line.executionDate)).toEqual(['2027-04-12', '2028-02-14']);
+    expect(main.totalInterestWon).toBeGreaterThan(pre.totalInterestWon);
+    expect(calculateBundangInterimLoanInterest({ adjustedSupplyPriceWon: 600_000_000, paymentPlanKind: 'main-subscription', annualRateBps: 450 }).totalInterestWon).toBeGreaterThan(main.totalInterestWon);
   });
 
   it('separates option II and III, and clears both under the minus-option contract', () => {

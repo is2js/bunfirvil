@@ -130,6 +130,31 @@ export interface BundangMortgageQuoteV1 {
   totalInterestWon: number;
 }
 
+export interface BundangInterimLoanInterestInputV1 {
+  adjustedSupplyPriceWon: number;
+  paymentPlanKind: BundangPaymentPlanKind;
+  /** Planning rate only. The project lender and actual rate have not been announced. */
+  annualRateBps?: number;
+  /** The notice states only 2029-02; the first day is used as a conservative calculation boundary. */
+  assumedMoveInDate?: string;
+}
+
+export interface BundangInterimLoanInterestTrancheV1 {
+  id: string;
+  executionDate: string;
+  principalWon: number;
+  days: number;
+  interestWon: number;
+}
+
+export interface BundangInterimLoanInterestQuoteV1 {
+  annualRateBps: number;
+  assumedMoveInDate: string;
+  totalPrincipalWon: number;
+  totalInterestWon: number;
+  tranches: readonly BundangInterimLoanInterestTrancheV1[];
+}
+
 export type BundangMortgageChildCount = 0 | 1 | 2;
 export type BundangMortgageSettlementPeriod = '1-9' | '14' | '19' | '24+';
 
@@ -329,6 +354,8 @@ const PAYMENT_DEFINITIONS: Record<BundangPaymentPlanKind, Record<BundangPaymentT
 };
 
 export const BUNDANG_PAYMENT_PLAN_PRESETS_V1 = PAYMENT_DEFINITIONS;
+export const BUNDANG_INTERIM_LOAN_DEFAULT_RATE_BPS = 400;
+export const BUNDANG_INTERIM_LOAN_ASSUMED_MOVE_IN_DATE = '2029-02-01';
 
 /**
  * Rounds each percentage line to won and assigns all rounding residue to the
@@ -360,6 +387,42 @@ export function calculateBundangPaymentSchedule(
         amountWon: index === definitions.length - 1 ? total - (assigned - amountWon) : amountWon,
       };
     }),
+  };
+}
+
+/**
+ * Estimates the interest-deferred group loan described in the notice. Only
+ * supply-price interim installments (20% total) are financed; balcony and
+ * option installments are intentionally excluded.
+ */
+export function calculateBundangInterimLoanInterest(
+  input: BundangInterimLoanInterestInputV1,
+): BundangInterimLoanInterestQuoteV1 {
+  const annualRateBps = Math.max(0, Math.round(input.annualRateBps ?? BUNDANG_INTERIM_LOAN_DEFAULT_RATE_BPS));
+  const assumedMoveInDate = input.assumedMoveInDate ?? BUNDANG_INTERIM_LOAN_ASSUMED_MOVE_IN_DATE;
+  const moveIn = Date.parse(`${assumedMoveInDate}T00:00:00Z`);
+  if (!Number.isFinite(moveIn)) throw new Error('유효한 입주 예정일을 입력하세요.');
+  const schedule = calculateBundangPaymentSchedule(input.adjustedSupplyPriceWon, input.paymentPlanKind, 'supply');
+  const tranches = schedule.installments
+    .filter((installment) => installment.id.startsWith('interim'))
+    .map((installment) => {
+      const execution = Date.parse(`${installment.due}T00:00:00Z`);
+      if (!Number.isFinite(execution) || execution >= moveIn) throw new Error('중도금 실행일은 입주 예정일보다 앞서야 합니다.');
+      const days = Math.round((moveIn - execution) / 86_400_000);
+      return {
+        id: installment.id,
+        executionDate: installment.due,
+        principalWon: installment.amountWon,
+        days,
+        interestWon: won(installment.amountWon * annualRateBps / 10_000 * days / 365),
+      };
+    });
+  return {
+    annualRateBps,
+    assumedMoveInDate,
+    totalPrincipalWon: tranches.reduce((sum, tranche) => sum + tranche.principalWon, 0),
+    totalInterestWon: tranches.reduce((sum, tranche) => sum + tranche.interestWon, 0),
+    tranches,
   };
 }
 

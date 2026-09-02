@@ -2,12 +2,13 @@ import './style.css';
 import { loadCatalog } from '../game/catalog';
 import { readHouseholdVerificationSession } from '../game/household-verification';
 import { BUNDANG_MINUS_OPTION_ID } from '../game/minus-option';
-import { bundangMortgageFundSharePercent, calculateBundangSaleFinance, type BundangMortgageChildCount, type BundangMortgageSettlementPeriod, type BundangPaymentPlanKind, type BundangSaleFloorBand, type BundangSaleUnitType } from '../game/bundang-sale-finance';
+import { bundangMortgageFundSharePercent, calculateBundangInterimLoanInterest, calculateBundangSaleFinance, type BundangInterimLoanInterestQuoteV1, type BundangMortgageChildCount, type BundangMortgageSettlementPeriod, type BundangPaymentPlanKind, type BundangSaleFloorBand, type BundangSaleUnitType } from '../game/bundang-sale-finance';
 import { clearSaleCalculatorContext, readSaleCalculatorLaunchContext, type SaleCalculatorContextV1 } from '../game/sale-calculator-context';
 import { resolveSaleCalculatorOptionLines, type SaleCalculatorOptionLineV1 } from '../game/sale-calculator-options';
 
 type ScheduleRow = { label: string; due: string; supply: number; balcony: number; systemAc: number; other: number };
-type Quote = { baseSupply: number; baseBalcony: number; selectedOptions: number; minusSupply: number; minusBalcony: number; minusDiscount: number; contractTotal: number; schedule: ScheduleRow[]; optionLines: SaleCalculatorOptionLineV1[]; tax?: { taxable: number; ratePercent: number; relief: number; acquisition: number; education: number; rural: number; total: number }; mortgage?: { principal: number; eligibleMaximum: number; moveInCash: number; graceInterest: number; repayment: number; ltvPercent: number; annualRatePercent: number; repaymentMonths: number; fundSharePercent: number } };
+type TaxReliefMode = 'none' | 'first-home' | 'birth-care';
+type Quote = { baseSupply: number; adjustedSupply: number; baseBalcony: number; selectedOptions: number; minusSupply: number; minusBalcony: number; minusDiscount: number; contractTotal: number; schedule: ScheduleRow[]; optionLines: SaleCalculatorOptionLineV1[]; interimLoan: BundangInterimLoanInterestQuoteV1; tax?: { taxable: number; ratePercent: number; relief: number; acquisition: number; education: number; rural: number; total: number }; mortgage?: { principal: number; eligibleMaximum: number; moveInCash: number; graceInterest: number; repayment: number; ltvPercent: number; annualRatePercent: number; repaymentMonths: number; fundSharePercent: number } };
 
 const moneyFormat = new Intl.NumberFormat('ko-KR');
 const money = (value: number) => `${moneyFormat.format(value)}원`;
@@ -34,9 +35,14 @@ function mergeSchedules(schedules: ReturnType<typeof calculateBundangSaleFinance
     '계약 시': '계약금', '2027-04-12': '중도금 1차', '별도 안내': '기타 옵션 중도금',
     '2028-02-14': plan === 'pre-subscription' ? '중도금' : '중도금 2차', '입주 시': '잔금',
   }[due] ?? '납부 일정');
+  const displayDue = (due: string) => ({
+    '계약 시': '2026.11.07~11.13',
+    '별도 안내': '계약 후 별도 안내',
+    '입주 시': '입주지정기간 · 2029.02 예정',
+  }[due] ?? due);
   return [...merged.values()]
-    .map((row) => ({ ...row, label: labelForDue(row.due) }))
-    .sort((left, right) => (dueOrder.get(left.due) ?? 99) - (dueOrder.get(right.due) ?? 99));
+    .sort((left, right) => (dueOrder.get(left.due) ?? 99) - (dueOrder.get(right.due) ?? 99))
+    .map((row) => ({ ...row, label: labelForDue(row.due), due: displayDue(row.due) }));
 }
 
 class CalculatorApp {
@@ -45,7 +51,9 @@ class CalculatorApp {
   private options: SaleCalculatorOptionLineV1[] = [];
   private plan: BundangPaymentPlanKind;
   private taxEnabled = false;
-  private taxRelief = 0;
+  private taxReliefMode: TaxReliefMode = 'none';
+  private interimLoanEnabled = false;
+  private interimRatePercent = 4;
   private mortgageEnabled = false;
   private ltv: 30 | 40 | 50 | 60 | 70 = 70;
   private term: 20 | 30 = 30;
@@ -76,18 +84,20 @@ class CalculatorApp {
   }
 
   private calculate(): Quote {
+    const taxRelief = this.taxReliefMode === 'first-home' ? 2_000_000 : this.taxReliefMode === 'birth-care' ? 5_000_000 : 0;
     const result = calculateBundangSaleFinance({
       household: { unitType: this.unitType, floorBand: this.floor }, paymentPlanKind: this.plan,
       includeBalconyExtension: true, selectMinusOption: this.minus, optionLines: this.options,
-      acquisitionTax: { manualReliefWon: this.taxEnabled ? this.taxRelief : 0 },
+      acquisitionTax: { manualReliefWon: this.taxEnabled ? taxRelief : 0 },
       mortgage: this.mortgageEnabled ? { termYears: this.term, ltvBps: this.ltv * 100 } : undefined,
     });
     return {
-      baseSupply: result.baseSupplyPriceWon, baseBalcony: result.baseBalconyExtensionWon,
+      baseSupply: result.baseSupplyPriceWon, adjustedSupply: result.adjustedSupplyPriceWon, baseBalcony: result.baseBalconyExtensionWon,
       selectedOptions: result.optionIiSubtotalWon + result.optionIiiSubtotalWon,
       minusSupply: result.minusSupplyDiscountWon, minusBalcony: result.minusBalconyDiscountWon,
       minusDiscount: result.minusSupplyDiscountWon + result.minusBalconyDiscountWon,
       contractTotal: result.contractTotalWon, schedule: mergeSchedules(result.paymentSchedules, this.plan), optionLines: this.options,
+      interimLoan: calculateBundangInterimLoanInterest({ adjustedSupplyPriceWon: result.adjustedSupplyPriceWon, paymentPlanKind: this.plan, annualRateBps: Math.round(this.interimRatePercent * 100) }),
       ...(this.taxEnabled ? { tax: {
         taxable: result.acquisitionTax.taxableAmountWon,
         ratePercent: result.acquisitionTax.acquisitionTaxRatePercent,
@@ -123,9 +133,8 @@ class CalculatorApp {
       <header class="topbar"><a class="brand" href="../" aria-label="Bunfirvil 쇼케이스로 돌아가기"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span><b>BUNFIRVIL</b><small>RPG RENDERING LAB</small></span></a><nav class="topnav" aria-label="주 메뉴"><a href="../">쇼케이스</a><a class="is-active" href="./">자금 계획</a><a href="../guides/">가이드</a><a href="../households/">동·호 현황</a></nav><div id="calculator-context-header" class="build-chip" data-payment-plan="${this.plan}"><i class="status-dot"></i><span><small>${this.unitType} · ${floorLabel(this.floor)} · 2026.09.02 검토</small><b>${planName}</b></span></div></header>
       <div class="serverless-banner"><span class="banner-pulse"></span><b>브라우저 계산 도구</b><i></i><span>계산 결과는 참고용이며 공식 공고·계약서가 우선합니다.</span></div>
       <main id="calculator-main" class="calculator-main">
-        <section class="calculator-hero"><div><p class="eyebrow">BUNFIRVIL / SALE FINANCE</p><h1>내 자금 계획</h1><p><b>${this.unitType} · ${floorLabel(this.floor)} · ${planName}</b> 쇼케이스 선택을 기준으로 계산합니다. 세대 정보는 이 화면에 남기지 않습니다.</p><p class="source-stamp">기준: 입주자모집공고 2026.05.29 · 계산 검토 2026.09.02</p></div><aside class="restore-card"><span>선택 옵션 상태</span><strong>${(this.context!.optionIds ?? []).length}개 불러옴</strong><p>평형·층은 인증된 선택값으로 고정됩니다.</p><button id="calculator-return-options" data-action="return-to-showcase" type="button">옵션 다시 선택</button></aside></section>
-        <section class="calculator-card controls-card"><div class="section-head"><div><p class="eyebrow">01 / PLAN</p><h2>청약 구분</h2></div><span class="data-note">본청약과 사전청약의 일정·납부 조건을 혼용하지 않습니다.</span></div><fieldset class="plan-switch" aria-label="청약 구분"><label><input id="calculator-plan-pre" name="payment-plan" value="pre-subscription" type="radio" ${this.plan === 'pre-subscription' ? 'checked' : ''}><span>사전청약 당첨자</span></label><label><input id="calculator-plan-main" name="payment-plan" value="main-subscription" type="radio" ${this.plan === 'main-subscription' ? 'checked' : ''}><span>본청약(신규신청자)</span></label></fieldset><p class="mode-notice ${this.plan === 'pre-subscription' ? 'is-pre' : ''}"><b>${planName}</b> · 납부 일정과 회차는 표시된 공고 기준을 확인하세요.</p></section>
-        <section class="quote-layout"><article class="calculator-card result-card"><div class="section-head result-head"><div><p class="eyebrow">02 / CONTRACT</p><h2>최종 계약 예상 총액</h2></div><button id="calculator-print" data-action="print" class="print-button" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-3M7 13h10v8H7z" /></svg><span>인쇄 · PDF 저장</span></button></div><div class="hero-total"><span>공급가 + 발코니 + 선택 옵션 − 마이너스 감액</span><strong>${money(quote.contractTotal)}</strong><p>세금·대출은 아래 항목을 활성화할 때만 별도로 계산합니다.</p></div><dl class="contract-breakdown"><div><dt>조정 전 공급가</dt><dd>${money(quote.baseSupply)}</dd></div><div><dt>발코니 확장</dt><dd>${money(quote.baseBalcony)}</dd></div><div><dt>선택 옵션 합계</dt><dd>${money(quote.selectedOptions)}</dd></div><div class="discount"><dt>마이너스 감액</dt><dd>−${money(quote.minusDiscount)}</dd></div></dl><p class="fund-note">공고표의 주택도시기금 55,000,000원은 실제 수령액으로 차감하지 않았습니다.</p><div class="payment-block"><div class="subhead"><h3>납부 일정</h3><span>동일 회차·일자 기준 합산</span></div>${this.scheduleTable(quote.schedule)}</div></article><aside class="calculator-side"><article class="calculator-card option-card"><div class="section-head compact"><div><p class="eyebrow">SELECTED OPTIONS</p><h2>선택 옵션</h2></div><span>${this.minus ? 1 : quote.optionLines.length}개</span></div>${this.optionMarkup(quote)}</article>${this.taxDetails(quote)}${this.mortgageDetails(quote)}<article class="calculator-card source-card"><p class="eyebrow">NOTICE</p><h2>계산 전 확인</h2><p>금액·일정·감면·대출 실행은 공고문, 계약서, 관계기관 심사 결과가 우선합니다.</p><a href="../guides/" class="text-link">옵션·저장 가이드 보기 →</a></article></aside></section>
+        <section class="calculator-hero"><div><p class="eyebrow">BUNFIRVIL / SALE FINANCE</p><h1>내 자금 계획</h1><p><b class="context-highlight">${this.unitType} · ${floorLabel(this.floor)} · ${planName}</b> 쇼케이스 선택을 기준으로 계산합니다. 세대 정보는 이 화면에 남기지 않습니다.</p><fieldset class="plan-switch hero-plan-switch" aria-label="청약 구분"><legend>청약 구분</legend><label><input id="calculator-plan-pre" name="payment-plan" value="pre-subscription" type="radio" ${this.plan === 'pre-subscription' ? 'checked' : ''}><span>사전청약 당첨자</span></label><label><input id="calculator-plan-main" name="payment-plan" value="main-subscription" type="radio" ${this.plan === 'main-subscription' ? 'checked' : ''}><span>본청약(신규신청자)</span></label></fieldset><p class="source-stamp">기준: 입주자모집공고 2026.05.29 · 계산 검토 2026.09.02</p></div><aside class="restore-card"><span>선택 옵션 상태</span><strong>${(this.context!.optionIds ?? []).length}개 불러옴</strong><p>평형·층은 인증된 선택값으로 고정됩니다.</p><button id="calculator-return-options" data-action="return-to-showcase" type="button">옵션 다시 선택</button></aside></section>
+        <section class="quote-layout"><article class="calculator-card result-card"><div class="section-head result-head"><div><p class="eyebrow">CONTRACT</p><h2>최종 계약 예상 총액</h2></div><button id="calculator-print" data-action="print" class="print-button" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-3M7 13h10v8H7z" /></svg><span>인쇄 · PDF 저장</span></button></div><div class="hero-total"><span>공급가 + 발코니 + 선택 옵션 − 마이너스 감액</span><strong>${money(quote.contractTotal)}</strong><p>세금·대출은 오른쪽 항목을 펼쳐 선택할 때만 별도로 계산합니다.</p></div><dl class="contract-breakdown"><div><dt>조정 전 공급가</dt><dd>${money(quote.baseSupply)}</dd></div><div><dt>발코니 확장</dt><dd>${money(quote.baseBalcony)}</dd></div><div><dt>선택 옵션 합계</dt><dd>${money(quote.selectedOptions)}</dd></div><div class="discount"><dt>마이너스 감액</dt><dd>−${money(quote.minusDiscount)}</dd></div></dl><p class="fund-note">공고표의 주택도시기금 55,000,000원은 실제 수령액으로 차감하지 않았습니다.</p><div class="payment-block"><div class="subhead"><h3>납부 일정</h3><span>동일 회차·일자 기준 합산</span></div>${this.scheduleTable(quote.schedule)}<p class="schedule-note">추가선택품목 Ⅲ 중도금은 공고문상 납부일이 <b>별도 안내</b>로 명시되어 공급대금 중도금 1·2차에 합산하지 않습니다.</p></div></article><aside class="calculator-side">${this.taxDetails(quote)}${this.interimLoanDetails(quote)}${this.mortgageDetails(quote)}<details id="calculator-option-details" class="calculator-card disclosure option-card"><summary><span class="summary-title">선택 옵션 <b>${this.minus ? 1 : quote.optionLines.length}개</b></span><span>펼치기</span></summary><div class="disclosure-body">${this.optionMarkup(quote)}</div></details><article class="calculator-card source-card"><p class="eyebrow">NOTICE</p><h2>계산 전 확인</h2><p>금액·일정·감면·대출 실행은 공고문, 계약서, 관계기관 심사 결과가 우선합니다.</p><a href="../guides/" class="text-link">옵션·저장 가이드 보기 →</a></article></aside></section>
       </main><footer class="calculator-footer"><span>BUNFIRVIL · STATIC FRONTEND</span><span>개인정보·인증값은 인쇄물과 계산 URL에 포함하지 않습니다.</span></footer></div>`;
     this.bind();
   }
@@ -133,7 +142,7 @@ class CalculatorApp {
   private scheduleTable(rows: ScheduleRow[]): string {
     if (!rows.length) return '<div class="empty-state">납부 일정 데이터를 불러오지 못했습니다.</div>';
     const cell = (value: number) => value ? money(value) : '—';
-    return `<div class="schedule-scroll"><table class="schedule-table"><thead><tr><th>회차 · 납부일</th><th>주택</th><th>발코니</th><th>시스템<br>에어컨</th><th>기타 옵션</th><th>회차 합계</th></tr></thead><tbody>${rows.map((row) => { const total = row.supply + row.balcony + row.systemAc + row.other; return `<tr><th>${escape(row.label)}<small>${escape(row.due)}</small></th><td>${cell(row.supply)}</td><td>${cell(row.balcony)}</td><td>${cell(row.systemAc)}</td><td>${cell(row.other)}</td><td class="total">${money(total)}</td></tr>`; }).join('')}</tbody></table></div>`;
+    return `<div class="schedule-scroll"><table class="schedule-table"><thead><tr><th>회차 · 납부일</th><th>주택</th><th>발코니</th><th>시스템<br>에어컨</th><th>기타 옵션</th><th>회차 합계</th></tr></thead><tbody>${rows.map((row) => { const total = row.supply + row.balcony + row.systemAc + row.other; const phase = row.label === '계약금' ? 'contract' : row.label === '잔금' ? 'balance' : 'interim'; return `<tr data-phase="${phase}"><th><strong>${escape(row.label)}</strong><small>${escape(row.due)}</small></th><td>${cell(row.supply)}</td><td>${cell(row.balcony)}</td><td>${cell(row.systemAc)}</td><td>${cell(row.other)}</td><td class="total">${money(total)}</td></tr>`; }).join('')}</tbody></table></div>`;
   }
 
   private optionMarkup(quote: Quote): string {
@@ -148,7 +157,13 @@ class CalculatorApp {
   }
 
   private taxDetails(quote: Quote): string {
-    return `<details id="calculator-tax-details" class="calculator-card disclosure" ${this.taxEnabled ? 'open' : ''}><summary>취득세 추정 <span>열기</span></summary><div class="disclosure-body"><label class="enable-row"><input id="calculator-tax-enabled" type="checkbox" ${this.taxEnabled ? 'checked' : ''}> 취득세 추정 활성화</label><label class="number-field">수동 감면액<input id="calculator-tax-relief" type="number" min="0" step="10000" value="${this.taxRelief}" ${this.taxEnabled ? '' : 'disabled'}></label>${quote.tax ? `<dl><dt>과세 추정 기준</dt><dd>${money(quote.tax.taxable)}</dd><dt>적용 취득세율</dt><dd>${quote.tax.ratePercent}%</dd><dt>수동 감면 반영</dt><dd>−${money(quote.tax.relief)}</dd><dt>취득세</dt><dd>${money(quote.tax.acquisition)}</dd><dt>지방교육세</dt><dd>${money(quote.tax.education)}</dd><dt>농어촌특별세</dt><dd>${money(quote.tax.rural)}</dd><dt>합계</dt><dd>${money(quote.tax.total)}</dd></dl>` : '<p class="muted-copy">활성화 시 계약 예상 총액 기준으로 계산합니다.</p>'}<p class="legal-copy">수동 감면액은 취득세에서만 차감합니다. 2028-12-31 일몰 감면은 2029년에 자동 적용하지 않습니다. 전용 85㎡ 이하 기준 농어촌특별세는 0원이며 등기비용·인지세·법무비·대출 부대비용은 제외됩니다. <a href="https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&amp;lsId=001649&amp;lsJoLnkSeq=1000889820&amp;print=print" target="_blank" rel="noreferrer">지방세법 제11조 ↗</a> · <a href="https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&amp;lsJoLnkSeq=1029506947" target="_blank" rel="noreferrer">지방세특례제한법 제36조의3 ↗</a></p></div></details>`;
+    const choices: readonly [TaxReliefMode, string, number][] = [['none', '감면 없음', 0], ['first-home', '생애최초', 2_000_000], ['birth-care', '출산·양육', 5_000_000]];
+    return `<details id="calculator-tax-details" class="calculator-card disclosure" ${this.taxEnabled ? 'open' : ''}><summary>취득세 추정 <span>펼치기</span></summary><div class="disclosure-body"><label class="enable-row"><input id="calculator-tax-enabled" type="checkbox" ${this.taxEnabled ? 'checked' : ''}> 취득세 추정 활성화</label><fieldset class="relief-options" ${this.taxEnabled ? '' : 'disabled'}><legend>감면 시나리오</legend>${choices.map(([value, label, amount]) => `<label><input name="tax-relief-mode" type="radio" value="${value}" ${this.taxReliefMode === value ? 'checked' : ''}><span><b>${label}</b><small>${amount ? `최대 ${money(amount)}` : '기본 계산'}</small></span></label>`).join('')}</fieldset>${quote.tax ? `<dl><dt>과세 추정 기준</dt><dd>${money(quote.tax.taxable)}</dd><dt>적용 취득세율</dt><dd>${quote.tax.ratePercent}%</dd><dt>선택 감면 반영</dt><dd>−${money(quote.tax.relief)}</dd><dt>취득세</dt><dd>${money(quote.tax.acquisition)}</dd><dt>지방교육세</dt><dd>${money(quote.tax.education)}</dd><dt>농어촌특별세</dt><dd>${money(quote.tax.rural)}</dd><dt>합계</dt><dd>${money(quote.tax.total)}</dd></dl>` : '<p class="muted-copy">활성화 시 계약 예상 총액 기준으로 계산합니다.</p>'}<p class="legal-copy">생애최초는 현행법상 최대 200만원, 출산·양육 감면은 최대 500만원 시나리오입니다. 입주 예정 시점에는 일몰·자격·1주택 요건이 달라질 수 있어 자동 확정하지 않습니다. 지방교육세는 감면 전 취득세 기준의 단순 추정이며 등기·법무·대출 부대비용은 제외됩니다. <a href="https://www.law.go.kr/법령/지방세특례제한법/제36조의3" target="_blank" rel="noreferrer">생애최초 조문 ↗</a> · <a href="https://www.law.go.kr/법령/지방세특례제한법/제36조의5" target="_blank" rel="noreferrer">출산·양육 조문 ↗</a></p></div></details>`;
+  }
+
+  private interimLoanDetails(quote: Quote): string {
+    const details = quote.interimLoan;
+    return `<details id="calculator-interim-loan-details" class="calculator-card disclosure" ${this.interimLoanEnabled ? 'open' : ''}><summary>중도금 대출 이자 추정 <span>펼치기</span></summary><div class="disclosure-body"><label class="enable-row"><input id="calculator-interim-loan-enabled" type="checkbox" ${this.interimLoanEnabled ? 'checked' : ''}> 이자후불제 추정 활성화</label><div class="rate-stepper" aria-label="예상 연 금리"><span>예상 연 금리</span><div><button id="calculator-interim-rate-down" type="button" ${this.interimLoanEnabled ? '' : 'disabled'} aria-label="금리 0.5%포인트 낮추기">−</button><strong>${this.interimRatePercent.toFixed(1)}%</strong><button id="calculator-interim-rate-up" type="button" ${this.interimLoanEnabled ? '' : 'disabled'} aria-label="금리 0.5%포인트 높이기">＋</button></div></div>${this.interimLoanEnabled ? `<dl><dt>중도금 대출 원금 합계</dt><dd>${money(details.totalPrincipalWon)}</dd><dt>입주 시 납부 예상 이자</dt><dd>${money(details.totalInterestWon)}</dd><dt>계산상 입주 기준일</dt><dd>${details.assumedMoveInDate}</dd></dl><ul class="tranche-list">${details.tranches.map((tranche, index) => `<li><span>${this.plan === 'main-subscription' ? `${index + 1}차 · ` : ''}${tranche.executionDate}<small>${tranche.days}일 후불</small></span><b>${money(tranche.principalWon)}<small>이자 ${money(tranche.interestWon)}</small></b></li>`).join('')}</ul>` : '<p class="muted-copy">활성화하면 공급대금 중도금 20%에 대한 이자후불 예상액을 계산합니다.</p>'}<p class="legal-copy">공고문에는 중도금 대출 20%와 이자후불 방식만 명시되어 있으며 금융기관·금리는 아직 확정되지 않았습니다. 4.0%는 조절 가능한 계획용 기본값입니다. 입주는 월만 공고되어 2029-02-01을 계산 경계로 사용하며 발코니·유상옵션은 대출원금에서 제외합니다.</p></div></details>`;
   }
 
   private mortgageDetails(quote: Quote): string {
@@ -160,7 +175,10 @@ class CalculatorApp {
     this.mount.querySelector('#calculator-print')?.addEventListener('click', () => window.print());
     this.mount.querySelector('#calculator-return-options')?.addEventListener('click', () => window.location.assign(this.context!.returnUrl!));
     this.mount.querySelector<HTMLInputElement>('#calculator-tax-enabled')?.addEventListener('change', (event) => { this.taxEnabled = (event.target as HTMLInputElement).checked; this.render(); });
-    this.mount.querySelector<HTMLInputElement>('#calculator-tax-relief')?.addEventListener('change', (event) => { this.taxRelief = Math.max(0, Number((event.target as HTMLInputElement).value) || 0); this.render(); });
+    this.mount.querySelectorAll<HTMLInputElement>('input[name="tax-relief-mode"]').forEach((input) => input.addEventListener('change', () => { this.taxReliefMode = input.value as TaxReliefMode; this.render(); }));
+    this.mount.querySelector<HTMLInputElement>('#calculator-interim-loan-enabled')?.addEventListener('change', (event) => { this.interimLoanEnabled = (event.target as HTMLInputElement).checked; this.render(); });
+    this.mount.querySelector('#calculator-interim-rate-down')?.addEventListener('click', () => { this.interimRatePercent = Math.max(0.5, this.interimRatePercent - 0.5); this.render(); });
+    this.mount.querySelector('#calculator-interim-rate-up')?.addEventListener('click', () => { this.interimRatePercent = Math.min(15, this.interimRatePercent + 0.5); this.render(); });
     this.mount.querySelector<HTMLInputElement>('#calculator-mortgage-enabled')?.addEventListener('change', (event) => { this.mortgageEnabled = (event.target as HTMLInputElement).checked; this.render(); });
     this.mount.querySelector<HTMLSelectElement>('#calculator-ltv')?.addEventListener('change', (event) => { this.ltv = Number((event.target as HTMLSelectElement).value) as 30 | 40 | 50 | 60 | 70; this.render(); });
     this.mount.querySelector<HTMLSelectElement>('#calculator-term')?.addEventListener('change', (event) => { this.term = Number((event.target as HTMLSelectElement).value) as 20 | 30; this.render(); });
