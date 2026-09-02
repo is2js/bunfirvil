@@ -34,10 +34,17 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
     const request = JSON.parse(route.request().postData() || '{}') as Record<string, unknown>;
     expect(route.request().method()).toBe('POST');
     expect(route.request().headers()['content-type']).toContain('text/plain');
-    expect(request).toMatchObject({ schemaVersion: 1, action: 'verifyHousehold', buildingId: '105', householdNumber: '2501' });
+    expect(request).toMatchObject({ schemaVersion: 1, action: 'verifyHousehold', buildingId: '105', unitType: '51A' });
     await route.fulfill({
       contentType: 'application/json',
-      body: JSON.stringify({ schemaVersion: 1, ok: true, verified: verificationMode === 'match' }),
+      body: JSON.stringify({
+        schemaVersion: 1,
+        ok: true,
+        verified: verificationMode === 'match',
+        operator: verificationMode === 'match',
+        requested: false,
+        status: verificationMode === 'match' ? 'operator' : 'not_found',
+      }),
     });
   });
   page.on('request', (request) => {
@@ -52,7 +59,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
   await expect(page.locator('.household-selector-shell > .topbar')).toBeVisible();
   await expect(page.locator('.household-selector-shell > .serverless-banner')).toBeVisible();
-  await expect(page.locator('.household-topbar').getByRole('link', { name: '전체 동·호 현황' })).toBeVisible();
+  await expect(page.locator('.household-topbar').getByRole('link', { name: '전체 동·호 현황' })).toHaveCount(0);
   await expect(page.locator('.household-topbar').getByRole('button', { name: '저장 관리' })).toBeVisible();
   await expect(page.locator('.household-building-choice')).toHaveCount(12);
   await expect(page.locator('#household-step-building')).toHaveAttribute('aria-current', 'step');
@@ -64,17 +71,25 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   const mobileHouseholdBox = (await page.locator('.household-building-row.is-single .household-cell[data-floor="25"]').first().boundingBox())!;
   expect(mobileHouseholdBox.width).toBeLessThanOrEqual(46);
   expect(mobileHouseholdBox.height).toBeGreaterThanOrEqual(22);
-  await page.getByRole('button', { name: '동 다시 선택' }).click();
+  await page.locator('#household-step-building').click();
+  await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect.poll(async () => page.locator('.household-building-picker').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(4);
   expect((await page.locator('.household-building-choice').first().boundingBox())!.height).toBeLessThanOrEqual(72);
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => sessionStorage.setItem('bunfirvil:household-verification:v1', JSON.stringify({
+    schemaVersion: 1,
+    provider: 'google-apps-script',
+    verifiedAt: Date.now(),
+    role: 'operator',
+  })));
   await page.goto('./households/');
   await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 전체 동·호 현황' })).toBeVisible();
   await expect(page.locator('.household-overview-shell > .topbar')).toBeVisible();
   await expect(page.locator('.household-building-row').first().locator('.household-building-card')).toHaveCount(3);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(page.locator('.household-building-row').first().locator('.household-building-card')).toHaveCount(4);
+  await page.evaluate(() => sessionStorage.removeItem('bunfirvil:household-verification:v1'));
   await page.goto('./');
   await page.locator('[data-choose-building="105"]').click();
   await expect(page.getByRole('heading', { name: '105동 세대 선택' })).toBeVisible();
@@ -110,7 +125,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   verificationMode = 'mismatch';
   await page.getByPlaceholder('닉네임 입력').fill('잘못된닉네임');
   await page.getByRole('button', { name: '인증 확인' }).click();
-  await expect(page.locator('#household-nickname-status')).toHaveText('선택한 세대와 닉네임을 확인할 수 없습니다.');
+  await expect(page.locator('#household-nickname-status')).toHaveText('선택한 동·타입과 닉네임을 확인할 수 없습니다.');
   await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeDisabled();
   verificationMode = 'match';
   await page.getByPlaceholder('닉네임 입력').fill('돌범이웃');
@@ -118,7 +133,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(page.locator('#household-selection-summary')).not.toContainText('A형');
   await page.getByRole('button', { name: '인증 확인' }).click();
   await expect(page.locator('#household-nickname-stage')).toBeVisible();
-  await expect(page.locator('#household-nickname-status')).toHaveText('세대 및 닉네임 인증이 완료되었습니다.');
+  await expect(page.locator('#household-nickname-status')).toHaveText('운영자 인증이 완료되었습니다. 관리 메뉴를 사용할 수 있습니다.');
   await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeEnabled();
   await page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' }).click();
   await expect(page).toHaveURL(/map=bundang-first-village-51a-prototype/);
@@ -127,7 +142,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   expect(await page.evaluate(() => {
     const parsed = JSON.parse(sessionStorage.getItem('bunfirvil:household-verification:v1') || '{}') as Record<string, unknown>;
     return { keys: Object.keys(parsed).sort(), schemaVersion: parsed.schemaVersion, provider: parsed.provider };
-  })).toEqual({ keys: ['provider', 'schemaVersion', 'verifiedAt'], schemaVersion: 1, provider: 'google-apps-script' });
+  })).toEqual({ keys: ['provider', 'role', 'schemaVersion', 'verifiedAt'], schemaVersion: 1, provider: 'google-apps-script' });
 
   await page.evaluate(() => sessionStorage.removeItem('bunfirvil:household-verification:v1'));
   await page.goto('./?map=bundang-first-village-55b-prototype&actor=200&variant=B');
@@ -136,7 +151,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await page.locator('.household-cell[data-building="105"][data-floor="25"][data-line="1"]').click();
   await page.getByPlaceholder('닉네임 입력').fill('돌범이웃');
   await page.getByRole('button', { name: '인증 확인' }).click();
-  await expect(page.locator('#household-nickname-status')).toHaveText('세대 및 닉네임 인증이 완료되었습니다.');
+  await expect(page.locator('#household-nickname-status')).toHaveText('운영자 인증이 완료되었습니다. 관리 메뉴를 사용할 수 있습니다.');
   await page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' }).click();
   await expect(page).toHaveURL(/map=bundang-first-village-55b-prototype/);
   await expect(page).toHaveURL(/actor=200/);
