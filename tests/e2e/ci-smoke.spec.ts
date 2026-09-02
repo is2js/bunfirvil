@@ -22,6 +22,8 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
   await expect(page.locator('.household-selector-shell > .topbar')).toBeVisible();
   await expect(page.locator('.household-selector-shell > .serverless-banner')).toBeVisible();
+  await expect(page.locator('.household-topbar').getByRole('link', { name: '전체 동·호 현황' })).toBeVisible();
+  await expect(page.locator('.household-topbar').getByRole('button', { name: '저장 관리' })).toBeVisible();
   await expect(page.locator('.household-building-choice')).toHaveCount(12);
   await expect(page.locator('#household-step-building')).toHaveAttribute('aria-current', 'step');
   await expect.poll(async () => page.locator('.household-building-picker').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(3);
@@ -29,6 +31,9 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.locator('[data-choose-building="105"]').click();
   expect(await page.locator('.household-building-row.is-single .household-cell[data-floor="25"]').first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(9.5);
+  const mobileHouseholdBox = (await page.locator('.household-building-row.is-single .household-cell[data-floor="25"]').first().boundingBox())!;
+  expect(mobileHouseholdBox.width).toBeLessThanOrEqual(46);
+  expect(mobileHouseholdBox.height).toBeGreaterThanOrEqual(22);
   await page.getByRole('button', { name: '동 다시 선택' }).click();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect.poll(async () => page.locator('.household-building-picker').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(4);
@@ -47,6 +52,10 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(page.locator('#household-selected-building')).toHaveText('105동 선택됨');
   await expect(page.locator('.household-building-row.is-single .household-building-card')).toHaveCount(1);
   expect(await page.locator('.household-building-row.is-single .household-cell[data-floor="25"]').first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(11);
+  const desktopHouseholdBox = (await page.locator('.household-building-row.is-single .household-cell[data-floor="25"]').first().boundingBox())!;
+  expect(desktopHouseholdBox.width).toBeLessThanOrEqual(60);
+  expect(desktopHouseholdBox.height).toBeGreaterThanOrEqual(24);
+  expect(await page.locator('.household-building-row.is-single .household-building-card footer span').first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(10);
   await page.getByRole('button', { name: '동 다시 선택' }).click();
   await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
   await expect(page.locator('[data-choose-building="105"]')).toHaveClass(/is-selected/);
@@ -54,8 +63,14 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   const household = page.locator('.household-cell[data-building="105"][data-floor="25"][data-line="1"]');
   await household.click();
   await expect(household).toHaveClass(/is-selected/);
-  await expect(page.locator('#household-selection-summary')).toHaveText('105동 2501호 · 51A · 남동향');
+  await expect(page.locator('#household-nickname-dialog')).toBeVisible();
+  await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeDisabled();
+  await page.getByPlaceholder('닉네임 입력').fill('돌범이웃');
+  await expect(page.locator('#household-selection-summary')).toHaveText('105동 2501호 · 25층 · 51A · 돌범이웃 · 남동향');
   await expect(page.locator('#household-selection-summary')).not.toContainText('A형');
+  await page.getByRole('button', { name: '인증 확인' }).click();
+  await expect(page.locator('#household-nickname-dialog')).toBeHidden();
+  await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeEnabled();
   await page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' }).click();
   await expect(page).toHaveURL(/map=bundang-first-village-51a-prototype/);
   await expect(page).toHaveURL(/variant=A/);

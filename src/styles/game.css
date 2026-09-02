@@ -2361,6 +2361,27 @@ button.household-cell:focus-visible { z-index: 2; outline: 2px solid #183d62; ou
 }
 .household-overview-shell { padding-bottom: 0; }
 .household-selector-shell [hidden] { display: none !important; }
+.household-topbar { grid-template-columns: minmax(205px, 1fr) auto minmax(300px, 1fr); }
+.household-header-actions { justify-self: end; display: flex; align-items: center; gap: 7px; }
+.household-header-action {
+  min-height: 34px;
+  padding: 7px 10px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: #9db0ad;
+  background: rgba(15, 31, 36, .7);
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.household-header-action small { display: none; font-size: 9px; font-weight: 800; }
+.household-header-action:hover { border-color: rgba(92, 211, 189, .34); color: #e0efeb; background: rgba(92, 211, 189, .07); }
+.household-header-actions .build-chip { min-width: 148px; }
 .household-selector-main {
   width: min(1040px, 100%);
   margin: 0 auto;
@@ -2441,15 +2462,15 @@ button.household-cell:focus-visible { z-index: 2; outline: 2px solid #183d62; ou
 .household-legend .is-pilotis { color: #83928f; background: rgba(137, 155, 151, .07); }
 .household-legend .is-pilotis i { color: #071116; }
 
-.household-wizard-progress { margin: 0 0 15px; display: grid; grid-template-columns: auto minmax(28px, 84px) auto; align-items: center; justify-content: start; gap: 8px; }
-.household-wizard-progress span { display: inline-flex; align-items: center; gap: 7px; color: #667a77; font-size: 9px; }
-.household-wizard-progress span i { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: #7d918e; background: rgba(255, 255, 255, .025); font: 800 8px ui-monospace, monospace; font-style: normal; }
-.household-wizard-progress span b { font-size: 9px; }
+.household-wizard-progress { margin: 0 0 17px; display: grid; grid-template-columns: auto minmax(36px, 100px) auto; align-items: center; justify-content: start; gap: 10px; }
+.household-wizard-progress span { display: inline-flex; align-items: center; gap: 8px; color: #667a77; font-size: 10px; line-height: 1; }
+.household-wizard-progress span i { width: 30px; height: 30px; position: relative; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: #7d918e; background: rgba(255, 255, 255, .025); font: 800 10px/1 ui-monospace, monospace; font-style: normal; }
+.household-wizard-progress span b { font-size: 10px; line-height: 1; }
 .household-wizard-progress em { height: 1px; background: var(--line); }
 .household-wizard-progress span.is-current { color: #c9e5df; }
 .household-wizard-progress span.is-current i { border-color: rgba(92, 211, 189, .65); color: #061411; background: var(--mint); box-shadow: 0 0 0 3px rgba(92, 211, 189, .08), 0 0 12px rgba(92, 211, 189, .25); }
 .household-wizard-progress span.is-complete i { border-color: rgba(92, 211, 189, .3); color: transparent; background: rgba(92, 211, 189, .08); }
-.household-wizard-progress span.is-complete i::after { content: '✓'; color: var(--mint); font-size: 11px; }
+.household-wizard-progress span.is-complete i::after { content: '✓'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--mint); font-size: 14px; line-height: 1; }
 
 .household-building-picker-panel {
   max-width: 960px;
@@ -2485,7 +2506,7 @@ button.household-cell:focus-visible { z-index: 2; outline: 2px solid #183d62; ou
 .household-building-choice.is-selected .household-building-number small { color: #afeadd; }
 
 .household-building-detail {
-  max-width: 860px;
+  max-width: 660px;
   margin: 0 auto 34px;
   padding: 18px;
   display: grid;
@@ -2499,14 +2520,16 @@ button.household-cell:focus-visible { z-index: 2; outline: 2px solid #183d62; ou
 .household-building-back { width: max-content; min-height: 32px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 5px; color: #9eb1ad; background: rgba(4, 13, 17, .44); font-size: 9px; font-weight: 800; cursor: pointer; }
 .household-building-back:hover { border-color: rgba(92, 211, 189, .35); color: var(--mint-bright); }
 .household-selected-building { padding: 6px 10px; border: 1px solid rgba(92, 211, 189, .3); border-radius: 999px; color: #a9eadc; background: rgba(92, 211, 189, .07); font-size: 9px; font-weight: 850; }
-.household-building-row.is-single { --unit-cell-height: 20px; width: 100%; margin: 0 auto; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; padding: 16px; border-radius: 8px; box-shadow: none; background: rgba(4, 14, 18, .5); }
+.household-building-row.is-single { --unit-cell-height: 28px; --single-cell-width: 58px; width: max-content; max-width: 100%; margin: 0 auto; grid-template-columns: 30px auto; gap: 9px; padding: 14px; border-radius: 12px; box-shadow: none; background: rgba(4, 14, 18, .5); }
 .household-building-row.is-single .household-floor-rail,
-.household-building-row.is-single .household-building-card { grid-template-rows: 40px auto 27px; }
-.household-building-row.is-single .household-cell { margin: 1px; border-radius: 3px; font-size: 11.5px; }
-.household-building-row.is-single .household-floor-rail > div span { font-size: 9px; }
+.household-building-row.is-single .household-building-card { grid-template-rows: 42px auto 32px; }
+.household-building-row.is-single .household-unit-grid,
+.household-building-row.is-single .household-building-card footer { grid-template-columns: repeat(var(--line-count), var(--single-cell-width)); }
+.household-building-row.is-single .household-cell { margin: 2px; padding: 3px 2px; border-radius: 6px; font-size: 12px; }
+.household-building-row.is-single .household-floor-rail > div span { font-size: 9.5px; }
 .household-building-row.is-single .household-building-card header b { font-size: 17px; }
 .household-building-row.is-single .household-building-card header small { margin-top: 2px; font-size: 8px; }
-.household-building-row.is-single .household-building-card footer span { padding: 4px 2px; font-size: 8px; }
+.household-building-row.is-single .household-building-card footer span { padding: 6px 2px; border-radius: 5px; font-size: 10.5px; }
 
 .household-building-rows { display: grid; gap: 12px; }
 .household-building-row {
@@ -2553,6 +2576,30 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 .household-building-card footer { min-width: 0; display: grid; grid-template-columns: repeat(var(--line-count), minmax(0, 1fr)); gap: 2px; align-items: end; }
 .household-building-card footer span { min-width: 0; padding: 3px 1px; overflow: hidden; border-radius: 2px; color: #fff; font: 800 clamp(5px, .65vw, 8px) ui-monospace, monospace; text-align: center; white-space: nowrap; }
 
+.household-nickname-dialog {
+  width: min(460px, calc(100vw - 24px));
+  padding: 0;
+  border: 1px solid rgba(92, 211, 189, .28);
+  border-radius: 13px;
+  color: var(--ink);
+  background: #0b171c;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .62), 0 0 0 1px rgba(255, 255, 255, .018) inset;
+}
+.household-nickname-dialog::backdrop { background: rgba(0, 8, 12, .76); backdrop-filter: blur(7px); }
+.household-nickname-dialog form { padding: 26px; position: relative; }
+.household-nickname-dialog .dialog-close { width: 30px; height: 30px; position: absolute; right: 14px; top: 14px; border: 1px solid var(--line); border-radius: 50%; color: #8ba19d; background: rgba(255, 255, 255, .03); cursor: pointer; }
+.household-nickname-dialog .eyebrow { margin: 0 0 5px; color: var(--mint); font-size: 8px; font-weight: 850; letter-spacing: .16em; }
+.household-nickname-dialog h2 { margin: 0; font-size: 22px; letter-spacing: -.035em; }
+.household-nickname-dialog form > p:not(.eyebrow) { margin: 8px 0 17px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.household-nickname-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 7px; }
+.household-nickname-controls label { min-width: 0; display: grid; gap: 5px; }
+.household-nickname-controls label span { color: #819591; font-size: 8px; font-weight: 750; }
+.household-nickname-controls input { width: 100%; height: 40px; padding: 0 12px; border: 1px solid rgba(151, 193, 187, .2); border-radius: 6px; color: #e9f5f2; background: rgba(4, 13, 17, .72); font-size: 13px; outline: none; }
+.household-nickname-controls input:focus { border-color: rgba(92, 211, 189, .65); box-shadow: 0 0 0 3px rgba(92, 211, 189, .08); }
+.household-nickname-controls > button { height: 40px; padding: 0 14px; border: 1px solid rgba(92, 211, 189, .5); border-radius: 6px; color: #061411; background: var(--mint); font-size: 10px; font-weight: 850; cursor: pointer; white-space: nowrap; }
+.household-nickname-controls > button:disabled { border-color: var(--line); color: #627672; background: #102328; cursor: default; }
+.household-nickname-dialog output { min-height: 16px; margin-top: 7px; display: block; color: #8bcdbf; font-size: 9px; }
+
 .household-selection-dock {
   min-height: 72px;
   padding: 10px clamp(12px, 4vw, 48px);
@@ -2576,6 +2623,10 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 .household-selection-dock button:hover:not(:disabled) { background: var(--mint-bright); }
 .household-selection-dock button:disabled { border-color: var(--line); color: #657975; background: #102328; cursor: default; }
 
+@media (max-width: 1050px) {
+  .household-topbar { grid-template-columns: minmax(0, 1fr) auto; }
+}
+
 @media (max-width: 899px) {
   .household-building-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .household-building-choice { min-height: 64px; padding: 11px 8px; border-radius: 7px; }
@@ -2583,6 +2634,12 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 }
 
 @media (max-width: 719px) {
+  .household-topbar { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .household-header-actions { gap: 5px; }
+  .household-header-actions .build-chip { display: none; }
+  .household-header-action { min-width: 42px; min-height: 32px; padding: 6px 8px; }
+  .household-header-action span { display: none; }
+  .household-header-action small { display: block; }
   .household-selector-shell { padding-bottom: 108px; }
   .household-overview-shell { padding-bottom: 0; }
   .household-selector-main { padding: 14px 12px 28px; }
@@ -2592,26 +2649,31 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
   .household-selector-tools { justify-content: flex-start; }
   .household-selector-tools button,
   .household-selector-tools .selector-overview-link { min-height: 32px; max-width: none; padding: 7px 9px; font-size: 9px; }
-  .household-wizard-progress { margin-bottom: 13px; }
+  .household-wizard-progress { margin-bottom: 14px; grid-template-columns: auto minmax(30px, 70px) auto; gap: 8px; }
+  .household-wizard-progress span i { width: 28px; height: 28px; }
+  .household-wizard-progress span b { font-size: 9.5px; }
   .household-building-picker-panel { padding: 12px; border-radius: 8px; }
   .household-building-picker { gap: 8px; }
   .household-building-choice { min-height: 62px; padding: 10px 6px; }
   .household-building-number small { font-size: 9px; }
-  .household-building-detail { margin-bottom: 28px; padding: 12px; gap: 11px; border-radius: 8px; }
+  .household-building-detail { max-width: 380px; margin-bottom: 28px; padding: 12px; gap: 11px; border-radius: 8px; }
   .household-building-detail-head { align-items: center; }
   .household-building-back { min-height: 32px; padding: 7px 9px; font-size: 9px; }
   .household-selected-building { display: grid; place-items: center; padding: 6px 9px; font-size: 9px; }
   .household-building-rows { gap: 8px; }
   .household-building-row { padding-inline: 4px; border-radius: 7px; gap: 2px; }
   .household-cell span { display: none; }
-  .household-building-row.is-single { --unit-cell-height: 20px; grid-template-columns: 27px minmax(0, 1fr); padding: 11px 7px; gap: 5px; }
+  .household-building-row.is-single { --unit-cell-height: 26px; --single-cell-width: 44px; grid-template-columns: 25px auto; padding: 10px 6px; gap: 5px; border-radius: 10px; }
   .household-building-row.is-single .household-floor-rail,
-  .household-building-row.is-single .household-building-card { grid-template-rows: 36px auto 25px; }
+  .household-building-row.is-single .household-building-card { grid-template-rows: 38px auto 29px; }
   .household-building-row.is-single .household-cell span { display: block; }
-  .household-building-row.is-single .household-cell { margin: 1px; font-size: 10px; }
-  .household-building-row.is-single .household-floor-rail > div span { font-size: 8px; }
+  .household-building-row.is-single .household-cell { margin: 1px; padding: 3px 1px; border-radius: 5px; font-size: 10.5px; }
+  .household-building-row.is-single .household-floor-rail > div span { font-size: 8.5px; }
   .household-building-row.is-single .household-building-card header b { font-size: 15px; }
-  .household-building-row.is-single .household-building-card footer span { font-size: 7px; }
+  .household-building-row.is-single .household-building-card footer span { padding: 5px 1px; font-size: 9.5px; }
+  .household-nickname-dialog form { padding: 22px 18px 18px; }
+  .household-nickname-dialog h2 { font-size: 20px; }
+  .household-nickname-controls input { font-size: 12px; }
   .household-selection-dock { min-height: 96px; padding: 9px 12px; align-items: stretch; flex-direction: column; gap: 6px; }
   .household-selection-dock > div { min-width: 0; }
   .household-selection-dock button { width: 100%; min-height: 34px; padding-block: 8px; }

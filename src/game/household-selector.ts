@@ -70,7 +70,7 @@ function buildingPicker(): string {
   }).join('');
 }
 
-function storageDialogMarkup(): string {
+export function householdStorageDialogMarkup(): string {
   return `<dialog id="selector-storage-dialog" class="storage-dialog">
     <form method="dialog">
       <button class="dialog-close" value="close" aria-label="닫기">×</button>
@@ -90,7 +90,20 @@ function storageDialogMarkup(): string {
   </dialog>`;
 }
 
-export function householdShellHeader(exportId: string, fallback = false): string {
+export function bindHouseholdStorageControls(mount: HTMLElement): void {
+  const storageDialog = mount.querySelector<HTMLDialogElement>('#selector-storage-dialog');
+  const storageStatus = mount.querySelector<HTMLOutputElement>('#selector-storage-status');
+  mount.querySelector<HTMLButtonElement>('#selector-open-storage')?.addEventListener('click', () => storageDialog?.showModal());
+  mount.querySelector<HTMLButtonElement>('#selector-reset-all')?.addEventListener('click', () => {
+    if (!window.confirm('Bunfirvil의 모든 평형 옵션·가구, 검수 메모, 건축 기록과 핫바를 초기화할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+    const result = resetAllBunfirvilLocalData();
+    if (storageStatus) storageStatus.textContent = `${result.removedKeys.length}개의 Bunfirvil 저장 항목을 초기화했습니다.`;
+  });
+}
+
+export function householdShellHeader(exportId: string, fallback = false, overview = false): string {
+  const householdHref = overview ? resolveProjectUrl('') : resolveProjectUrl('households/');
+  const householdLabel = overview ? '세대 선택' : '전체 동·호 현황';
   return `<header class="topbar household-topbar">
     <a class="brand" href="${resolveProjectUrl('')}" aria-label="Bunfirvil 렌더 랩 홈">
       <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -103,9 +116,13 @@ export function householdShellHeader(exportId: string, fallback = false): string
       <a href="${resolveProjectUrl('interior-admin/')}">인테리어 관리</a>
       <a href="${resolveProjectUrl('guides/')}">가이드</a>
     </nav>
-    <div class="build-chip" title="현재 정적 자산 스냅샷">
-      <span class="status-dot ${fallback ? 'is-amber' : ''}"></span>
-      <span><small>STATIC BUILD</small><b>${escapeHtml(exportId)}</b></span>
+    <div class="household-header-actions" aria-label="세대 메뉴">
+      <a class="household-header-action" href="${householdHref}" aria-label="${householdLabel}"><span>${householdLabel}</span><small aria-hidden="true">${overview ? '선택' : '현황'}</small></a>
+      <button type="button" id="selector-open-storage" class="household-header-action" aria-label="저장 관리"><span>저장 관리</span><small aria-hidden="true">저장</small></button>
+      <div class="build-chip" title="현재 정적 자산 스냅샷">
+        <span class="status-dot ${fallback ? 'is-amber' : ''}"></span>
+        <span><small>STATIC BUILD</small><b>${escapeHtml(exportId)}</b></span>
+      </div>
     </div>
   </header>
   <div class="serverless-banner" role="status">
@@ -115,6 +132,27 @@ export function householdShellHeader(exportId: string, fallback = false): string
     <i></i>
     <span>데이터는 이 브라우저에만 저장됩니다.</span>
   </div>`;
+}
+
+function nicknameDialogMarkup(): string {
+  return `<dialog id="household-nickname-dialog" class="household-nickname-dialog">
+    <form method="dialog">
+      <button class="dialog-close" value="close" aria-label="닉네임 입력 닫기">×</button>
+      <p class="eyebrow">HOUSEHOLD NICKNAME</p>
+      <h2>쇼케이스 닉네임 입력</h2>
+      <p>선택한 세대에서 사용할 닉네임을 입력해 주세요. 현재 서버리스 데모에서는 입력 형식만 확인합니다.</p>
+      <div class="household-nickname-controls">
+        <label><span>닉네임</span><input id="household-nickname" type="text" maxlength="20" autocomplete="off" placeholder="닉네임 입력" /></label>
+        <button type="button" id="household-verify-nickname" disabled>인증 확인</button>
+      </div>
+      <output id="household-nickname-status" aria-live="polite"></output>
+    </form>
+  </dialog>`;
+}
+
+async function verifyHouseholdNickname(nickname: string): Promise<boolean> {
+  await new Promise((resolve) => window.setTimeout(resolve, 160));
+  return nickname.trim().length > 0;
 }
 
 export function waitForHouseholdSelection(
@@ -138,10 +176,6 @@ export function waitForHouseholdSelection(
             <h1 id="household-selector-title">분당퍼스트빌리지 동 선택</h1>
             <p id="household-selector-description">먼저 확인할 동을 선택해 주세요. 다음 화면에서 해당 동의 세대를 선택할 수 있습니다.</p>
           </div>
-          <div class="household-selector-tools" aria-label="세대 선택 도구">
-            <a class="selector-overview-link" href="${resolveProjectUrl('households/')}">전체 동·호 현황</a>
-            <button type="button" id="selector-open-storage">저장 관리</button>
-          </div>
           <div class="household-legend" id="household-selector-legend" aria-label="평형 색상 범례" hidden>
             <span class="unit-51a"><i></i>51A</span><span class="unit-55a"><i></i>55A</span><span class="unit-55b"><i></i>55B</span><span class="unit-59a"><i></i>59A</span><span class="is-pilotis"><i>×</i>필로티</span>
           </div>
@@ -161,7 +195,8 @@ export function waitForHouseholdSelection(
         <div><small>선택 세대</small><b id="household-selection-summary">동·층·호를 선택해 주세요.</b></div>
         <button type="button" id="household-enter" disabled>선택한 세대 쇼케이스 보기</button>
       </aside>
-      ${storageDialogMarkup()}
+      ${householdStorageDialogMarkup()}
+      ${nicknameDialogMarkup()}
     </div>`;
 
     const picker = mount.querySelector<HTMLElement>('#household-building-picker');
@@ -176,8 +211,14 @@ export function waitForHouseholdSelection(
     const dock = mount.querySelector<HTMLElement>('#household-selection-dock');
     const summary = mount.querySelector<HTMLElement>('#household-selection-summary');
     const enter = mount.querySelector<HTMLButtonElement>('#household-enter');
-    if (!picker || !detail || !rows || !title || !description || !legend || !buildingStep || !unitStep || !selectedBuilding || !dock || !summary || !enter) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
+    const nicknameDialog = mount.querySelector<HTMLDialogElement>('#household-nickname-dialog');
+    const nicknameInput = mount.querySelector<HTMLInputElement>('#household-nickname');
+    const verifyNickname = mount.querySelector<HTMLButtonElement>('#household-verify-nickname');
+    const nicknameStatus = mount.querySelector<HTMLOutputElement>('#household-nickname-status');
+    if (!picker || !detail || !rows || !title || !description || !legend || !buildingStep || !unitStep || !selectedBuilding || !dock || !summary || !enter || !nicknameDialog || !nicknameInput || !verifyNickname || !nicknameStatus) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
     let chosenBuildingId: string | null = null;
+    let nickname = '';
+    let nicknameVerified = false;
 
     const paintBuildingChoice = (): void => {
       picker.querySelectorAll<HTMLButtonElement>('[data-choose-building]').forEach((button) => {
@@ -192,6 +233,31 @@ export function waitForHouseholdSelection(
       requestAnimationFrame(() => panel.classList.add('is-entering'));
     };
 
+    const updateSelectionSummary = (): void => {
+      if (!selected) {
+        summary.textContent = '층·호를 선택해 주세요.';
+        enter.disabled = true;
+        return;
+      }
+      const facing = selected.facing === 'south-east' ? '남동향' : '남서향';
+      const nicknameText = nickname.trim() ? ` · ${nickname.trim()}` : '';
+      summary.textContent = `${selected.buildingId}동 ${selected.householdNumber}호 · ${selected.floor}층 · ${selected.unitType}${nicknameText} · ${facing}`;
+      enter.disabled = !nicknameVerified;
+    };
+
+    const resetNicknameVerification = (clearNickname: boolean): void => {
+      nicknameVerified = false;
+      if (clearNickname) {
+        nickname = '';
+        nicknameInput.value = '';
+      }
+      verifyNickname.textContent = '인증 확인';
+      verifyNickname.disabled = nickname.trim().length === 0;
+      verifyNickname.removeAttribute('aria-busy');
+      nicknameStatus.textContent = '';
+      updateSelectionSummary();
+    };
+
     const paintSelection = (): void => {
       mount.querySelectorAll<HTMLButtonElement>('.household-cell[data-building]').forEach((button) => {
         const active = Boolean(selected
@@ -202,13 +268,13 @@ export function waitForHouseholdSelection(
         button.setAttribute('aria-pressed', String(active));
       });
       if (!selected) return;
-      const facing = selected.facing === 'south-east' ? '남동향' : '남서향';
-      summary.textContent = `${selected.buildingId}동 ${selected.householdNumber}호 · ${selected.unitType} · ${facing}`;
-      enter.disabled = false;
+      updateSelectionSummary();
     };
 
     const showBuildingPicker = (): void => {
       selected = null;
+      if (nicknameDialog.open) nicknameDialog.close();
+      resetNicknameVerification(true);
       picker.hidden = false;
       detail.hidden = true;
       dock.hidden = true;
@@ -230,11 +296,13 @@ export function waitForHouseholdSelection(
       if (!building) return;
       chosenBuildingId = buildingId;
       selected = null;
+      if (nicknameDialog.open) nicknameDialog.close();
+      resetNicknameVerification(true);
       picker.hidden = true;
       detail.hidden = false;
       dock.hidden = false;
       legend.hidden = false;
-      rows.innerHTML = `<section class="household-building-row is-single" style="--building-count:1" aria-label="${building.buildingId}동 세대">${floorRail()}${householdBuildingCard(building)}</section>`;
+      rows.innerHTML = `<section class="household-building-row is-single" data-line-count="${building.lines.length}" style="--building-count:1" aria-label="${building.buildingId}동 세대">${floorRail()}${householdBuildingCard(building)}</section>`;
       title.textContent = `${building.buildingId}동 세대 선택`;
       description.textContent = '층과 호를 선택하면 평형과 향을 확인한 뒤 쇼케이스로 이동할 수 있습니다.';
       selectedBuilding.textContent = `${building.buildingId}동 선택됨`;
@@ -245,8 +313,7 @@ export function waitForHouseholdSelection(
       unitStep.setAttribute('aria-current', 'step');
       paintBuildingChoice();
       animatePanel(detail);
-      summary.textContent = '층·호를 선택해 주세요.';
-      enter.disabled = true;
+      updateSelectionSummary();
       if (pushHistory) history.pushState({ householdBuilding: buildingId }, '', `#building=${buildingId}`);
       requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
     };
@@ -265,7 +332,37 @@ export function waitForHouseholdSelection(
         Number(button.dataset.line),
         catalog.maps,
       );
+      resetNicknameVerification(false);
       paintSelection();
+      if (!nicknameDialog.open) nicknameDialog.showModal();
+      requestAnimationFrame(() => nicknameInput.focus());
+    });
+
+    nicknameInput.addEventListener('input', () => {
+      nickname = nicknameInput.value;
+      nicknameVerified = false;
+      verifyNickname.textContent = '인증 확인';
+      verifyNickname.disabled = nickname.trim().length === 0;
+      verifyNickname.removeAttribute('aria-busy');
+      nicknameStatus.textContent = nickname.trim() ? '인증 확인이 필요합니다.' : '';
+      updateSelectionSummary();
+    });
+
+    verifyNickname.addEventListener('click', async () => {
+      const candidate = nickname.trim();
+      if (!candidate) return;
+      verifyNickname.disabled = true;
+      verifyNickname.setAttribute('aria-busy', 'true');
+      nicknameStatus.textContent = '닉네임을 확인하고 있습니다.';
+      const verified = await verifyHouseholdNickname(candidate);
+      if (nickname.trim() !== candidate || !selected) return;
+      nicknameVerified = verified;
+      verifyNickname.removeAttribute('aria-busy');
+      verifyNickname.textContent = verified ? '인증 완료' : '다시 확인';
+      verifyNickname.disabled = false;
+      nicknameStatus.textContent = verified ? '입력 확인이 완료되었습니다.' : '닉네임을 다시 확인해 주세요.';
+      updateSelectionSummary();
+      if (verified) nicknameDialog.close();
     });
 
     const onPopState = (): void => {
@@ -280,19 +377,12 @@ export function waitForHouseholdSelection(
     });
 
     enter.addEventListener('click', () => {
-      if (!selected) return;
+      if (!selected || !nicknameVerified) return;
       window.removeEventListener('popstate', onPopState);
       resolve(selected);
     });
 
-    const storageDialog = mount.querySelector<HTMLDialogElement>('#selector-storage-dialog');
-    const storageStatus = mount.querySelector<HTMLOutputElement>('#selector-storage-status');
-    mount.querySelector<HTMLButtonElement>('#selector-open-storage')?.addEventListener('click', () => storageDialog?.showModal());
-    mount.querySelector<HTMLButtonElement>('#selector-reset-all')?.addEventListener('click', () => {
-      if (!window.confirm('Bunfirvil의 모든 평형 옵션·가구, 검수 메모, 건축 기록과 핫바를 초기화할까요? 이 작업은 되돌릴 수 없습니다.')) return;
-      const result = resetAllBunfirvilLocalData();
-      if (storageStatus) storageStatus.textContent = `${result.removedKeys.length}개의 Bunfirvil 저장 항목을 초기화했습니다.`;
-    });
+    bindHouseholdStorageControls(mount);
 
     const initialBuilding = new URLSearchParams(window.location.hash.slice(1)).get('building');
     if (initialBuilding) showBuilding(initialBuilding, false);
