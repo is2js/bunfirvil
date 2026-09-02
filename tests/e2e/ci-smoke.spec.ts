@@ -110,7 +110,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(household).toHaveClass(/is-selected/);
   await expect(page.locator('#household-building-detail')).toBeHidden();
   await expect(page.locator('#household-nickname-stage')).toBeVisible();
-  await expect(page.getByRole('heading', { name: '닉네임 입력' })).toHaveCount(1);
+  await expect(page.locator('#household-nickname-stage').getByRole('heading', { name: '닉네임 입력' })).toHaveCount(1);
   await expect(page.locator('#household-step-nickname')).toHaveAttribute('aria-current', 'step');
   await page.getByRole('button', { name: '세대 다시 선택' }).click();
   await expect(page.getByRole('heading', { name: '105동 세대 선택' })).toBeVisible();
