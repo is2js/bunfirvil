@@ -21,13 +21,15 @@ const assets = [{ assetId: 'sofa', displayNameKo: '소파', category: '거실', 
 describe('read-only share', () => {
   it('round-trips only the allowed showcase state', () => {
     const state = createBundangReadOnlyShare({
+      sharedByNickname: '돌범',
       mapId: catalog.maps[0].id, unitType: '55B', planVariant: 'A', livingFacing: 'south-west', selectedOptionIds: ['option-1'],
       furniture: [{ id: 'local-private', assetId: 'sofa', positionMeters: [2.345, 4.321], yawDeg: 90, mirrored: true, materialVariantId: 'oak', privateNote: 'drop-me' }],
     });
     const token = encodeBundangReadOnlyShare(state);
     const restored = validateBundangReadOnlyShare(decodeBundangReadOnlyShare(token), catalog, assets);
     expect(restored.furniture[0]).toEqual({ assetId: 'sofa', positionMeters: [2.35, 4.32], yawDeg: 90, mirrored: true, materialVariantId: 'oak' });
-    expect(JSON.stringify(restored)).not.toMatch(/private|nickname|building|household|operator/);
+    expect(restored.sharedByNickname).toBe('돌범');
+    expect(JSON.stringify(restored)).not.toMatch(/privateNote|building|household|operator/);
     expect(sharedFurnitureProps(restored, assets)[0].id).toBe('local-shared-1');
     const url = bundangReadOnlyShareUrl('https://is2js.github.io/bunfirvil/?actor=200', restored);
     expect(url).not.toContain('actor=');
@@ -35,8 +37,11 @@ describe('read-only share', () => {
   });
 
   it('rejects incompatible or malformed state', () => {
-    const invalid = { schemaVersion: 1, mapId: catalog.maps[0].id, unitType: '55B', planVariant: 'A', livingFacing: 'south-west', selectedOptionIds: ['unknown'], furniture: [] };
+    const invalid = { schemaVersion: 1, sharedByNickname: '돌범', mapId: catalog.maps[0].id, unitType: '55B', planVariant: 'A', livingFacing: 'south-west', selectedOptionIds: ['unknown'], furniture: [] };
     expect(() => validateBundangReadOnlyShare(invalid, catalog, assets)).toThrow(BundangShareError);
+    expect(() => createBundangReadOnlyShare({
+      sharedByNickname: '', mapId: catalog.maps[0].id, unitType: '55B', planVariant: 'A', livingFacing: 'south-west', selectedOptionIds: [], furniture: [],
+    })).toThrow(BundangShareError);
     expect(() => decodeBundangReadOnlyShare('%%%')).toThrow(BundangShareError);
   });
 });

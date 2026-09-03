@@ -110,8 +110,13 @@ export function bindHouseholdStorageControls(mount: HTMLElement): void {
 }
 
 export interface HouseholdSelectionResultV1 {
-  selection: HouseholdSelectionV1;
+  selection: HouseholdSelectionV1 | null;
   role: HouseholdVerificationRole;
+  nickname: string;
+}
+
+export interface HouseholdShareAuthenticationV1 {
+  unitType: string;
 }
 
 export function householdShellHeader(exportId: string, fallback = false, overview = false): string {
@@ -153,21 +158,22 @@ export function waitForHouseholdSelection(
   catalog: ShowcaseCatalog,
   fallback: boolean,
   verificationConfig: HouseholdVerificationConfigV1,
+  shareAuthentication: HouseholdShareAuthenticationV1 | null = null,
 ): Promise<HouseholdSelectionResultV1> {
   return new Promise((resolve) => {
     let selected: HouseholdSelectionV1 | null = null;
-    mount.innerHTML = `<div class="household-selector-shell app-shell">
+    mount.innerHTML = `<div class="household-selector-shell app-shell ${shareAuthentication ? 'is-share-authentication' : ''}">
       ${householdShellHeader(catalog.exportId, fallback)}
       <main class="household-selector-main">
         <div class="household-wizard-shell">
         <section class="household-selector-intro" id="household-selector-intro">
           <div class="household-selector-intro-copy">
-            <nav class="household-wizard-progress" aria-label="세대 선택 단계">
+            <nav class="household-wizard-progress ${shareAuthentication ? 'is-share-progress' : ''}" aria-label="${shareAuthentication ? '공유 놀이터 인증 단계' : '세대 선택 단계'}">
               <button type="button" id="household-step-building" class="is-current" aria-current="step"><i>1</i><b>동 선택</b></button>
               <em aria-hidden="true"></em>
-              <button type="button" id="household-step-unit" disabled><i>2</i><b>세대 선택</b></button>
-              <em aria-hidden="true"></em>
-              <button type="button" id="household-step-nickname" disabled><i>3</i><b>닉네임 입력</b></button>
+              ${shareAuthentication
+                ? '<button type="button" id="household-step-nickname" disabled><i>2</i><b>닉네임 입력</b></button>'
+                : '<button type="button" id="household-step-unit" disabled><i>2</i><b>세대 선택</b></button><em aria-hidden="true"></em><button type="button" id="household-step-nickname" disabled><i>3</i><b>닉네임 입력</b></button>'}
             </nav>
             <p class="eyebrow">BUNDANG FIRST VILLAGE</p>
             <h1 id="household-selector-title">분당퍼스트빌리지 동 선택</h1>
@@ -189,7 +195,7 @@ export function waitForHouseholdSelection(
         </section>
         <section id="household-nickname-stage" class="household-nickname-stage" hidden>
           <header class="household-nickname-stage-head">
-            <button type="button" id="household-unit-back" class="household-building-back">← 세대 다시 선택</button>
+            <button type="button" id="household-unit-back" class="household-building-back">← ${shareAuthentication ? '동 다시 선택' : '세대 다시 선택'}</button>
             <span id="household-nickname-building" class="household-selected-building"></span>
           </header>
           <div class="household-nickname-card">
@@ -207,8 +213,8 @@ export function waitForHouseholdSelection(
         </div>
       </main>
       <aside class="household-selection-dock" id="household-selection-dock" aria-live="polite" hidden>
-        <div><small>선택 세대</small><b id="household-selection-summary">동·층·호를 선택해 주세요.</b></div>
-        <button type="button" id="household-enter" disabled>놀이터 입장</button>
+        <div><small>${shareAuthentication ? '공유 놀이터 인증' : '선택 세대'}</small><b id="household-selection-summary">${shareAuthentication ? '동과 닉네임을 확인해 주세요.' : '동·층·호를 선택해 주세요.'}</b></div>
+        <button type="button" id="household-enter" disabled>${shareAuthentication ? '공유 놀이터 열람' : '놀이터 입장'}</button>
       </aside>
       ${householdStorageDialogMarkup()}
     </div>`;
@@ -232,7 +238,7 @@ export function waitForHouseholdSelection(
     const verifyNickname = mount.querySelector<HTMLButtonElement>('#household-verify-nickname');
     const requestVerification = mount.querySelector<HTMLButtonElement>('#household-request-verification');
     const nicknameStatus = mount.querySelector<HTMLOutputElement>('#household-nickname-status');
-    if (!picker || !detail || !nicknameStage || !rows || !title || !description || !legend || !buildingStep || !unitStep || !nicknameStep || !selectedBuilding || !nicknameBuilding || !dock || !summary || !enter || !nicknameInput || !verifyNickname || !requestVerification || !nicknameStatus) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
+    if (!picker || !detail || !nicknameStage || !rows || !title || !description || !legend || !buildingStep || (!shareAuthentication && !unitStep) || !nicknameStep || !selectedBuilding || !nicknameBuilding || !dock || !summary || !enter || !nicknameInput || !verifyNickname || !requestVerification || !nicknameStatus) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
     let chosenBuildingId: string | null = null;
     let nickname = '';
     let nicknameVerified = false;
@@ -265,6 +271,14 @@ export function waitForHouseholdSelection(
     };
 
     const updateSelectionSummary = (): void => {
+      if (shareAuthentication) {
+        const nicknameText = nickname.trim() ? ` · ${nickname.trim()}` : '';
+        summary.textContent = chosenBuildingId
+          ? `${chosenBuildingId}동 · ${shareAuthentication.unitType}${nicknameText}`
+          : '동과 닉네임을 확인해 주세요.';
+        enter.disabled = !nicknameVerified;
+        return;
+      }
       if (!selected) {
         summary.textContent = '층·호를 선택해 주세요.';
         enter.disabled = true;
@@ -320,14 +334,16 @@ export function waitForHouseholdSelection(
       dock.hidden = true;
       legend.hidden = true;
       title.textContent = '분당퍼스트빌리지 동 선택';
-      description.textContent = '먼저 확인할 동을 선택해 주세요. 다음 화면에서 해당 동의 세대를 선택할 수 있습니다.';
+      description.textContent = shareAuthentication
+        ? '공유 놀이터 열람 인증에 사용할 동을 선택해 주세요. 세대 선택은 필요하지 않습니다.'
+        : '먼저 확인할 동을 선택해 주세요. 다음 화면에서 해당 동의 세대를 선택할 수 있습니다.';
       buildingStep.classList.add('is-current');
       buildingStep.classList.toggle('is-complete', Boolean(chosenBuildingId));
       buildingStep.setAttribute('aria-current', 'step');
-      unitStep.classList.remove('is-current');
-      unitStep.classList.remove('is-complete');
-      unitStep.removeAttribute('aria-current');
-      unitStep.disabled = !chosenBuildingId;
+      unitStep?.classList.remove('is-current');
+      unitStep?.classList.remove('is-complete');
+      unitStep?.removeAttribute('aria-current');
+      if (unitStep) unitStep.disabled = !chosenBuildingId;
       nicknameStep.classList.remove('is-current', 'is-complete');
       nicknameStep.removeAttribute('aria-current');
       nicknameStep.disabled = true;
@@ -342,6 +358,11 @@ export function waitForHouseholdSelection(
       chosenBuildingId = buildingId;
       selected = null;
       resetNicknameVerification(true);
+      if (shareAuthentication) {
+        paintBuildingChoice();
+        showNicknameStage();
+        return;
+      }
       picker.hidden = true;
       detail.hidden = false;
       nicknameStage.hidden = true;
@@ -354,10 +375,10 @@ export function waitForHouseholdSelection(
       buildingStep.classList.remove('is-current');
       buildingStep.classList.add('is-complete');
       buildingStep.removeAttribute('aria-current');
-      unitStep.classList.add('is-current');
-      unitStep.classList.remove('is-complete');
-      unitStep.setAttribute('aria-current', 'step');
-      unitStep.disabled = false;
+      unitStep?.classList.add('is-current');
+      unitStep?.classList.remove('is-complete');
+      unitStep?.setAttribute('aria-current', 'step');
+      if (unitStep) unitStep.disabled = false;
       nicknameStep.classList.remove('is-current', 'is-complete');
       nicknameStep.removeAttribute('aria-current');
       nicknameStep.disabled = true;
@@ -369,7 +390,7 @@ export function waitForHouseholdSelection(
     };
 
     const showNicknameStage = (): void => {
-      if (!selected || !chosenBuildingId) return;
+      if ((!selected && !shareAuthentication) || !chosenBuildingId) return;
       picker.hidden = true;
       detail.hidden = true;
       nicknameStage.hidden = false;
@@ -377,14 +398,18 @@ export function waitForHouseholdSelection(
       dock.classList.toggle('is-authenticated', nicknameVerified);
       legend.hidden = true;
       title.textContent = '닉네임 입력';
-      description.textContent = '선택한 세대에서 사용할 닉네임을 입력하고 인증을 확인해 주세요.';
-      nicknameBuilding.textContent = `${selected.buildingId}동 ${selected.householdNumber}호 선택됨`;
+      description.textContent = shareAuthentication
+        ? '동과 닉네임 인증 후 공유받은 놀이터를 읽기 전용으로 열람할 수 있습니다.'
+        : '선택한 세대에서 사용할 닉네임을 입력하고 인증을 확인해 주세요.';
+      nicknameBuilding.textContent = shareAuthentication
+        ? `${chosenBuildingId}동 선택됨 · ${shareAuthentication.unitType}`
+        : `${selected!.buildingId}동 ${selected!.householdNumber}호 선택됨`;
       buildingStep.classList.remove('is-current');
       buildingStep.classList.add('is-complete');
       buildingStep.removeAttribute('aria-current');
-      unitStep.classList.remove('is-current');
-      unitStep.classList.add('is-complete');
-      unitStep.removeAttribute('aria-current');
+      unitStep?.classList.remove('is-current');
+      unitStep?.classList.add('is-complete');
+      unitStep?.removeAttribute('aria-current');
       nicknameStep.classList.add('is-current');
       nicknameStep.classList.remove('is-complete');
       nicknameStep.setAttribute('aria-current', 'step');
@@ -399,22 +424,22 @@ export function waitForHouseholdSelection(
 
     picker.addEventListener('click', (event) => {
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-choose-building]');
-      if (button?.dataset.chooseBuilding) showBuilding(button.dataset.chooseBuilding, true);
+      if (button?.dataset.chooseBuilding) showBuilding(button.dataset.chooseBuilding, !shareAuthentication);
     });
 
     buildingStep.addEventListener('click', () => {
       if (!picker.hidden) return;
-      history.pushState({ householdStep: 'building' }, '', `${window.location.pathname}${window.location.search}`);
+      if (!shareAuthentication) history.pushState({ householdStep: 'building' }, '', `${window.location.pathname}${window.location.search}`);
       showBuildingPicker();
     });
 
-    unitStep.addEventListener('click', () => {
+    unitStep?.addEventListener('click', () => {
       if (!chosenBuildingId || !detail.hidden) return;
       showBuilding(chosenBuildingId, false);
     });
 
     nicknameStep.addEventListener('click', () => {
-      if (!selected || !nicknameStage.hidden) return;
+      if ((!selected && !shareAuthentication) || !nicknameStage.hidden) return;
       showNicknameStage();
     });
 
@@ -451,8 +476,10 @@ export function waitForHouseholdSelection(
 
     verifyNickname.addEventListener('click', async () => {
       const candidate = nickname.trim();
-      if (!candidate || !selected || !householdVerificationConfigured(verificationConfig)) return;
-      const selectedKey = `${selected.buildingId}:${selected.unitType}`;
+      const selectedBuildingId = selected?.buildingId || chosenBuildingId || '';
+      const selectedUnitType = selected?.unitType || shareAuthentication?.unitType || '';
+      if (!candidate || !selectedBuildingId || !selectedUnitType || !householdVerificationConfigured(verificationConfig)) return;
+      const selectedKey = `${selectedBuildingId}:${selectedUnitType}`;
       const attempt = ++verificationAttempt;
       verifyNickname.disabled = true;
       requestVerification.disabled = true;
@@ -460,14 +487,13 @@ export function waitForHouseholdSelection(
       nicknameStatus.textContent = '닉네임을 확인하고 있습니다.';
       try {
         const response = await verifyHousehold(verificationConfig, {
-          buildingId: selected.buildingId,
-          unitType: selected.unitType,
+          buildingId: selectedBuildingId,
+          unitType: selectedUnitType,
           nickname: candidate,
         });
         if (attempt !== verificationAttempt
           || nickname.trim() !== candidate
-          || !selected
-          || `${selected.buildingId}:${selected.unitType}` !== selectedKey) return;
+          || `${selected?.buildingId || chosenBuildingId || ''}:${selected?.unitType || shareAuthentication?.unitType || ''}` !== selectedKey) return;
         nicknameVerified = response.verified;
         verifiedRole = response.operator ? 'operator' : response.verified ? 'verified' : null;
         verifyNickname.textContent = response.verified ? '인증 완료' : '다시 확인';
@@ -497,8 +523,10 @@ export function waitForHouseholdSelection(
 
     requestVerification.addEventListener('click', async () => {
       const candidate = nickname.trim();
-      if (!candidate || !selected || !householdVerificationConfigured(verificationConfig)) return;
-      const selectedKey = `${selected.buildingId}:${selected.unitType}`;
+      const selectedBuildingId = selected?.buildingId || chosenBuildingId || '';
+      const selectedUnitType = selected?.unitType || shareAuthentication?.unitType || '';
+      if (!candidate || !selectedBuildingId || !selectedUnitType || !householdVerificationConfigured(verificationConfig)) return;
+      const selectedKey = `${selectedBuildingId}:${selectedUnitType}`;
       const attempt = ++verificationAttempt;
       verifyNickname.disabled = true;
       requestVerification.disabled = true;
@@ -506,12 +534,12 @@ export function waitForHouseholdSelection(
       nicknameStatus.textContent = '닉네임 등록을 요청하고 있습니다.';
       try {
         const response = await requestHouseholdVerification(verificationConfig, {
-          buildingId: selected.buildingId,
-          unitType: selected.unitType,
+          buildingId: selectedBuildingId,
+          unitType: selectedUnitType,
           nickname: candidate,
         });
-        if (attempt !== verificationAttempt || nickname.trim() !== candidate || !selected
-          || `${selected.buildingId}:${selected.unitType}` !== selectedKey) return;
+        if (attempt !== verificationAttempt || nickname.trim() !== candidate
+          || `${selected?.buildingId || chosenBuildingId || ''}:${selected?.unitType || shareAuthentication?.unitType || ''}` !== selectedKey) return;
         nicknameVerified = response.verified;
         verifiedRole = response.operator ? 'operator' : response.verified ? 'verified' : null;
         nicknameStatus.textContent = response.operator
@@ -542,6 +570,10 @@ export function waitForHouseholdSelection(
     });
 
     const onPopState = (): void => {
+      if (shareAuthentication) {
+        showBuildingPicker();
+        return;
+      }
       const buildingId = new URLSearchParams(window.location.hash.slice(1)).get('building');
       if (buildingId) showBuilding(buildingId, false);
       else showBuildingPicker();
@@ -552,18 +584,20 @@ export function waitForHouseholdSelection(
       else showBuildingPicker();
     });
     mount.querySelector<HTMLButtonElement>('#household-unit-back')?.addEventListener('click', () => {
-      if (chosenBuildingId) showBuilding(chosenBuildingId, false);
+      if (shareAuthentication) showBuildingPicker();
+      else if (chosenBuildingId) showBuilding(chosenBuildingId, false);
     });
 
     enter.addEventListener('click', () => {
-      if (!selected || !nicknameVerified || !verifiedRole) return;
+      if ((!selected && !shareAuthentication) || !nicknameVerified || !verifiedRole) return;
       window.removeEventListener('popstate', onPopState);
-      resolve({ selection: selected, role: verifiedRole });
+      resolve({ selection: selected, role: verifiedRole, nickname: nickname.trim() });
     });
 
     bindHouseholdStorageControls(mount);
 
     const initialBuilding = new URLSearchParams(window.location.hash.slice(1)).get('building');
     if (initialBuilding) showBuilding(initialBuilding, false);
+    else if (shareAuthentication) showBuildingPicker();
   });
 }

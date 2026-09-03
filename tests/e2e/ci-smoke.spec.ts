@@ -34,7 +34,8 @@ test('smokes household selection, deployed maps, read-only sharing, living-room 
     const request = JSON.parse(route.request().postData() || '{}') as Record<string, unknown>;
     expect(route.request().method()).toBe('POST');
     expect(route.request().headers()['content-type']).toContain('text/plain');
-    expect(request).toMatchObject({ schemaVersion: 1, action: 'verifyHousehold', buildingId: '105', unitType: '51A' });
+    expect(request).toMatchObject({ schemaVersion: 1, action: 'verifyHousehold', buildingId: '105' });
+    expect(['51A', '59A']).toContain(request.unitType);
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -150,7 +151,7 @@ test('smokes household selection, deployed maps, read-only sharing, living-room 
   expect(await page.evaluate(() => {
     const parsed = JSON.parse(sessionStorage.getItem('bunfirvil:household-verification:v1') || '{}') as Record<string, unknown>;
     return { keys: Object.keys(parsed).sort(), schemaVersion: parsed.schemaVersion, provider: parsed.provider };
-  })).toEqual({ keys: ['provider', 'role', 'schemaVersion', 'verifiedAt'], schemaVersion: 1, provider: 'google-apps-script' });
+  })).toEqual({ keys: ['nickname', 'provider', 'role', 'schemaVersion', 'verifiedAt'], schemaVersion: 1, provider: 'google-apps-script' });
 
   await page.evaluate(() => sessionStorage.removeItem('bunfirvil:household-verification:v1'));
   await page.goto('./?map=bundang-first-village-55b-prototype&actor=200&variant=B');
@@ -186,37 +187,31 @@ test('smokes household selection, deployed maps, read-only sharing, living-room 
   await page.evaluate(() => sessionStorage.removeItem('bunfirvil:household-verification:v1'));
   await page.goto(sharedUrl);
   await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
+  await expect(page.locator('#household-step-unit')).toHaveCount(0);
   await page.locator('[data-choose-building="105"]').click();
-  await page.locator('.household-cell[data-building="105"][data-floor="25"][data-line="1"]').click();
+  await expect(page.locator('#household-building-detail')).toBeHidden();
+  await expect(page.locator('#household-nickname-stage')).toBeVisible();
   await page.getByPlaceholder('닉네임 입력').fill('돌범이웃');
   await page.getByRole('button', { name: '인증 확인' }).click();
-  await page.getByRole('button', { name: '놀이터 입장' }).click();
+  await page.getByRole('button', { name: '공유 놀이터 열람' }).click();
   await expect(page.locator('#stage-loader')).toHaveClass(/is-hidden/, { timeout: 30_000 });
   await expect(page.locator('.share-readonly-banner')).toBeVisible();
-  await expect(page.locator('#open-storage-manager')).toBeDisabled();
+  await expect(page.locator('#map-title')).toHaveText('돌범이웃님의 59A타입 공유 놀이터');
+  await expect(page.locator('#map-revision')).toHaveText('공유 놀이터는 수정 불가입니다.');
+  await expect(page.locator('#plan-variant-badge')).toHaveText(/남동향|남서향/);
+  await expect(page.locator('#open-storage-manager')).toBeHidden();
+  await expect(page.locator('#palette-applied-only')).toBeHidden();
+  await expect(page.locator('#palette-view-label')).toContainText('적용 옵션');
   await expect(page.locator('.hotbar-slot').nth(0)).toBeEnabled();
   await expect(page.locator('.hotbar-slot').nth(1)).toBeDisabled();
   await expect(page.locator('.hotbar-slot').nth(2)).toBeDisabled();
   await expect(page.locator('.hotbar-slot').nth(3)).toBeDisabled();
 
   await expect(page.locator('.rpg-actor')).toHaveCount(2);
-  const categories = page.locator('#option-categories');
-  await expect.poll(async () => categories.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeGreaterThan(0);
-  await expect(page.getByRole('button', { name: '주방 벽/상판·냉장고장', exact: true })).toBeVisible();
-
-  const optionList = page.locator('#option-list');
-  const summary = page.locator('.option-summary');
-  await expect.poll(async () => optionList.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0);
-  const summaryTop = (await summary.boundingBox())!.y;
-  await optionList.evaluate((element) => { element.scrollTop = element.scrollHeight; });
-  await expect.poll(async () => optionList.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
-  expect(Math.abs((await summary.boundingBox())!.y - summaryTop)).toBeLessThan(1);
+  await expect(page.locator('#option-categories').getByRole('button', { name: '전체', exact: true })).toBeVisible();
+  await expect(page.locator('#option-list .option-card input:not(:disabled)')).toHaveCount(0);
   expect((await page.locator('#option-total').innerText()).replace(/\s/g, '')).toMatch(/^\d{1,3}(,\d{3})*원$/);
-  expect(await page.locator('.option-copy b').first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(11);
   expect(await page.locator('.stage-tip').evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(10);
-
-  await page.getByRole('button', { name: '주방 벽/상판·냉장고장', exact: true }).click();
-  await expect.poll(async () => page.locator('#option-list .option-card').count()).toBeGreaterThan(0);
 
   const laserToggle = page.locator('#inspection-laser-toggle');
   await expect(laserToggle).toBeAttached();

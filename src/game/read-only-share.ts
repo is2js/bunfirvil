@@ -19,6 +19,7 @@ export interface BundangReadOnlyShareFurnitureV1 {
 
 export interface BundangReadOnlyShareV1 {
   schemaVersion: 1;
+  sharedByNickname: string;
   mapId: string;
   unitType: string;
   planVariant: ApartmentPlanVariant;
@@ -58,6 +59,14 @@ function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
+export function normalizeSharedNickname(value: unknown): string {
+  const nickname = String(value ?? '').normalize('NFKC').trim();
+  if (!nickname || Array.from(nickname).length > 20 || /[\u0000-\u001f\u007f]/u.test(nickname)) {
+    throw new BundangShareError('invalid-state');
+  }
+  return nickname;
+}
+
 function sanitizeFurniture(prop: ApartmentInteriorProp): BundangReadOnlyShareFurnitureV1 | null {
   const assetId = String(prop.assetId || '');
   const position = Array.isArray(prop.positionMeters) ? prop.positionMeters : [];
@@ -74,6 +83,7 @@ function sanitizeFurniture(prop: ApartmentInteriorProp): BundangReadOnlyShareFur
 }
 
 export function createBundangReadOnlyShare(input: {
+  sharedByNickname: string;
   mapId: string;
   unitType: string;
   planVariant: ApartmentPlanVariant;
@@ -83,6 +93,7 @@ export function createBundangReadOnlyShare(input: {
 }): BundangReadOnlyShareV1 {
   return {
     schemaVersion: 1,
+    sharedByNickname: normalizeSharedNickname(input.sharedByNickname),
     mapId: input.mapId,
     unitType: input.unitType,
     planVariant: input.planVariant,
@@ -134,6 +145,7 @@ export function validateBundangReadOnlyShare(
 ): BundangReadOnlyShareV1 {
   const row = record(value);
   if (!row || row.schemaVersion !== 1) throw new BundangShareError('invalid-state');
+  const sharedByNickname = normalizeSharedNickname(row.sharedByNickname);
   const mapId = String(row.mapId || '');
   const unitType = String(row.unitType || '').toUpperCase();
   const planVariant = String(row.planVariant || '').toUpperCase() as ApartmentPlanVariant;
@@ -174,7 +186,7 @@ export function validateBundangReadOnlyShare(
       ...(typeof material === 'string' ? { materialVariantId: material } : {}),
     };
   });
-  return { schemaVersion: 1, mapId, unitType, planVariant, livingFacing, selectedOptionIds: canonical, furniture };
+  return { schemaVersion: 1, sharedByNickname, mapId, unitType, planVariant, livingFacing, selectedOptionIds: canonical, furniture };
 }
 
 export function sharedFurnitureProps(value: BundangReadOnlyShareV1, assets: InteriorAssetEntry[]): ApartmentInteriorProp[] {

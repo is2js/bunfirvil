@@ -39,6 +39,8 @@ export interface HouseholdVerificationSessionV1 {
   provider: typeof HOUSEHOLD_VERIFICATION_PROVIDER;
   verifiedAt: number;
   role: HouseholdVerificationRole;
+  /** 현재 탭에서 공유 링크 작성자 표시에만 사용하며 localStorage에는 기록하지 않는다. */
+  nickname?: string;
 }
 
 export type HouseholdVerificationErrorCode = 'not-configured' | 'timeout' | 'network' | 'invalid-response';
@@ -171,7 +173,14 @@ export function readHouseholdVerificationSession(storage: SessionStoragePort | n
     if (!parsed || parsed.schemaVersion !== 1 || parsed.provider !== HOUSEHOLD_VERIFICATION_PROVIDER
       || typeof parsed.verifiedAt !== 'number' || !Number.isFinite(parsed.verifiedAt) || parsed.verifiedAt <= 0
       || (parsed.role !== 'verified' && parsed.role !== 'operator')) return null;
-    return { schemaVersion: 1, provider: HOUSEHOLD_VERIFICATION_PROVIDER, verifiedAt: parsed.verifiedAt, role: parsed.role };
+    const nickname = normalizeHouseholdNickname(parsed.nickname);
+    return {
+      schemaVersion: 1,
+      provider: HOUSEHOLD_VERIFICATION_PROVIDER,
+      verifiedAt: parsed.verifiedAt,
+      role: parsed.role,
+      ...(nickname && Array.from(nickname).length <= 20 ? { nickname } : {}),
+    };
   } catch { return null; }
 }
 
@@ -181,11 +190,19 @@ export function householdVerificationIsOperator(storage: SessionStoragePort | nu
 
 export function writeHouseholdVerificationSession(
   role: HouseholdVerificationRole,
+  nickname = '',
   storage: SessionStoragePort | null = browserSessionStorage(),
   verifiedAt = Date.now(),
 ): HouseholdVerificationSessionV1 | null {
   if (!storage) return null;
-  const session: HouseholdVerificationSessionV1 = { schemaVersion: 1, provider: HOUSEHOLD_VERIFICATION_PROVIDER, verifiedAt, role };
+  const normalizedNickname = normalizeHouseholdNickname(nickname);
+  const session: HouseholdVerificationSessionV1 = {
+    schemaVersion: 1,
+    provider: HOUSEHOLD_VERIFICATION_PROVIDER,
+    verifiedAt,
+    role,
+    ...(normalizedNickname && Array.from(normalizedNickname).length <= 20 ? { nickname: normalizedNickname } : {}),
+  };
   storage.setItem(HOUSEHOLD_VERIFICATION_SESSION_KEY, JSON.stringify(session));
   return session;
 }

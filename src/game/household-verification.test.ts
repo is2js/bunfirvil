@@ -74,14 +74,15 @@ describe('household Google Sheet verification', () => {
       .rejects.toMatchObject({ code: 'invalid-response' });
   });
 
-  it('stores only provider, timestamp, and role for the current tab', () => {
+  it('stores the verified nickname only in the current tab without household details', () => {
     const storage = new MemoryStorage();
-    writeHouseholdVerificationSession('operator', storage, 1_789_000_000_000);
+    writeHouseholdVerificationSession('operator', ' 피치 ', storage, 1_789_000_000_000);
     const raw = storage.getItem(HOUSEHOLD_VERIFICATION_SESSION_KEY) || '';
-    expect(raw).toBe('{"schemaVersion":1,"provider":"google-apps-script","verifiedAt":1789000000000,"role":"operator"}');
-    expect(raw).not.toMatch(/105|55A|2501|피치/);
+    expect(raw).toBe('{"schemaVersion":1,"provider":"google-apps-script","verifiedAt":1789000000000,"role":"operator","nickname":"피치"}');
+    expect(raw).not.toMatch(/105|55A|2501/);
     expect(householdVerificationIsOperator(storage)).toBe(true);
     expect(readHouseholdVerificationSession(storage)?.role).toBe('operator');
+    expect(readHouseholdVerificationSession(storage)?.nickname).toBe('피치');
     clearHouseholdVerificationSession(storage);
     expect(readHouseholdVerificationSession(storage)).toBeNull();
   });

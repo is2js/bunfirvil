@@ -2669,6 +2669,17 @@ button.household-cell:focus-visible { z-index: 2; outline: 2px solid #183d62; ou
 .household-wizard-progress button.is-complete { opacity: 1; }
 .household-wizard-progress button.is-complete i { border-color: rgba(92, 211, 189, .3); color: transparent; background: rgba(92, 211, 189, .08); }
 .household-wizard-progress button.is-complete i::after { content: '✓'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--mint); font-size: 14px; line-height: 1; }
+.household-wizard-progress.is-share-progress { grid-template-columns: auto minmax(38px, 120px) auto; }
+.household-selector-shell.is-share-authentication .household-nickname-card { border-color: rgba(225, 185, 99, .26); }
+.household-selector-shell.is-share-authentication .household-selection-dock.is-authenticated { background: linear-gradient(95deg, rgba(33, 91, 82, .98), rgba(68, 61, 34, .98)); }
+
+.share-readonly-banner + .showcase-layout .map-identity { border-color: rgba(225, 185, 99, .42); background: linear-gradient(135deg, rgba(6, 22, 25, .94), rgba(55, 45, 22, .91)); }
+.share-readonly-banner + .showcase-layout .map-identity #map-title { color: #fff4d4; }
+.share-readonly-banner + .showcase-layout .map-identity #map-revision { color: #d7bf87; }
+.app-shell.is-readonly-share .stage-option-remove,
+.app-shell.is-readonly-share .stage-option-clear { display: none !important; }
+.app-shell.is-readonly-share .palette-tabs button,
+.app-shell.is-readonly-share .option-categories button { cursor: pointer; }
 
 .household-building-picker-panel {
   max-width: 960px;
