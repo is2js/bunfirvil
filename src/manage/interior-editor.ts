@@ -6,6 +6,7 @@ import {
 import { resolveReferencedUrl } from '../game/base';
 import {
   applyPlanVariant,
+  availablePlanVariants,
   inverseTransformPlanPoint,
   transformPlanPoint,
   type ApartmentPlanVariant,
@@ -178,12 +179,18 @@ export class InteriorEditor {
   private async selectMap(mapId: string): Promise<void> {
     const map = this.catalog.maps.find((entry) => entry.id === mapId);
     if (!map) return;
+    const availableVariants = availablePlanVariants(map.unitType);
+    [...this.planVariantSelect.options].forEach((option) => {
+      option.hidden = !availableVariants.includes(option.value as ApartmentPlanVariant);
+      option.disabled = option.hidden;
+    });
+    if (!availableVariants.includes(this.planVariantSelect.value as ApartmentPlanVariant)) this.planVariantSelect.value = availableVariants[0] || 'A';
     const token = ++this.mapLoadToken;
     this.status.textContent = `${map.unitType} 정적 world와 PBR 구조를 불러오는 중…`;
     this.section.dataset.loading = 'true';
     const world = await loadWorld(map as unknown as StaticMapEntry);
     if (token !== this.mapLoadToken) return;
-    const planVariant = (this.planVariantSelect.value === 'B' ? 'B' : 'A') as ApartmentPlanVariant;
+    const planVariant = this.planVariantSelect.value as ApartmentPlanVariant;
     const planDefinition = applyPlanVariant(world, planVariant);
     this.world = world;
     this.apartment = world.objects.find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry) || null;

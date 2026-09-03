@@ -435,7 +435,8 @@ function storageWallPlacement(
 }
 
 function planVariantKey(planVariant: string | undefined): 'A' | 'B' {
-  return String(planVariant || 'A').toUpperCase() === 'B' ? 'B' : 'A';
+  const variant = String(planVariant || 'A').toUpperCase();
+  return variant === 'B' || variant === 'D' ? 'B' : 'A';
 }
 
 function normalizedYaw(yawDeg: number): number {
@@ -1050,7 +1051,7 @@ function alignOpenPremiumShoeCabinetToEntry(
   const isPremiumShoeCabinet = prop.sourceOptionId === OPEN_PREMIUM_SHOE_CABINET_OPTION_ID
     || prop.anchorId === 'options.entryShoeCabinet'
     || (prop.assetId === 'entry-shoe-cabinet-tall' && /premium-shoe-cabinet/.test(String(prop.id || '')));
-  if (!isPremiumShoeCabinet || planVariant !== 'A' || !OPEN_PREMIUM_SHOE_CABINET_A_FACING_FIX.has(unitType)) return prop;
+  if (!isPremiumShoeCabinet || planVariantKey(planVariant) !== 'A' || !OPEN_PREMIUM_SHOE_CABINET_A_FACING_FIX.has(unitType)) return prop;
   const yawDeg = Number(prop.yawDeg);
   return {
     ...prop,

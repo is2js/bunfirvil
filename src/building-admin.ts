@@ -1,5 +1,5 @@
 import { apartmentUnitWorldPoint, type NumericPoint } from './game/apartment-transform';
-import { applyPlanVariant, transformPlanPoint, type ApartmentPlanVariant } from './game/plan-variants';
+import { applyPlanVariant, availablePlanVariants, transformPlanPoint, type ApartmentPlanVariant } from './game/plan-variants';
 import type { ThreeWorldRenderer } from './game/three-world';
 import type { StaticMapEntry, WorldData, WorldObject } from './game/types';
 import { loadWorld } from './game/world';
@@ -110,11 +110,17 @@ class BuildingAdmin {
   private async selectMap(mapId: string): Promise<void> {
     const map = this.catalog.maps.find((entry) => entry.id === mapId);
     if (!map) return;
+    const availableVariants = availablePlanVariants(map.unitType);
+    [...this.variantSelect.options].forEach((option) => {
+      option.hidden = !availableVariants.includes(option.value as ApartmentPlanVariant);
+      option.disabled = option.hidden;
+    });
+    if (!availableVariants.includes(this.variantSelect.value as ApartmentPlanVariant)) this.variantSelect.value = availableVariants[0] || 'A';
     const token = ++this.loadToken;
     this.status.textContent = `${map.unitType} 건축물 구조를 불러오는 중…`;
     const world = await loadWorld(map as unknown as StaticMapEntry);
     if (token !== this.loadToken) return;
-    const variant = (this.variantSelect.value === 'B' ? 'B' : 'A') as ApartmentPlanVariant;
+    const variant = this.variantSelect.value as ApartmentPlanVariant;
     const plan = applyPlanVariant(world, variant);
     this.world = world;
     this.apartment = world.objects.find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry) || null;

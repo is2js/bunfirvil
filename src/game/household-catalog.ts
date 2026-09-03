@@ -47,18 +47,18 @@ interface LineSeed {
 }
 
 const VARIANTS: Record<string, ApartmentPlanVariant[]> = {
-  '101': ['B', 'B', 'B', 'A'],
-  '102': ['B', 'B', 'A', 'B', 'A'],
-  '103': ['B', 'B', 'A', 'B', 'A'],
+  '101': ['B', 'A', 'D', 'A'],
+  '102': ['B', 'A', 'A', 'B', 'A'],
+  '103': ['B', 'A', 'A', 'B', 'A'],
   '104': ['A', 'B', 'B', 'A', 'B', 'A'],
-  '105': ['A', 'B', 'B', 'A', 'A', 'B'],
-  '106': ['B', 'B', 'A', 'B', 'A'],
-  '107': ['A', 'B', 'A', 'A'],
-  '108': ['A', 'B', 'A', 'A'],
+  '105': ['A', 'B', 'B', 'A', 'C', 'D'],
+  '106': ['B', 'A', 'A', 'B', 'A'],
+  '107': ['A', 'B', 'B', 'A'],
+  '108': ['A', 'B', 'B', 'A'],
   '109': ['A', 'B', 'B', 'A', 'B', 'A'],
-  '110': ['B', 'A', 'B', 'A', 'B', 'A'],
-  '111': ['A', 'B', 'A', 'B', 'A', 'B'],
-  '112': ['B', 'A', 'A', 'B'],
+  '110': ['B', 'C', 'B', 'A', 'B', 'A'],
+  '111': ['A', 'B', 'B', 'A', 'C', 'D'],
+  '112': ['D', 'A', 'C', 'D'],
 };
 
 const BUILDING_LINES: Record<string, LineSeed[]> = {
@@ -157,7 +157,7 @@ function facingForLine(lineCount: number, lineId: number): HouseholdFacing {
 function buildCatalog(): BundangHouseholdCatalogV1 {
   const buildings = Object.entries(BUILDING_LINES).map(([buildingId, seeds]) => {
     const variants = VARIANTS[buildingId];
-    if (!variants || variants.length !== seeds.length) throw new Error(`${buildingId}동 A/B 매핑이 호라인과 일치하지 않습니다.`);
+    if (!variants || variants.length !== seeds.length) throw new Error(`${buildingId}동 평면 타입 매핑이 호라인과 일치하지 않습니다.`);
     const confidence: VariantConfidence = buildingId === '105' || buildingId === '106'
       ? 'pvp-authoritative'
       : 'site-plan-inferred';

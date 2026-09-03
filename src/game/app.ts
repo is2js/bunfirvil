@@ -46,6 +46,7 @@ import {
 } from './istarpark-laser-measurement';
 import {
   applyPlanVariant,
+  availablePlanVariants,
   planVariantDefinition,
   planVariantFromQuery,
   type ApartmentPlanVariant,
@@ -112,8 +113,8 @@ const CHARACTER_DISPLAY_NAMES: Record<CharacterKey, string> = {
   '200': '피치',
 };
 
-function planFacingLabel(variant: ApartmentPlanVariant): '남서향' | '남동향' {
-  return variant === 'B' ? '남동향' : '남서향';
+function planFacingLabel(unitType: string, variant: ApartmentPlanVariant): '남서향' | '남동향' {
+  return planVariantDefinition(unitType, variant).livingFacing === 'south-east' ? '남동향' : '남서향';
 }
 
 interface WorldRendererPort {
@@ -309,7 +310,10 @@ export class ShowcaseApp {
       }
     }
     this.currentMap = mapFromQuery(catalog, window.location.search);
-    this.planVariant = planVariantFromQuery(window.location.search);
+    this.planVariant = planVariantDefinition(
+      this.currentMap.unitType,
+      planVariantFromQuery(window.location.search),
+    ).variant;
     // 쇼케이스는 돌범으로 시작하고 슬롯 2에서 돌범/피치를 전환한다.
     this.activeActor = '100';
 
@@ -441,11 +445,10 @@ export class ShowcaseApp {
                 <span>INSPECTION MAP</span>
                 <select id="map-select" aria-label="검수맵 선택">${mapOptions}</select>
               </label>
-              <div class="plan-variant-switch" role="group" aria-label="평면 A B형 선택">
+              <div class="plan-variant-switch" role="group" aria-label="평면 타입 선택">
                 <span>PLAN TYPE</span>
                 <div>
-                  <button type="button" data-plan-variant="A" class="${this.planVariant === 'A' ? 'is-active' : ''}">A형</button>
-                  <button type="button" data-plan-variant="B" class="${this.planVariant === 'B' ? 'is-active' : ''}">B형</button>
+                  ${(['A', 'B', 'C', 'D'] as ApartmentPlanVariant[]).map((variant) => `<button type="button" data-plan-variant="${variant}" class="${this.planVariant === variant ? 'is-active' : ''}">${variant}형</button>`).join('')}
                 </div>
               </div>
               <div class="actor-switch" role="group" aria-label="조작 캐릭터">
@@ -673,14 +676,14 @@ export class ShowcaseApp {
           <h2>저장 관리</h2>
           <p class="storage-dialog-lead">옵션과 가구 배치는 서버가 아닌 현재 브라우저에만 저장됩니다.</p>
           <dl class="storage-key-list">
-            <div><dt>옵션·검수</dt><dd>평형별 · A/B 공통</dd></div>
-            <div><dt>가구 배치</dt><dd>평형별 · A/B 공통</dd></div>
-            <div><dt>건축 검수</dt><dd>평형·A/B별</dd></div>
+            <div><dt>옵션·검수</dt><dd>평형별 · 모든 타입 공통</dd></div>
+            <div><dt>가구 배치</dt><dd>평형별 · 모든 타입 공통</dd></div>
+            <div><dt>건축 검수</dt><dd>평형·타입별</dd></div>
             <div><dt>핫바</dt><dd>전체 맵 공통</dd></div>
           </dl>
           <div class="storage-current-scope">
             <span>현재 초기화 범위</span>
-            <b id="storage-current-map">${escapeHtml(this.currentMap.unitType)} · A/B 공통</b>
+            <b id="storage-current-map">${escapeHtml(this.currentMap.unitType)} · 모든 평면 타입 공통</b>
             <small>선택 옵션과 가구 배치만 초기화하며 검수 상태·메모, 건축 기록과 핫바는 유지합니다.</small>
           </div>
           <div class="storage-dialog-actions">
@@ -737,7 +740,7 @@ export class ShowcaseApp {
       button.addEventListener('click', () => void this.selectMap(button.dataset.mapId || ''), { signal });
     });
     this.mount.querySelectorAll<HTMLButtonElement>('[data-plan-variant]').forEach((button) => {
-      button.addEventListener('click', () => void this.selectPlanVariant(button.dataset.planVariant === 'B' ? 'B' : 'A'), { signal });
+      button.addEventListener('click', () => void this.selectPlanVariant((button.dataset.planVariant || 'A') as ApartmentPlanVariant), { signal });
     });
     this.mount.querySelectorAll<HTMLButtonElement>('[data-actor-key]').forEach((button) => {
       button.addEventListener('click', () => this.setActiveActor(button.dataset.actorKey as CharacterKey), { signal });
@@ -849,7 +852,7 @@ export class ShowcaseApp {
     }, { signal });
     this.get<HTMLButtonElement>('#reset-current-storage').addEventListener('click', () => {
       const unitType = this.currentMap.unitType;
-      if (!window.confirm(`${unitType} 평형의 A/B형과 같은 평형 세대에 공통 저장된 옵션·가구 배치를 초기화할까요? 검수 상태·메모, 건축 기록과 핫바는 유지됩니다.`)) return;
+      if (!window.confirm(`${unitType} 평형의 모든 평면 타입과 같은 평형 세대에 공통 저장된 옵션·가구 배치를 초기화할까요? 검수 상태·메모, 건축 기록과 핫바는 유지됩니다.`)) return;
       resetCurrentMapOptionsAndLayout(this.currentMap.id);
       storageDialog.close();
       void this.selectMap(this.currentMap.id, false).then(() => {
@@ -2086,6 +2089,7 @@ export class ShowcaseApp {
   private async selectMap(mapId: string, updateUrl = true): Promise<void> {
     const map = this.catalog.maps.find((entry) => entry.id === mapId);
     if (!map) return;
+    this.planVariant = planVariantDefinition(map.unitType, this.planVariant).variant;
     this.stopInspectionLaser('map-change');
     this.cancelInteriorGhost('', false);
     this.lastInteriorPointerPoint = null;
@@ -2152,8 +2156,9 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#map-title').textContent = map.label;
     this.get<HTMLElement>('#map-revision').textContent = map.revision;
     this.paintPlanVariant(planDefinition);
+    this.renderHotbar();
     const storageMap = this.mount.querySelector<HTMLElement>('#storage-current-map');
-    if (storageMap) storageMap.textContent = `${map.unitType} · A/B 공통`;
+    if (storageMap) storageMap.textContent = `${map.unitType} · 모든 평면 타입 공통`;
     this.get<HTMLElement>('#metric-chunks').textContent = `${world.loadedChunkCount}/${world.requestedChunkCount}`;
     this.get<HTMLElement>('#metric-renderer').textContent = rendererLabel;
     this.minimap.setWorld(world, planDefinition.variant);
@@ -2168,14 +2173,17 @@ export class ShowcaseApp {
   }
 
   private async selectPlanVariant(variant: ApartmentPlanVariant): Promise<void> {
-    if (variant === this.planVariant) return;
-    this.planVariant = variant;
-    this.paintPlanVariant(planVariantDefinition(this.currentMap.unitType, variant));
+    const definition = planVariantDefinition(this.currentMap.unitType, variant);
+    if (definition.variant === this.planVariant) return;
+    this.planVariant = definition.variant;
+    this.paintPlanVariant(definition);
     await this.selectMap(this.currentMap.id);
   }
 
   private paintPlanVariant(definition: ApartmentPlanVariantDefinition): void {
+    const available = new Set(availablePlanVariants(this.currentMap.unitType));
     this.mount.querySelectorAll<HTMLElement>('[data-plan-variant]').forEach((button) => {
+      button.hidden = !available.has(button.dataset.planVariant as ApartmentPlanVariant);
       button.classList.toggle('is-active', button.dataset.planVariant === definition.variant);
       if (button instanceof HTMLButtonElement) button.setAttribute('aria-pressed', String(button.dataset.planVariant === definition.variant));
     });
@@ -2261,10 +2269,13 @@ export class ShowcaseApp {
   private renderHotbar(): void {
     const element = this.get<HTMLElement>('#hotbar');
     const teleport = this.skillById('common-teleport');
+    const planVariants = availablePlanVariants(this.currentMap.unitType);
+    const planVariantIndex = Math.max(0, planVariants.indexOf(this.planVariant));
+    const nextPlanVariant = planVariants[(planVariantIndex + 1) % planVariants.length] || 'A';
     const controls = [
       { id: 'common-teleport', label: '텔레포트', icon: teleport.iconUrl ? `<img src="${escapeHtml(resolveProjectUrl(teleport.iconUrl))}" alt="" onerror="this.hidden=true" />` : '', glyph: teleport.glyph, state: '', active: false },
       { id: 'showcase-gender-toggle', label: '성별 전환', icon: `<img src="${escapeHtml(resolveProjectUrl('assets/showcase-controls/lk-custom-023.png'))}" alt="" />`, glyph: '↺', state: '', active: this.activeActor === '200' },
-      { id: 'showcase-plan-toggle', label: '거실방향 전환', icon: '', glyph: 'A↔B', state: '', active: this.planVariant === 'B' },
+      { id: 'showcase-plan-toggle', label: '평면 타입 전환', icon: '', glyph: `${this.planVariant}→${nextPlanVariant}`, state: '', active: planVariantIndex > 0 },
       { id: 'showcase-pigmy-toggle', label: '변신', icon: '<span class="pigmy-hotbar-icon" aria-hidden="true"></span>', glyph: '', state: this.pigmyTransformationActive ? 'ON' : '', active: this.pigmyTransformationActive },
     ];
     element.innerHTML = controls.map((control, index) => `
@@ -2318,10 +2329,12 @@ export class ShowcaseApp {
       return;
     }
     if (index === 2) {
-      const next: ApartmentPlanVariant = this.planVariant === 'A' ? 'B' : 'A';
+      const variants = availablePlanVariants(this.currentMap.unitType);
+      const currentIndex = Math.max(0, variants.indexOf(this.planVariant));
+      const next = variants[(currentIndex + 1) % variants.length] || 'A';
       void this.selectPlanVariant(next).then(() => {
         this.renderHotbar();
-        this.toast(`${planFacingLabel(next)}으로 전환했습니다.`, 'success');
+        this.toast(`${next}형 · ${planFacingLabel(this.currentMap.unitType, next)}으로 전환했습니다.`, 'success');
       });
       return;
     }

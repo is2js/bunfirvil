@@ -20,15 +20,15 @@ describe('Bundang household catalog', () => {
     expect(householdCounts()).toEqual({ '51A': 413, '55A': 468, '55B': 254, '59A': 255, total: 1390 });
   });
 
-  it('locks authoritative and inferred A/B line sequences', () => {
+  it('locks the household-specific A-D floor-plan sequences', () => {
     const variants = Object.fromEntries(BUNDANG_HOUSEHOLD_CATALOG.buildings.map((building) => [
       building.buildingId,
       building.lines.map((line) => line.planVariant).join(''),
     ]));
     expect(variants).toEqual({
-      '101': 'BBBA', '102': 'BBABA', '103': 'BBABA', '104': 'ABBABA',
-      '105': 'ABBAAB', '106': 'BBABA', '107': 'ABAA', '108': 'ABAA',
-      '109': 'ABBABA', '110': 'BABABA', '111': 'ABABAB', '112': 'BAAB',
+      '101': 'BADA', '102': 'BAABA', '103': 'BAABA', '104': 'ABBABA',
+      '105': 'ABBACD', '106': 'BAABA', '107': 'ABBA', '108': 'ABBA',
+      '109': 'ABBABA', '110': 'BCBABA', '111': 'ABBACD', '112': 'DACD',
     });
     expect(BUNDANG_HOUSEHOLD_CATALOG.buildings.find((building) => building.buildingId === '105')?.lines[0]?.confidence)
       .toBe('pvp-authoritative');
@@ -46,6 +46,9 @@ describe('Bundang household catalog', () => {
       planVariant: 'A',
       facing: 'south-east',
     });
+    expect(householdSelection('105', 25, 5, maps)).toMatchObject({ planVariant: 'C', facing: 'south-west' });
+    expect(householdSelection('105', 25, 6, maps)).toMatchObject({ planVariant: 'D', facing: 'south-west' });
+    expect(householdSelection('110', 25, 2, maps)).toMatchObject({ unitType: '55A', planVariant: 'C', facing: 'south-east' });
   });
 
   it('only bypasses the gate for a known map query', () => {

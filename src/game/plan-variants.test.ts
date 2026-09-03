@@ -9,26 +9,51 @@ import {
 } from './plan-variants';
 import type { StaticMapEntry, WorldData, WorldObject } from './types';
 
-const expectedB = {
-  '51A': { rotationDeg: -90, mirrorX: true, mirrorY: false },
-  '55A': { rotationDeg: -90, mirrorX: true, mirrorY: false },
-  '55B': { rotationDeg: -180, mirrorX: false, mirrorY: true },
-  '59A': { rotationDeg: 0, mirrorX: true, mirrorY: false },
+const expected = {
+  '51A': {
+    A: { rotationDeg: 90, mirrorX: false, mirrorY: false },
+    B: { rotationDeg: -90, mirrorX: true, mirrorY: false },
+    C: { rotationDeg: 0, mirrorX: false, mirrorY: false },
+    D: { rotationDeg: 0, mirrorX: true, mirrorY: false },
+  },
+  '55A': {
+    A: { rotationDeg: 0, mirrorX: false, mirrorY: false },
+    B: { rotationDeg: -90, mirrorX: true, mirrorY: false },
+    C: { rotationDeg: -90, mirrorX: false, mirrorY: false },
+    D: { rotationDeg: 0, mirrorX: true, mirrorY: false },
+  },
+  '55B': {
+    A: { rotationDeg: -90, mirrorX: false, mirrorY: false },
+    B: { rotationDeg: -180, mirrorX: false, mirrorY: true },
+  },
+  '59A': {
+    A: { rotationDeg: 0, mirrorX: false, mirrorY: false },
+    B: { rotationDeg: 0, mirrorX: true, mirrorY: false },
+  },
 };
 
 describe('RPG apartment plan variants', () => {
-  it('matches every A/B transform used by the original site plan', () => {
-    for (const [unitType, transform] of Object.entries(expectedB)) {
-      expect(planVariantDefinition(unitType, 'A').transform).toEqual({ rotationDeg: 0, mirrorX: false, mirrorY: false });
-      expect(planVariantDefinition(unitType, 'B').transform).toEqual(transform);
-      expect(planVariantDefinition(unitType, 'B').targetPlan).toBe(`${unitType}-B`);
+  it('matches every household-specific A-D transform and living-room facing', () => {
+    for (const [unitType, variants] of Object.entries(expected)) {
+      for (const [variant, transform] of Object.entries(variants)) {
+        const definition = planVariantDefinition(unitType, variant as 'A' | 'B' | 'C' | 'D');
+        expect(definition.transform).toEqual(transform);
+        expect(definition.targetPlan).toBe(`${unitType}-${variant}`);
+      }
     }
+    expect(planVariantDefinition('51A', 'A').livingFacing).toBe('south-east');
+    expect(planVariantDefinition('51A', 'B').livingFacing).toBe('south-east');
+    expect(planVariantDefinition('51A', 'C').livingFacing).toBe('south-west');
+    expect(planVariantDefinition('55A', 'C').livingFacing).toBe('south-east');
+    expect(planVariantDefinition('55A', 'D').livingFacing).toBe('south-west');
   });
 
-  it('reads only A/B query values and keeps point transforms invertible', () => {
+  it('reads A-D query values and keeps point transforms invertible', () => {
     expect(planVariantFromQuery('?variant=b')).toBe('B');
+    expect(planVariantFromQuery('?variant=c')).toBe('C');
+    expect(planVariantFromQuery('?variant=d')).toBe('D');
     expect(planVariantFromQuery('?variant=unknown')).toBe('A');
-    const transform = expectedB['55A'];
+    const transform = expected['55A'].B;
     const source: [number, number] = [3.25, 7.5];
     const transformed = transformPlanPoint(source, transform);
     expect(inverseTransformPlanPoint(transformed, transform)).toEqual(source);
@@ -52,7 +77,7 @@ describe('RPG apartment plan variants', () => {
     } as WorldData;
     const definition = applyPlanVariant(world, 'B');
     expect(definition.targetPlan).toBe('55A-B');
-    expect(apartment.transform).toEqual(expectedB['55A']);
+    expect(apartment.transform).toEqual(expected['55A'].B);
     expect(apartment.blockedCells).toEqual([{ x: 11, y: 12 }]);
     expect(world.blocked).toEqual(new Set(['1,1', '11,12']));
   });

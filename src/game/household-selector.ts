@@ -86,9 +86,9 @@ export function householdStorageDialogMarkup(): string {
       <h2>저장 관리</h2>
       <p class="storage-dialog-lead">옵션과 가구 배치는 서버가 아닌 현재 브라우저에만 저장됩니다.</p>
       <dl class="storage-key-list">
-        <div><dt>옵션·검수</dt><dd>평형별 · A/B 공통</dd></div>
-        <div><dt>가구 배치</dt><dd>평형별 · A/B 공통</dd></div>
-        <div><dt>건축 검수</dt><dd>평형·A/B별</dd></div>
+        <div><dt>옵션·검수</dt><dd>평형별 · 모든 타입 공통</dd></div>
+        <div><dt>가구 배치</dt><dd>평형별 · 모든 타입 공통</dd></div>
+        <div><dt>건축 검수</dt><dd>평형·타입별</dd></div>
         <div><dt>핫바</dt><dd>전체 맵 공통</dd></div>
       </dl>
       <a class="storage-guide-link" href="${resolveProjectUrl('guides/?guide=local-storage')}">로컬 저장·초기화 가이드 보기 →</a>

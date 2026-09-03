@@ -5,67 +5,80 @@ import {
 } from './apartment-transform';
 import type { WorldData, WorldObject } from './types';
 
-export type ApartmentPlanVariant = 'A' | 'B';
+export type ApartmentPlanVariant = 'A' | 'B' | 'C' | 'D';
+export type ApartmentLivingFacing = 'south-east' | 'south-west';
 
 export interface ApartmentPlanVariantDefinition {
   variant: ApartmentPlanVariant;
   label: string;
   sourcePlan: string;
   targetPlan: string;
+  livingFacing: ApartmentLivingFacing;
   transform: { rotationDeg: number; mirrorX: boolean; mirrorY: boolean };
   operations: string[];
 }
 
 const SOURCE_TRANSFORM = Object.freeze({ rotationDeg: 0, mirrorX: false, mirrorY: false });
 
-const RPG_VARIANT_B: Record<string, Omit<ApartmentPlanVariantDefinition, 'variant' | 'label' | 'sourcePlan'>> = {
+const RPG_PLAN_VARIANTS: Record<string, Partial<Record<ApartmentPlanVariant, Omit<ApartmentPlanVariantDefinition, 'variant' | 'label' | 'sourcePlan'>>>> = {
   '51A': {
-    targetPlan: '51A-B',
-    transform: { rotationDeg: -90, mirrorX: true, mirrorY: false },
-    operations: ['좌우반전', '반시계 90° 회전'],
+    A: { targetPlan: '51A-A', livingFacing: 'south-east', transform: { rotationDeg: 90, mirrorX: false, mirrorY: false }, operations: ['시계 90° 회전'] },
+    B: { targetPlan: '51A-B', livingFacing: 'south-east', transform: { rotationDeg: -90, mirrorX: true, mirrorY: false }, operations: ['좌우반전', '반시계 90° 회전'] },
+    C: { targetPlan: '51A-C', livingFacing: 'south-west', transform: { ...SOURCE_TRANSFORM }, operations: [] },
+    D: { targetPlan: '51A-D', livingFacing: 'south-west', transform: { rotationDeg: 0, mirrorX: true, mirrorY: false }, operations: ['좌우반전'] },
   },
   '55A': {
-    targetPlan: '55A-B',
-    transform: { rotationDeg: -90, mirrorX: true, mirrorY: false },
-    operations: ['좌우반전', '반시계 90° 회전'],
+    A: { targetPlan: '55A-A', livingFacing: 'south-west', transform: { ...SOURCE_TRANSFORM }, operations: [] },
+    B: { targetPlan: '55A-B', livingFacing: 'south-east', transform: { rotationDeg: -90, mirrorX: true, mirrorY: false }, operations: ['좌우반전', '반시계 90° 회전'] },
+    C: { targetPlan: '55A-C', livingFacing: 'south-east', transform: { rotationDeg: -90, mirrorX: false, mirrorY: false }, operations: ['반시계 90° 회전'] },
+    D: { targetPlan: '55A-D', livingFacing: 'south-west', transform: { rotationDeg: 0, mirrorX: true, mirrorY: false }, operations: ['좌우반전'] },
   },
   '55B': {
-    targetPlan: '55B-B',
-    transform: { rotationDeg: -180, mirrorX: false, mirrorY: true },
-    operations: ['상하반전', '반시계 180° 회전'],
+    A: { targetPlan: '55B-A', livingFacing: 'south-west', transform: { rotationDeg: -90, mirrorX: false, mirrorY: false }, operations: ['반시계 90° 회전'] },
+    B: { targetPlan: '55B-B', livingFacing: 'south-east', transform: { rotationDeg: -180, mirrorX: false, mirrorY: true }, operations: ['상하반전', '반시계 180° 회전'] },
   },
   '59A': {
-    targetPlan: '59A-B',
-    transform: { rotationDeg: 0, mirrorX: true, mirrorY: false },
-    operations: ['좌우반전'],
+    A: { targetPlan: '59A-A', livingFacing: 'south-west', transform: { ...SOURCE_TRANSFORM }, operations: [] },
+    B: { targetPlan: '59A-B', livingFacing: 'south-west', transform: { rotationDeg: 0, mirrorX: true, mirrorY: false }, operations: ['좌우반전'] },
   },
 };
 
 export function planVariantDefinition(unitType: string, variant: ApartmentPlanVariant): ApartmentPlanVariantDefinition {
   const unit = String(unitType || '').toUpperCase();
-  if (variant === 'B' && RPG_VARIANT_B[unit]) {
-    return {
-      variant,
-      label: 'B형',
-      sourcePlan: `${unit}-A`,
-      ...RPG_VARIANT_B[unit],
-      transform: { ...RPG_VARIANT_B[unit].transform },
-      operations: [...RPG_VARIANT_B[unit].operations],
-    };
-  }
+  const available = RPG_PLAN_VARIANTS[unit] || {};
+  const resolvedVariant = available[variant] ? variant : 'A';
+  const resolved = available[resolvedVariant];
+  if (resolved) return {
+    variant: resolvedVariant,
+    label: `${resolvedVariant}형`,
+    sourcePlan: `${unit}-원형`,
+    ...resolved,
+    transform: { ...resolved.transform },
+    operations: [...resolved.operations],
+  };
   return {
     variant: 'A',
     label: 'A형',
     sourcePlan: `${unit}-A`,
     targetPlan: `${unit}-A`,
+    livingFacing: 'south-west',
     transform: { ...SOURCE_TRANSFORM },
     operations: [],
   };
 }
 
+export function availablePlanVariants(unitType: string): ApartmentPlanVariant[] {
+  const variants = RPG_PLAN_VARIANTS[String(unitType || '').toUpperCase()] || {};
+  return (['A', 'B', 'C', 'D'] as ApartmentPlanVariant[]).filter((variant) => Boolean(variants[variant]));
+}
+
+export function planVariantFamily(variant: ApartmentPlanVariant): 'A' | 'B' {
+  return variant === 'B' || variant === 'D' ? 'B' : 'A';
+}
+
 export function planVariantFromQuery(search: string): ApartmentPlanVariant {
   const requested = new URLSearchParams(search).get('variant')?.toUpperCase();
-  return requested === 'B' ? 'B' : 'A';
+  return requested === 'B' || requested === 'C' || requested === 'D' ? requested : 'A';
 }
 
 function cellKey(x: number, y: number): string {
@@ -115,7 +128,7 @@ function normalizedYaw(value: unknown): number {
 
 // 샤워부스 recipe의 샤워 기둥은 local -Y에 있다. B형은 평면 변환 이후
 // 출입문 벽을 바라보도록 A형 기준에서 추가로 180° 뒤집은 최종 yaw를 쓴다.
-const SERVICE_WALL_SHOWER_YAW: Record<string, Record<ApartmentPlanVariant, number>> = Object.freeze({
+const SERVICE_WALL_SHOWER_YAW: Record<string, Record<'A' | 'B', number>> = Object.freeze({
   '51A': { A: 270, B: 90 },
   '55A': { A: 90, B: 270 },
   '55B': { A: 180, B: 0 },
@@ -159,9 +172,10 @@ export function applyPlanVariantInteriorOverrides(
   const anchors = record(geometry?.optionAnchors);
   if (!geometry || !anchors) return;
   const unitType = String(apartment.unitTypeId || '').toUpperCase();
+  const variantFamily = planVariantFamily(variant);
   anchors.resolvedPlanVariant = variant;
   const overrides = record(anchors.planVariantOverrides);
-  const override = record(overrides?.[variant]);
+  const override = record(overrides?.[variantFamily]);
 
   const bathroomOverride = record(override?.bathrooms);
   const bathrooms = record(anchors.bathrooms);
@@ -193,7 +207,7 @@ export function applyPlanVariantInteriorOverrides(
 
   const serviceWallYaw = SERVICE_WALL_SHOWER_YAW[
     String(apartment.unitTypeId || '').toUpperCase()
-  ]?.[variant];
+  ]?.[variantFamily];
   const shower = record(record(bathrooms?.['bathroom-1'])?.wetFixture);
   if (Number.isFinite(serviceWallYaw)
     && shower
@@ -212,7 +226,7 @@ export function applyPlanVariantInteriorOverrides(
       if (field in islandOverride) island[field] = islandOverride[field];
     }
   }
-  if (variant === 'B' && island && PLAN_B_ISLAND_WINDOW_FACING_UNITS.has(unitType)) {
+  if (variantFamily === 'B' && island && PLAN_B_ISLAND_WINDOW_FACING_UNITS.has(unitType)) {
     island.yawDeg = normalizedYaw(Number(island.yawDeg) + 180);
     island.frontFaces = 'toward-kitchen-window-wall';
   }

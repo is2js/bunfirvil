@@ -20,10 +20,10 @@
     </div></header>
     <div class="local-only-banner" role="note"><strong>원형 정밀 검수 · 로컬 전용</strong><span>평면 구조와 PBR 결과를 함께 확인하며, 상태와 메모만 현재 브라우저에 저장합니다. 원본 publish는 제공하지 않습니다.</span></div>
     <main id="main" class="admin-page-shell">
-      <section class="admin-hero"><div><p class="eyebrow">APARTMENT EDITOR · STATIC REVIEW</p><h1>분퍼빌 건축물 관리자</h1><p>RPG 검수맵과 동일한 meter/cell 변환으로 A·B형 평면, 벽체, 문·창호와 구조물을 교차 검수합니다.</p></div><div class="admin-hero-badge"><span>LOCAL DRAFT</span><b>2D + THREE.JS PBR</b></div></section>
+      <section class="admin-hero"><div><p class="eyebrow">APARTMENT EDITOR · STATIC REVIEW</p><h1>분퍼빌 건축물 관리자</h1><p>RPG 검수맵과 동일한 meter/cell 변환으로 A–D 평면 타입, 벽체, 문·창호와 구조물을 교차 검수합니다.</p></div><div class="admin-hero-badge"><span>LOCAL DRAFT</span><b>2D + THREE.JS PBR</b></div></section>
       <section class="admin-toolbar" aria-label="건축물 검수 도구">
         <label>검수맵<select id="buildingMapSelect"></select></label>
-        <label>평면형<select id="buildingPlanVariant"><option value="A">A형 · 원본</option><option value="B">B형 · 회전/대칭</option></select></label>
+        <label>평면형<select id="buildingPlanVariant"><option value="A">A형</option><option value="B">B형</option><option value="C">C형</option><option value="D">D형</option></select></label>
         <label>검수 상태<select id="buildingReviewStatus"><option value="unreviewed">미검수</option><option value="pass">통과</option><option value="needs-work">수정 필요</option></select></label>
         <button id="buildingExport" class="button secondary" type="button">검수 JSON 내보내기</button>
         <input id="buildingImportFile" class="visually-hidden" type="file" accept="application/json,.json" />
