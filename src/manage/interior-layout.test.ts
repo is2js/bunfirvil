@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createLocalProp, validateLayout, type InteriorAssetEntry } from './interior-layout';
+import { createLocalProp, isUserPlacedFurnitureProp, validateLayout, type InteriorAssetEntry } from './interior-layout';
 
 const asset: InteriorAssetEntry = {
   assetId: 'sofa-three-seat',
@@ -10,6 +10,15 @@ const asset: InteriorAssetEntry = {
 };
 
 describe('local interior layout', () => {
+  it('사용자 추가 가구만 편집 가능 대상으로 구분한다', () => {
+    const local = createLocalProp(asset, 1, 2, 7);
+    expect(isUserPlacedFurnitureProp(local)).toBe(true);
+    expect(isUserPlacedFurnitureProp({ ...local, sourceOptionId: 'bundang-design-wall' })).toBe(false);
+    expect(isUserPlacedFurnitureProp({ ...local, fixedOptionLayout: true })).toBe(false);
+    expect(isUserPlacedFurnitureProp({ ...local, sourcePropId: 'snapshot-chair', localOverride: true })).toBe(false);
+    expect(isUserPlacedFurnitureProp({ ...local, id: 'snapshot-chair' })).toBe(false);
+  });
+
   it('creates a 0.05m-snapped local ghost prop', () => {
     expect(createLocalProp(asset, 1.027, 2.078, 7)).toMatchObject({
       id: 'local-sofa-three-seat-7',

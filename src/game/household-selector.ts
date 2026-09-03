@@ -121,10 +121,10 @@ export function householdShellHeader(exportId: string, fallback = false, overvie
   return `<header class="topbar household-topbar">
     <a class="brand" href="${resolveProjectUrl('')}" aria-label="Bunfirvil 렌더 랩 홈">
       <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span><b>BUNFIRVIL</b><small>RPG RENDERING LAB</small></span>
+      <span><b>e편한세상 분당퍼스트빌리지</b><small>돌아온범생의 놀이터 개발 연구실</small></span>
     </a>
     <nav class="topnav" aria-label="주요 메뉴">
-      <a class="is-active" href="${resolveProjectUrl('')}"><span>LIVE</span> 렌더 쇼케이스</a>
+      <a class="is-active" href="${resolveProjectUrl('')}"><span>LIVE</span> 놀이터</a>
       ${operator ? `<a href="${resolveProjectUrl('manage/')}">검수맵 관리</a>
       <a href="${resolveProjectUrl('building-admin/')}">건축물 관리</a>
       <a href="${resolveProjectUrl('interior-admin/')}">인테리어 관리</a>` : ''}
@@ -141,8 +141,8 @@ export function householdShellHeader(exportId: string, fallback = false, overvie
   </header>
   <div class="serverless-banner" role="status">
     <span class="banner-pulse" aria-hidden="true"></span>
-    <b>프론트엔드 로컬 데모</b>
-    <span>서버 판정 없음</span>
+    <b>평면도, 사이버주택전시관 기반 추론가상공간입니다. 공고문, 실제 주택전시관 정보를 참고하세요</b>
+    <span>게시 자료는 참고용</span>
     <i></i>
     <span>데이터는 이 브라우저에만 저장됩니다.</span>
   </div>`;
@@ -206,7 +206,7 @@ export function waitForHouseholdSelection(
       </main>
       <aside class="household-selection-dock" id="household-selection-dock" aria-live="polite" hidden>
         <div><small>선택 세대</small><b id="household-selection-summary">동·층·호를 선택해 주세요.</b></div>
-        <button type="button" id="household-enter" disabled>선택한 세대 쇼케이스 보기</button>
+        <button type="button" id="household-enter" disabled>놀이터 입장</button>
       </aside>
       ${householdStorageDialogMarkup()}
     </div>`;

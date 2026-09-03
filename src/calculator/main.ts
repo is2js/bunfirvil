@@ -30,7 +30,7 @@ function mergeSchedules(schedules: ReturnType<typeof calculateBundangSaleFinance
     else row.other += item.amountWon;
     merged.set(key, row);
   }
-  const dueOrder = new Map([['계약 시', 1], ['2027-04-12', 2], ['별도 안내', 3], ['2028-02-14', 4], ['입주 시', 5]]);
+  const dueOrder = new Map([['계약 시', 1], ['2027-04-12', 2], ['2028-02-14', 3], ['별도 안내', 4], ['입주 시', 5]]);
   const labelForDue = (due: string) => ({
     '계약 시': '계약금', '2027-04-12': '중도금 1차', '별도 안내': '기타 옵션 중도금',
     '2028-02-14': plan === 'pre-subscription' ? '중도금' : '중도금 2차', '입주 시': '잔금',
@@ -130,7 +130,7 @@ class CalculatorApp {
     const planName = this.plan === 'main-subscription' ? '본청약 기준' : '사전청약 당첨자 기준';
     this.mount.innerHTML = `<div class="calculator-shell">
       <a class="skip-link" href="#calculator-main">계산기 본문으로 건너뛰기</a>
-      <header class="topbar"><a class="brand" href="../" aria-label="Bunfirvil 쇼케이스로 돌아가기"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span><b>BUNFIRVIL</b><small>RPG RENDERING LAB</small></span></a><nav class="topnav" aria-label="주 메뉴"><a href="../">쇼케이스</a><a class="is-active" href="./">자금 계획</a><a href="../guides/">가이드</a><a href="../households/">동·호 현황</a></nav><div id="calculator-context-header" class="build-chip" data-payment-plan="${this.plan}"><i class="status-dot"></i><span><small>${this.unitType} · ${floorLabel(this.floor)} · 2026.09.02 검토</small><b>${planName}</b></span></div></header>
+      <header class="topbar"><a class="brand" href="../" aria-label="놀이터로 돌아가기"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span><b>e편한세상 분당퍼스트빌리지</b><small>돌아온범생의 놀이터 개발 연구실</small></span></a><nav class="topnav" aria-label="주 메뉴"><a href="../">놀이터</a><a class="is-active" href="./">자금 계획</a><a href="../guides/">가이드</a><a href="../households/">동·호 현황</a></nav><div id="calculator-context-header" class="build-chip" data-payment-plan="${this.plan}"><i class="status-dot"></i><span><small>${this.unitType} · ${floorLabel(this.floor)} · 2026.09.02 검토</small><b>${planName}</b></span></div></header>
       <div class="serverless-banner"><span class="banner-pulse"></span><b>브라우저 계산 도구</b><i></i><span>계산 결과는 참고용이며 공식 공고·계약서가 우선합니다.</span></div>
       <main id="calculator-main" class="calculator-main">
         <section class="calculator-hero"><div><p class="eyebrow">BUNFIRVIL / SALE FINANCE</p><h1>내 자금 계획</h1><p><b class="context-highlight">${this.unitType} · ${floorLabel(this.floor)} · ${planName}</b> 쇼케이스 선택을 기준으로 계산합니다. 세대 정보는 이 화면에 남기지 않습니다.</p><fieldset class="plan-switch hero-plan-switch" aria-label="청약 구분"><legend>청약 구분</legend><label><input id="calculator-plan-main" name="payment-plan" value="main-subscription" type="radio" ${this.plan === 'main-subscription' ? 'checked' : ''}><span>본청약(신규신청자)</span></label><label><input id="calculator-plan-pre" name="payment-plan" value="pre-subscription" type="radio" ${this.plan === 'pre-subscription' ? 'checked' : ''}><span>사전청약 당첨자</span></label></fieldset><p class="source-stamp">기준: 입주자모집공고 2026.05.29 · 계산 검토 2026.09.02</p></div><aside class="restore-card"><span>선택 옵션 상태</span><strong>${(this.context!.optionIds ?? []).length}개 불러옴</strong><p>평형·층은 인증된 선택값으로 고정됩니다.</p><button id="calculator-return-options" data-action="return-to-showcase" type="button">옵션 다시 선택</button></aside></section>
@@ -179,7 +179,13 @@ class CalculatorApp {
 
   private bind(): void {
     this.mount.querySelectorAll<HTMLInputElement>('input[name="payment-plan"]').forEach((input) => input.addEventListener('change', () => { this.plan = input.value as BundangPaymentPlanKind; this.render(); }));
-    this.mount.querySelector('#calculator-print')?.addEventListener('click', () => window.print());
+    this.mount.querySelector('#calculator-print')?.addEventListener('click', () => {
+      const optionDetails = this.mount.querySelector<HTMLDetailsElement>('#calculator-option-details');
+      const wasOpen = optionDetails?.open ?? false;
+      if (optionDetails) optionDetails.open = true;
+      window.addEventListener('afterprint', () => { if (optionDetails) optionDetails.open = wasOpen; }, { once: true });
+      window.print();
+    });
     this.mount.querySelector('#calculator-return-options')?.addEventListener('click', () => window.location.assign(this.context!.returnUrl!));
     this.mount.querySelector<HTMLInputElement>('#calculator-tax-enabled')?.addEventListener('change', (event) => { this.taxEnabled = (event.target as HTMLInputElement).checked; this.render(); });
     this.mount.querySelectorAll<HTMLInputElement>('input[name="tax-relief-mode"]').forEach((input) => input.addEventListener('change', () => { this.taxReliefMode = input.value as TaxReliefMode; this.render(); }));

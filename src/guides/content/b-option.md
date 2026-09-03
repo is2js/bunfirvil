@@ -3,7 +3,7 @@ id: b-option
 title: 옵션 가이드
 shortTitle: 옵션 가이드
 category: 인테리어
-summary: 세대 옵션 선택, 견적 확인, 배치 가구 편집을 위한 인게임 사용 안내입니다.
+summary: 세대 옵션 선택, 견적 확인, 배치 가구 편집을 위한 놀이터 사용 안내입니다.
 updatedAt: 2026-08-31
 order: 10
 ---

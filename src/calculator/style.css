@@ -37,3 +37,10 @@
 .disclosure-body dl .calculation-total-label{color:#c8ad70;font-size:12px;font-weight:800}
 .disclosure-body dl .calculation-total{color:#f0d18b;font-size:18px;font-weight:900;letter-spacing:-.035em}
 @media print{.option-card .disclosure-body{max-height:none;overflow:visible}.disclosure-body dl .calculation-total{color:#7d5224!important}}
+
+.calculator-side .option-card .summary-title,
+.calculator-side .option-card .summary-title b{font-size:14px}
+@media print{
+  .calculator-side #calculator-option-details,.calculator-side #calculator-option-details .disclosure-body,.calculator-side #calculator-option-details .option-group,.calculator-side #calculator-option-details .option-list{display:block!important;max-height:none!important;overflow:visible!important}
+  .calculator-side #calculator-option-details .option-list li{display:flex!important}
+}

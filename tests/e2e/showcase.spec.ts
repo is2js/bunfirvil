@@ -46,7 +46,7 @@ test("runs the full serverless showcase and local review workflow", async ({ pag
   page.on("pageerror", (error) => consoleErrors.push(error.message));
 
   await page.goto("./");
-  await expect(page.getByText("프론트엔드 로컬 데모", { exact: true })).toBeVisible();
+  await expect(page.getByText("평면도, 사이버주택전시관 기반 추론가상공간입니다. 공고문, 실제 주택전시관 정보를 참고하세요", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "가이드", exact: true })).toHaveAttribute("href", /guides\/$/);
   await expect(page.getByRole("link", { name: "건축물 관리", exact: true })).toHaveAttribute("href", /building-admin\/$/);
   await expect(page.getByRole("link", { name: "인테리어 관리", exact: true })).toHaveAttribute("href", /interior-admin\/$/);

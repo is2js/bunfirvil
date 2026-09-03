@@ -815,6 +815,7 @@ input:focus-visible {
   background: rgba(4, 14, 18, 0.72);
   backdrop-filter: blur(9px);
 }
+.map-identity[hidden] { display: none !important; }
 
 .map-identity > span {
   min-width: 40px;
@@ -1687,7 +1688,8 @@ input:focus-visible {
 .furniture-card small { align-self: start; color: #61736f; font-size: 8px; }
 .furniture-status { min-height: 36px; margin: 0; padding: 7px 10px; border-top: 1px solid rgba(143, 185, 179, .1); color: #79918b; font-size: 9px; line-height: 1.5; }
 .furniture-manage-link { min-height: 32px; padding: 8px 10px; border-top: 1px solid rgba(225, 185, 99, .12); color: #d3b977; font-size: 9px; text-align: right; }
-.game-stage.is-interior-authoring #three-world-canvas { cursor: grab; }
+.game-stage.is-option-browsing #three-world-canvas { cursor: default; }
+.game-stage.is-interior-authoring #three-world-canvas { cursor: cell; }
 .game-stage.is-interior-authoring.is-relocating-furniture #three-world-canvas { cursor: crosshair; }
 .game-stage.has-interior-ghost #three-world-canvas { cursor: crosshair; }
 .game-stage.has-interior-ghost.is-furniture-ghost-invalid #three-world-canvas { cursor: not-allowed; }
@@ -2802,6 +2804,7 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
 .household-selection-dock.is-authenticated small { color: #a6e8da; }
 .household-selection-dock.is-authenticated b { color: #f1fffc; text-shadow: 0 1px 12px rgba(2, 20, 18, .45); }
 .household-selection-dock.is-authenticated button { border-color: #d5fff5; background: #d8fff6; box-shadow: 0 8px 22px rgba(1, 24, 20, .24); }
+
 @keyframes household-dock-rise {
   from { opacity: 0; transform: translateY(100%); }
   to { opacity: 1; transform: translateY(0); }
@@ -2881,4 +2884,17 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
   }
+}
+
+/* Final overrides: keep the authenticated household action visually raised
+   after the compact mobile rules above. */
+.household-selection-dock { min-height: 112px; padding: 18px clamp(18px, 4vw, 46px); }
+.household-selection-dock.is-authenticated { min-height: 132px; padding-block: 24px; }
+.household-selection-dock button { min-height: 48px; padding: 12px 24px; font-size: 15px; }
+.household-overview-shell .household-cell { font-size: 11px; }
+.household-overview-shell .household-building-card footer span { font-size: 10px; }
+@media (max-width: 640px) {
+  .household-selection-dock { min-height: 124px; padding: 14px 16px; }
+  .household-selection-dock.is-authenticated { min-height: 146px; padding-block: 20px; }
+  .household-selection-dock button { min-height: 46px; padding-block: 10px; font-size: 14px; }
 }

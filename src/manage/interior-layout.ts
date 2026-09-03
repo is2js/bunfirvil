@@ -46,6 +46,18 @@ export function createLocalProp(asset: InteriorAssetEntry, x: number, y: number,
   };
 }
 
+/** Snapshot interiors and option-managed props keep their authored placement;
+ * only furniture explicitly added through the furniture palette is editable. */
+export function isUserPlacedFurnitureProp(prop: ApartmentInteriorProp | undefined): boolean {
+  return Boolean(prop
+    && prop.localDeleted !== true
+    && prop.localOverride !== true
+    && !prop.sourcePropId
+    && !prop.sourceOptionId
+    && prop.fixedOptionLayout !== true
+    && String(prop.id || '').startsWith('local-'));
+}
+
 export function validateLayout(
   value: unknown,
   expectedMapId: string,

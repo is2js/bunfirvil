@@ -7,7 +7,7 @@ import { householdVerificationIsOperator } from './game/household-verification';
 const operator = householdVerificationIsOperator();
 const guides = guideDocuments().filter((guide) => !guide.operatorOnly || operator);
 const query = new URLSearchParams(window.location.search);
-const requestedId = query.get('guide') || 'b-option';
+const requestedId = query.get('guide') || 'playground';
 const active = guides.find((guide) => guide.id === requestedId) || guides[0];
 
 document.querySelectorAll<HTMLElement>('[data-operator-only]').forEach((element) => { element.hidden = !operator; });

@@ -14,7 +14,7 @@ const mount = operatorAccess ? document.querySelector<HTMLElement>('#householdOv
 if (operatorAccess && !mount) throw new Error('Missing #householdOverview mount point');
 
 function columnCount(): number {
-  return window.matchMedia('(min-width: 900px)').matches ? 4 : 3;
+  return 3;
 }
 
 let columns = columnCount();

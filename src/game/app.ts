@@ -59,6 +59,7 @@ import {
 } from './apartment-transform';
 import {
   createLocalProp,
+  isUserPlacedFurnitureProp,
   readLayout,
   writeLayout,
   type InteriorAssetEntry,
@@ -412,10 +413,10 @@ export class ShowcaseApp {
         <header class="topbar">
           <a class="brand" href="${resolveProjectUrl('')}" aria-label="Bunfirvil 렌더 랩 홈">
             <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span><b>BUNFIRVIL</b><small>RPG RENDERING LAB</small></span>
+            <span><b>e편한세상 분당퍼스트빌리지</b><small>돌아온범생의 놀이터 개발 연구실</small></span>
           </a>
           <nav class="topnav" aria-label="주요 메뉴">
-            <a class="is-active" href="${resolveProjectUrl('')}"><span>LIVE</span> 렌더 쇼케이스</a>
+            <a class="is-active" href="${resolveProjectUrl('')}"><span>LIVE</span> 놀이터</a>
             ${operator ? `<a href="${resolveProjectUrl('manage/')}">검수맵 관리</a>
             <a href="${resolveProjectUrl('building-admin/')}">건축물 관리</a>
             <a href="${resolveProjectUrl('interior-admin/')}">인테리어 관리</a>` : ''}
@@ -429,8 +430,8 @@ export class ShowcaseApp {
 
         <div class="serverless-banner" role="status">
           <span class="banner-pulse" aria-hidden="true"></span>
-          <b>프론트엔드 로컬 데모</b>
-          <span>서버 판정 없음</span>
+          <b>평면도, 사이버주택전시관 기반 추론가상공간입니다. 공고문, 실제 주택전시관 정보를 참고하세요</b>
+          <span>게시 자료는 참고용</span>
           <i></i>
           <span>데이터는 이 브라우저에만 저장됩니다.</span>
         </div>
@@ -474,7 +475,7 @@ export class ShowcaseApp {
               <div id="actor-layer" class="actor-layer"></div>
               <div id="effect-layer" class="effect-layer" aria-hidden="true"></div>
 
-              <div class="map-identity">
+              <div class="map-identity" ${operator ? '' : 'hidden'}>
                 <span id="map-unit">${escapeHtml(this.currentMap.unitType)}</span>
                 <div><b id="map-title">${escapeHtml(this.currentMap.label)}</b><small id="map-revision">${escapeHtml(this.currentMap.revision)}</small></div>
                 <em id="plan-variant-badge">${this.planVariant}형</em>
@@ -1496,7 +1497,9 @@ export class ShowcaseApp {
       button.classList.toggle('is-active', button.dataset.paletteTab === tab));
     this.get<HTMLElement>('#option-palette-body').hidden = tab !== 'options';
     this.get<HTMLElement>('#furniture-palette-body').hidden = tab !== 'furniture';
-    this.get<HTMLElement>('#game-stage').classList.toggle('is-interior-authoring', tab === 'furniture');
+    const stage = this.get<HTMLElement>('#game-stage');
+    stage.classList.toggle('is-interior-authoring', tab === 'furniture');
+    stage.classList.toggle('is-option-browsing', tab === 'options');
     if (tab === 'furniture') {
       this.pressedKeys.clear();
       this.focusInteriorApartment();
@@ -1754,27 +1757,16 @@ export class ShowcaseApp {
       || undefined;
   }
 
+  private isEditableFurnitureProp(prop: ApartmentInteriorProp | undefined): boolean {
+    if (!prop) return false;
+    const local = this.localInteriorProps.find((candidate) => candidate === prop
+      || String(candidate.id || '') === String(prop.id || ''));
+    return isUserPlacedFurnitureProp(local);
+  }
+
   private ensureEditableSelectedProp(): ApartmentInteriorProp | undefined {
     const local = this.selectedLocalProp();
-    if (local) return local;
-    const rendered = this.threeRenderer?.getRenderedProp(this.selectedLocalPropId);
-    const source = rendered
-      || (String(this.selectedScenePropSnapshot?.id || '') === this.selectedLocalPropId ? this.selectedScenePropSnapshot : undefined);
-    if (!source?.id || !source.assetId) return undefined;
-    const safeSourceId = String(source.id).replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'prop';
-    const override: ApartmentInteriorProp = {
-      ...source,
-      id: `local-override-${safeSourceId}-${Date.now()}`,
-      sourcePropId: String(source.id),
-      localOverride: true,
-      positionMeters: [...(source.positionMeters || [0, 0])],
-    };
-    this.localInteriorProps.push(override);
-    this.selectedLocalPropId = String(override.id);
-    this.selectedScenePropSnapshot = { ...override, positionMeters: [...(override.positionMeters || [])] };
-    this.threeRenderer?.setEditorProps(this.localInteriorProps);
-    this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
-    return override;
+    return this.isEditableFurnitureProp(local) ? local : undefined;
   }
 
   private scenePropAt(event: MouseEvent | PointerEvent): ApartmentInteriorProp | undefined {
@@ -1847,7 +1839,10 @@ export class ShowcaseApp {
       : this.scenePropAt(event);
     if (!picked) return false;
     event.preventDefault();
-    this.selectSceneProp(picked, true, '가구 우클릭 메뉴를 열었습니다. 이동·회전·벽 자석·삭제를 사용할 수 있습니다.');
+    const editable = this.isEditableFurnitureProp(picked);
+    this.selectSceneProp(picked, editable, editable
+      ? '가구 우클릭 메뉴를 열었습니다. 이동·회전·벽 자석·삭제를 사용할 수 있습니다.'
+      : '기본 제공 인테리어와 옵션 구성은 위치가 고정되어 있습니다.');
     return true;
   }
 
@@ -1888,7 +1883,11 @@ export class ShowcaseApp {
       || this.threeRenderer?.getRenderedProp(pickedId)
       || undefined;
     if (picked) {
-      this.selectSceneProp(picked, true, '가구를 선택했습니다. 드래그하거나 화면 조작창으로 수정하세요.');
+      const editable = this.isEditableFurnitureProp(picked);
+      this.selectSceneProp(picked, editable, editable
+        ? '가구를 선택했습니다. 드래그하거나 화면 조작창으로 수정하세요.'
+        : '기본 제공 인테리어와 옵션 구성은 이동하거나 회전할 수 없습니다.');
+      if (!editable) return true;
       if (event.altKey) {
         this.transformLocalProp('mirror');
         return true;
@@ -1973,7 +1972,7 @@ export class ShowcaseApp {
   private transformLocalProp(action: 'rotate-left' | 'rotate-right' | 'mirror' | 'delete'): void {
     const prop = this.ensureEditableSelectedProp();
     if (!prop) {
-      this.get<HTMLElement>('#furniture-status').textContent = '먼저 PBR 맵에서 배치된 가구를 선택해 주세요.';
+      this.get<HTMLElement>('#furniture-status').textContent = '사용자가 가구배치에서 추가한 가구만 이동·회전·삭제할 수 있습니다.';
       return;
     }
     if (action === 'delete') {
@@ -2003,6 +2002,10 @@ export class ShowcaseApp {
     const ghost = this.interiorGhostProp;
     const selected = ghost || this.selectedSceneProp();
     if (!selected) return;
+    if (!ghost && !this.isEditableFurnitureProp(selected)) {
+      this.toast('기본 제공 인테리어와 옵션 구성은 고정되어 있습니다.', 'notice');
+      return;
+    }
     this.furnitureWallSnapEnabled = !this.furnitureWallSnapEnabled;
     if (ghost) {
       this.updateInteriorGhost((this.lastInteriorPointerPoint || ghost.positionMeters || this.defaultInteriorGhostPoint()) as NumericPoint);
@@ -2073,7 +2076,8 @@ export class ShowcaseApp {
     toolbar.style.left = `${left}px`;
     toolbar.style.top = `${top}px`;
     toolbar.hidden = false;
-    const actionsVisible = this.paletteTab === 'furniture' || this.furnitureContextMenuOpen;
+    const actionsVisible = this.isEditableFurnitureProp(prop)
+      && (this.paletteTab === 'furniture' || this.furnitureContextMenuOpen);
     toolbar.classList.toggle('is-name-only', !actionsVisible);
     toolbar.classList.toggle('is-wall-snap', this.furnitureWallSnapEnabled);
     stage.classList.add('has-furniture-selection');

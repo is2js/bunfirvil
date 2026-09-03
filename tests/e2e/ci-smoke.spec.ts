@@ -88,7 +88,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(page.locator('.household-overview-shell > .topbar')).toBeVisible();
   await expect(page.locator('.household-building-row').first().locator('.household-building-card')).toHaveCount(3);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await expect(page.locator('.household-building-row').first().locator('.household-building-card')).toHaveCount(4);
+  await expect(page.locator('.household-building-row').first().locator('.household-building-card')).toHaveCount(3);
   await page.evaluate(() => sessionStorage.removeItem('bunfirvil:household-verification:v1'));
   await page.goto('./');
   await page.locator('[data-choose-building="105"]').click();
@@ -141,8 +141,8 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await expect(page.locator('#household-request-verification')).toBeDisabled();
   await expect(page.locator('#household-selection-dock')).toBeVisible();
   await expect(page.locator('#household-selection-dock')).toHaveClass(/is-authenticated/);
-  await expect(page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' })).toBeEnabled();
-  await page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' }).click();
+  await expect(page.getByRole('button', { name: '놀이터 입장' })).toBeEnabled();
+  await page.getByRole('button', { name: '놀이터 입장' }).click();
   await expect(page).toHaveURL(/map=bundang-first-village-51a-prototype/);
   await expect(page).toHaveURL(/variant=A/);
   await expect(page.locator('#stage-loader')).toHaveClass(/is-hidden/, { timeout: 30_000 });
@@ -159,7 +159,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   await page.getByPlaceholder('닉네임 입력').fill('돌범이웃');
   await page.getByRole('button', { name: '인증 확인' }).click();
   await expect(page.locator('#household-nickname-status')).toHaveText('운영자 인증이 완료되었습니다. 관리 메뉴를 사용할 수 있습니다.');
-  await page.getByRole('button', { name: '선택한 세대 쇼케이스 보기' }).click();
+  await page.getByRole('button', { name: '놀이터 입장' }).click();
   await expect(page).toHaveURL(/map=bundang-first-village-55b-prototype/);
   await expect(page).toHaveURL(/actor=200/);
   await expect(page).toHaveURL(/variant=B/);
