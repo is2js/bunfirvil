@@ -61,6 +61,8 @@ function doPost(event) {
 }
 
 function verifyRequest_(sheet, request) {
+  var operatorMatch = matchingOperatorRow_(sheet, request.nickname);
+  if (operatorMatch) return verificationOutput_('운영자');
   var match = matchingVerificationRow_(sheet, request);
   return verificationOutput_(match ? normalizeStatus_(match[3]) : '');
 }
@@ -69,6 +71,10 @@ function requestVerification_(sheet, request) {
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return serviceUnavailable_();
   try {
+    // 운영자 닉네임은 동·타입에 종속되지 않는다. 기존 운영자가 등록 요청을
+    // 눌러도 요청 행을 추가하거나 권한을 낮추지 않고 즉시 운영자 결과를 준다.
+    var operatorMatch = matchingOperatorRow_(sheet, request.nickname);
+    if (operatorMatch) return verificationOutput_('운영자');
     var match = matchingVerificationRow_(sheet, request);
     if (match) {
       var existingStatus = normalizeStatus_(match[3]);
@@ -83,6 +89,22 @@ function requestVerification_(sheet, request) {
   } finally {
     lock.releaseLock();
   }
+}
+
+function matchingOperatorRow_(sheet, nickname) {
+  var normalizedNickname = normalizeNickname_(nickname);
+  if (!normalizedNickname) return null;
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+  var rowCount = Math.min(lastRow - 1, VERIFICATION_MAX_DATA_ROWS);
+  var values = sheet.getRange(2, 1, rowCount, 4).getDisplayValues();
+  for (var index = 0; index < values.length; index += 1) {
+    if (normalizeNickname_(values[index][2]) !== normalizedNickname
+      || normalizeStatus_(values[index][3]) !== '운영자') continue;
+    values[index].__rowNumber = index + 2;
+    return values[index];
+  }
+  return null;
 }
 
 function matchingVerificationRow_(sheet, request) {

@@ -74,7 +74,7 @@ a { color: inherit; }
 .brand-mark i:nth-child(2) { height: 21px; background: var(--gold); }
 .brand b, .brand small { display: block; }
 .brand b { font-size: 12px; letter-spacing: .12em; }
-.brand small { margin-top: 2px; color: #58716d; font: 700 7px ui-monospace, monospace; letter-spacing: .13em; }
+.brand small { margin-top: 2px; color: #6f8782; font: 700 9px ui-monospace, monospace; letter-spacing: .11em; }
 
 .topnav { display: flex; align-self: stretch; }
 .topnav a {
@@ -96,7 +96,7 @@ a { color: inherit; }
   border: 1px solid rgba(225, 185, 99, .18);
   border-radius: 3px;
   color: #a99056;
-  font: 700 7px ui-monospace, monospace;
+  font: 700 9px ui-monospace, monospace;
   letter-spacing: .1em;
 }
 
@@ -110,7 +110,7 @@ a { color: inherit; }
   border-bottom: 1px solid rgba(225, 185, 99, .13);
   color: #8a9c97;
   background: rgba(225, 185, 99, .035);
-  font-size: 8px;
+  font-size: 10px;
 }
 .guide-banner b { color: #d5bd80; }
 
@@ -131,9 +131,9 @@ a { color: inherit; }
 }
 .guide-sidebar { position: sticky; top: 20px; }
 .guide-sidebar > header { padding: 20px; border-bottom: 1px solid var(--line); }
-.guide-sidebar header p { margin: 0 0 6px; color: #607a75; font: 800 8px ui-monospace, monospace; letter-spacing: .15em; }
+.guide-sidebar header p { margin: 0 0 6px; color: #6f8882; font: 800 9px ui-monospace, monospace; letter-spacing: .15em; }
 .guide-sidebar h1 { margin: 0; font-size: 20px; }
-.guide-sidebar header span { margin-top: 10px; display: block; color: #ad9258; font: 700 7px ui-monospace, monospace; }
+.guide-sidebar header span { margin-top: 10px; display: block; color: #c0a465; font: 700 9px ui-monospace, monospace; }
 
 .guide-list { padding: 8px; display: grid; gap: 5px; }
 .guide-item {
@@ -144,26 +144,26 @@ a { color: inherit; }
   color: #829792;
   text-decoration: none;
 }
-.guide-item span { color: #607c76; font: 700 7px ui-monospace, monospace; }
+.guide-item span { color: #6f8882; font: 700 9px ui-monospace, monospace; }
 .guide-item b { color: #becdc9; font-size: 11px; }
-.guide-item small { overflow: hidden; font-size: 8px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.guide-item small { overflow: hidden; font-size: 9px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
 .guide-item:hover { border-color: var(--line); background: rgba(255,255,255,.02); }
 .guide-item.is-active { border-color: rgba(225, 185, 99, .25); background: rgba(225, 185, 99, .055); }
 .guide-item.is-active b { color: #f0d89e; }
 
-.guide-extension-note { margin: 8px; padding: 12px; border-top: 1px solid var(--line); color: #657b76; font-size: 8px; line-height: 1.6; }
+.guide-extension-note { margin: 8px; padding: 12px; border-top: 1px solid var(--line); color: #718984; font-size: 9px; line-height: 1.6; }
 .guide-extension-note b { color: #9eb2ad; }
 .guide-extension-note p { margin: 5px 0 0; }
 .guide-extension-note code { color: #bcaa75; }
 
 .guide-reader { min-width: 0; }
 .guide-hero { padding: 34px 42px 30px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, rgba(112, 217, 195, .04), rgba(225, 185, 99, .03)); }
-.guide-meta { display: flex; align-items: center; gap: 10px; color: #637c76; font: 700 8px ui-monospace, monospace; }
+.guide-meta { display: flex; align-items: center; gap: 10px; color: #718984; font: 700 9px ui-monospace, monospace; }
 .guide-meta span { padding: 4px 7px; border: 1px solid rgba(112, 217, 195, .22); color: #80cdbd; }
 .guide-hero h2 { margin: 17px 0 9px; font-size: clamp(27px, 4vw, 42px); letter-spacing: -.045em; }
 .guide-hero > p { max-width: 720px; margin: 0; color: #8ca19b; font-size: 13px; line-height: 1.7; }
 .guide-actions { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 8px; }
-.guide-actions a { padding: 8px 11px; border: 1px solid var(--line-strong); color: #9fb5af; background: rgba(255,255,255,.02); font-size: 9px; font-weight: 700; text-decoration: none; }
+.guide-actions a { padding: 8px 11px; border: 1px solid var(--line-strong); color: #a9beb8; background: rgba(255,255,255,.02); font-size: 10px; font-weight: 700; text-decoration: none; }
 .guide-actions a:first-child { border-color: rgba(225, 185, 99, .25); color: #d4bd83; }
 .guide-actions a:hover { color: white; background: rgba(255,255,255,.05); }
 

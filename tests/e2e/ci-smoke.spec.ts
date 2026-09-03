@@ -7,7 +7,7 @@ const MAPS = [
   ['bundang-first-village-59a-prototype', '59A'],
 ] as const;
 
-test('smokes household selection, deployed maps, living-room spawn, and B palette', async ({ page }) => {
+test('smokes household selection, deployed maps, read-only sharing, living-room spawn, and option palette', async ({ page, context }) => {
   const forbiddenRequests: string[] = [];
   const consoleErrors: string[] = [];
   let verificationMode: 'match' | 'mismatch' | 'error' = 'match';
@@ -55,6 +55,7 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
   page.on('pageerror', (error) => consoleErrors.push(error.message));
 
   await page.setViewportSize({ width: 390, height: 844 });
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://127.0.0.1:4173' });
   await page.goto('./');
   await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
   await expect(page.locator('.household-selector-shell > .topbar')).toBeVisible();
@@ -176,6 +177,27 @@ test('smokes household selection, deployed maps, living-room spawn, and B palett
     await expect(page.locator('#metric-chunks')).toHaveText('16/16');
     await expect(page.locator('#game-stage')).toHaveAttribute('data-actor-spawn-room', 'living');
   }
+
+  await page.locator('#share-showcase').click();
+  await expect(page.locator('#toast')).toContainText('읽기 전용 공유 링크를 복사했습니다.');
+  const sharedUrl = await page.evaluate(() => navigator.clipboard.readText());
+  expect(sharedUrl).toMatch(/\?map=bundang-first-village-59a-prototype&variant=B#share=v1\./);
+  expect(sharedUrl).not.toMatch(/actor=|nickname|household|operator/);
+  await page.evaluate(() => sessionStorage.removeItem('bunfirvil:household-verification:v1'));
+  await page.goto(sharedUrl);
+  await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
+  await page.locator('[data-choose-building="105"]').click();
+  await page.locator('.household-cell[data-building="105"][data-floor="25"][data-line="1"]').click();
+  await page.getByPlaceholder('닉네임 입력').fill('돌범이웃');
+  await page.getByRole('button', { name: '인증 확인' }).click();
+  await page.getByRole('button', { name: '놀이터 입장' }).click();
+  await expect(page.locator('#stage-loader')).toHaveClass(/is-hidden/, { timeout: 30_000 });
+  await expect(page.locator('.share-readonly-banner')).toBeVisible();
+  await expect(page.locator('#open-storage-manager')).toBeDisabled();
+  await expect(page.locator('.hotbar-slot').nth(0)).toBeEnabled();
+  await expect(page.locator('.hotbar-slot').nth(1)).toBeDisabled();
+  await expect(page.locator('.hotbar-slot').nth(2)).toBeDisabled();
+  await expect(page.locator('.hotbar-slot').nth(3)).toBeDisabled();
 
   await expect(page.locator('.rpg-actor')).toHaveCount(2);
   const categories = page.locator('#option-categories');

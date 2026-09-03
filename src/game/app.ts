@@ -31,6 +31,16 @@ import { COOKTOP_OPTION_IDS } from './bundang-option-layout';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import { stageOptionChipActionFromPath } from './stage-option-chip-action';
 import {
+  BundangShareError,
+  bundangReadOnlyShareUrl,
+  createBundangReadOnlyShare,
+  decodeBundangReadOnlyShare,
+  shareTokenFromHash,
+  sharedFurnitureProps,
+  validateBundangReadOnlyShare,
+  type BundangReadOnlyShareV1,
+} from './read-only-share';
+import {
   validateInteriorPlacement,
   type InteriorPlacementValidation,
 } from './interior-placement';
@@ -257,6 +267,9 @@ export class ShowcaseApp {
   private assetCount = 0;
   private mapLoadToken = 0;
   private planVariant: ApartmentPlanVariant = 'A';
+  private readOnlyShare = false;
+  private shareToken = '';
+  private sharedState: BundangReadOnlyShareV1 | null = null;
   private readonly inspectionLaser = {
     active: false,
     axis: 'x' as InspectionLaserAxis,
@@ -281,6 +294,8 @@ export class ShowcaseApp {
   async start(): Promise<void> {
     const { catalog, fallback } = await loadCatalog();
     this.catalog = catalog;
+    this.shareToken = shareTokenFromHash(window.location.hash) || '';
+    this.readOnlyShare = Boolean(this.shareToken);
     const hasRequestedMap = hasValidMapQuery(catalog.maps, window.location.search);
     const requestedDeepLink = hasRequestedMap ? new URL(window.location.href) : null;
     if (!hasRequestedMap || !readHouseholdVerificationSession()) {
@@ -302,7 +317,7 @@ export class ShowcaseApp {
       // 계산기는 인증 세대의 타입과 가격 층 구간만 사용한다. 동·호·닉네임은 저장하지 않는다.
       writeSaleCalculatorHouseholdContext(selection.unitType, selection.floor);
       if (requestedDeepLink) {
-        requestedDeepLink.hash = '';
+        requestedDeepLink.hash = this.shareToken ? `#share=v1.${this.shareToken}` : '';
         history.replaceState(null, '', requestedDeepLink);
       } else {
         const url = new URL(resolveProjectUrl(''));
@@ -342,6 +357,23 @@ export class ShowcaseApp {
       this.threeRenderer = null;
     }
     await this.loadInteriorAssets();
+    if (this.shareToken) {
+      try {
+        const shared = validateBundangReadOnlyShare(
+          decodeBundangReadOnlyShare(this.shareToken),
+          this.catalog,
+          this.interiorAssets,
+        );
+        if (shared.mapId !== this.currentMap.id || shared.planVariant !== this.planVariant) throw new BundangShareError('invalid-state');
+        this.sharedState = shared;
+      } catch (error) {
+        console.warn('[bunfirvil] invalid read-only share', error);
+        const loader = this.get<HTMLElement>('#stage-loader');
+        loader.innerHTML = '<b>공유 링크를 열 수 없습니다</b><small>링크가 손상되었거나 현재 카탈로그와 맞지 않습니다. 공유한 사람에게 새 링크를 요청해 주세요.</small>';
+        loader.classList.add('is-share-error');
+        return;
+      }
+    }
     this.createActors();
     this.bindEvents();
     this.renderHotbar();
@@ -452,6 +484,7 @@ export class ShowcaseApp {
           <i></i>
           <span>데이터는 이 브라우저에만 저장됩니다.</span>
         </div>
+        ${this.readOnlyShare ? '<div class="share-readonly-banner" role="status"><b>공유 열람 모드</b><span>이동과 실측은 가능하지만 옵션·가구·평면은 변경하거나 저장할 수 없습니다.</span></div>' : ''}
 
         <main class="showcase-layout">
           <section class="play-column" aria-label="RPG 렌더링 쇼케이스">
@@ -459,16 +492,17 @@ export class ShowcaseApp {
               <button type="button" id="choose-household" class="deck-text-button">세대 다시 선택</button>
               <button type="button" id="viewer-reset-position" class="icon-button" title="캐릭터 위치 초기화" aria-label="캐릭터 위치 초기화">↺</button>
               <button type="button" id="viewer-open-help" class="icon-button" title="놀이터 조작법" aria-label="놀이터 조작법">?</button>
+              <button type="button" id="share-showcase" class="deck-text-button share-showcase-button">공유</button>
             </div>`}
             <div class="control-deck ${operator ? '' : 'is-user-hidden'}">
               <label class="select-field">
                 <span>INSPECTION MAP</span>
-                <select id="map-select" aria-label="검수맵 선택">${mapOptions}</select>
+                <select id="map-select" aria-label="검수맵 선택" ${this.readOnlyShare ? 'disabled' : ''}>${mapOptions}</select>
               </label>
               <div class="plan-variant-switch" role="group" aria-label="평면 타입 선택">
                 <span>PLAN TYPE</span>
                 <div>
-                  ${(['A', 'B', 'C', 'D'] as ApartmentPlanVariant[]).map((variant) => `<button type="button" data-plan-variant="${variant}" class="${this.planVariant === variant ? 'is-active' : ''}">${variant}형</button>`).join('')}
+                  ${(['A', 'B', 'C', 'D'] as ApartmentPlanVariant[]).map((variant) => `<button type="button" data-plan-variant="${variant}" class="${this.planVariant === variant ? 'is-active' : ''}" ${this.readOnlyShare ? 'disabled' : ''}>${variant}형</button>`).join('')}
                 </div>
               </div>
               <div class="actor-switch" role="group" aria-label="조작 캐릭터">
@@ -482,6 +516,7 @@ export class ShowcaseApp {
                 <button type="button" id="${operator ? 'choose-household' : 'operator-choose-household'}" class="deck-text-button">세대 다시 선택</button>
                 <button type="button" id="reset-position" class="icon-button" title="캐릭터 위치 초기화" aria-label="캐릭터 위치 초기화">↺</button>
                 <button type="button" id="open-help" class="icon-button" title="놀이터 조작법" aria-label="놀이터 조작법">?</button>
+                ${operator ? '<button type="button" id="share-showcase" class="deck-text-button share-showcase-button">공유</button>' : ''}
               </div>
             </div>
 
@@ -593,7 +628,7 @@ export class ShowcaseApp {
                 <h2>옵션 팔레트</h2>
               </div>
               <div class="option-head-actions">
-                <button type="button" id="open-storage-manager" class="option-storage-button">저장 관리</button>
+                <button type="button" id="open-storage-manager" class="option-storage-button" ${this.readOnlyShare ? 'disabled title="공유 열람 모드에서는 저장을 변경할 수 없습니다."' : ''}>저장 관리</button>
                 <a class="option-guide-link" href="${resolveProjectUrl('guides/?guide=b-option')}" target="_blank" rel="noopener noreferrer">옵션 가이드</a>
                 <span class="option-count" id="option-count">0</span>
               </div>
@@ -606,6 +641,7 @@ export class ShowcaseApp {
               <span id="palette-view-label">전체 옵션</span>
               <button type="button" id="palette-applied-only" aria-pressed="false">적용만 보기</button>
             </div>
+            ${this.readOnlyShare ? '<div class="palette-readonly-note"><b>공유 열람 중</b><span>옵션과 가구 배치는 원본을 그대로 표시합니다.</span></div>' : ''}
             <div id="option-palette-body">
               <div id="option-categories" class="option-categories"></div>
               <div id="option-list" class="option-list"></div>
@@ -625,14 +661,14 @@ export class ShowcaseApp {
               </div>
               <input id="furniture-search" class="furniture-search" type="search" placeholder="가구·가전 검색" autocomplete="off" />
               <div class="furniture-actions">
-                <button type="button" id="furniture-rotate-left">−90°</button>
-                <button type="button" id="furniture-rotate-right">+90°</button>
-                <button type="button" id="furniture-mirror">반전</button>
-                <button type="button" id="furniture-delete">삭제</button>
+                <button type="button" id="furniture-rotate-left" ${this.readOnlyShare ? 'disabled' : ''}>−90°</button>
+                <button type="button" id="furniture-rotate-right" ${this.readOnlyShare ? 'disabled' : ''}>+90°</button>
+                <button type="button" id="furniture-mirror" ${this.readOnlyShare ? 'disabled' : ''}>반전</button>
+                <button type="button" id="furniture-delete" ${this.readOnlyShare ? 'disabled' : ''}>삭제</button>
               </div>
               <div id="furniture-list" class="furniture-list"></div>
               <p id="furniture-status" class="furniture-status">가구 카드를 선택한 뒤 PBR 맵 바닥을 누르세요.</p>
-              <a class="furniture-manage-link" href="${resolveProjectUrl('manage/#interiorEditor')}">평면도 · PBR 상세 편집 열기 →</a>
+              ${this.readOnlyShare ? '' : `<a class="furniture-manage-link" href="${resolveProjectUrl('manage/#interiorEditor')}">평면도 · PBR 상세 편집 열기 →</a>`}
             </div>
           </aside>
         </main>
@@ -753,17 +789,28 @@ export class ShowcaseApp {
   private bindEvents(): void {
     const signal = this.abortController.signal;
     this.get<HTMLSelectElement>('#map-select').addEventListener('change', (event) => {
+      if (this.readOnlyShare) return;
       void this.selectMap((event.currentTarget as HTMLSelectElement).value);
     }, { signal });
 
     this.mount.querySelectorAll<HTMLButtonElement>('[data-map-id]').forEach((button) => {
-      button.addEventListener('click', () => void this.selectMap(button.dataset.mapId || ''), { signal });
+      button.addEventListener('click', () => {
+        if (!this.readOnlyShare) void this.selectMap(button.dataset.mapId || '');
+      }, { signal });
     });
     this.mount.querySelectorAll<HTMLButtonElement>('[data-plan-variant]').forEach((button) => {
-      button.addEventListener('click', () => void this.selectPlanVariant((button.dataset.planVariant || 'A') as ApartmentPlanVariant), { signal });
+      button.addEventListener('click', () => {
+        if (!this.readOnlyShare) void this.selectPlanVariant((button.dataset.planVariant || 'A') as ApartmentPlanVariant);
+      }, { signal });
     });
     this.mount.querySelectorAll<HTMLButtonElement>('[data-actor-key]').forEach((button) => {
-      button.addEventListener('click', () => this.setActiveActor(button.dataset.actorKey as CharacterKey), { signal });
+      button.addEventListener('click', () => {
+        if (this.readOnlyShare) {
+          this.toast('공유 열람 모드에서는 캐릭터를 전환할 수 없습니다.', 'notice');
+          return;
+        }
+        this.setActiveActor(button.dataset.actorKey as CharacterKey);
+      }, { signal });
     });
     this.mount.querySelectorAll<HTMLButtonElement>('[data-palette-tab]').forEach((button) => {
       button.addEventListener('click', () => this.setPaletteTab(button.dataset.paletteTab === 'furniture' ? 'furniture' : 'options'), { signal });
@@ -776,6 +823,10 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#stage-option-chips').addEventListener('click', (event) => {
       const action = stageOptionChipActionFromPath(event.composedPath());
       if (!action) return;
+      if (this.readOnlyShare && action.kind === 'remove') {
+        this.toast('공유 열람 모드에서는 옵션을 해제할 수 없습니다.', 'notice');
+        return;
+      }
       const options = compatibleOptions(this.catalog.bOptions, this.currentMap.unitType).map((option) => ({
         ...option,
         price: option.prices?.[this.currentMap.unitType] ?? option.price,
@@ -787,6 +838,7 @@ export class ShowcaseApp {
       this.selectStageOptionInWorld(action.optionId);
     }, { signal });
     this.get<HTMLButtonElement>('#stage-option-clear').addEventListener('click', () => {
+      if (this.readOnlyShare) return;
       void this.clearAllSelectedOptionsWithConfirmation();
     }, { signal });
     this.get<HTMLInputElement>('#furniture-search').addEventListener('input', () => this.renderFurniturePalette(), { signal });
@@ -831,6 +883,9 @@ export class ShowcaseApp {
     const dialog = this.get<HTMLDialogElement>('#help-dialog');
     this.mount.querySelectorAll<HTMLButtonElement>('#open-help, #viewer-open-help')
       .forEach((button) => button.addEventListener('click', () => dialog.showModal(), { signal }));
+    this.mount.querySelectorAll<HTMLButtonElement>('#share-showcase').forEach((button) => {
+      button.addEventListener('click', () => void this.copyReadOnlyShareLink(), { signal });
+    });
     this.get<HTMLButtonElement>('#choose-household').addEventListener('click', () => {
       clearHouseholdVerificationSession();
       clearSaleCalculatorContext();
@@ -874,6 +929,7 @@ export class ShowcaseApp {
       if (event.target === storageDialog) storageDialog.close();
     }, { signal });
     this.get<HTMLButtonElement>('#reset-current-storage').addEventListener('click', () => {
+      if (this.readOnlyShare) return;
       const unitType = this.currentMap.unitType;
       if (!window.confirm(`${unitType} 평형의 모든 평면 타입과 같은 평형 세대에 공통 저장된 옵션·가구 배치를 초기화할까요? 검수 상태·메모, 건축 기록과 핫바는 유지됩니다.`)) return;
       resetCurrentMapOptionsAndLayout(this.currentMap.id);
@@ -883,6 +939,7 @@ export class ShowcaseApp {
       });
     }, { signal });
     this.get<HTMLButtonElement>('#reset-all-storage').addEventListener('click', () => {
+      if (this.readOnlyShare) return;
       if (!window.confirm('Bunfirvil의 모든 평형 옵션·가구, 검수 메모, 건축 기록과 핫바를 초기화할까요? 이 작업은 되돌릴 수 없습니다.')) return;
       resetAllBunfirvilLocalData();
       clearSaleCalculatorContext();
@@ -954,6 +1011,10 @@ export class ShowcaseApp {
       }
       if (event.code === 'Space' && !event.repeat) {
         event.preventDefault();
+        if (this.readOnlyShare) {
+          this.toast('공유 열람 모드에서는 기본 공격을 사용할 수 없습니다.', 'notice');
+          return;
+        }
         this.activateSkill('basic-attack');
         return;
       }
@@ -1600,7 +1661,9 @@ export class ShowcaseApp {
       }).join('') || '<p class="empty-options">검색 결과가 없습니다.</p>';
     }
     list.querySelectorAll<HTMLButtonElement>('[data-furniture-asset]').forEach((button) => {
+      button.disabled = this.readOnlyShare;
       button.addEventListener('click', () => {
+        if (this.readOnlyShare) return;
         const assetId = button.dataset.furnitureAsset || '';
         const asset = this.interiorAssets.find((candidate) => candidate.assetId === assetId);
         if (!asset) return;
@@ -1665,6 +1728,7 @@ export class ShowcaseApp {
   }
 
   private beginInteriorGhost(mode: 'add' | 'move', prop: ApartmentInteriorProp): void {
+    if (this.readOnlyShare) return;
     this.interiorGhostMode = mode;
     this.interiorGhostProp = { ...prop, positionMeters: [...(prop.positionMeters || this.defaultInteriorGhostPoint())] };
     this.interiorRelocationArmed = mode === 'move';
@@ -1707,6 +1771,7 @@ export class ShowcaseApp {
   }
 
   private confirmInteriorGhost(): boolean {
+    if (this.readOnlyShare) return false;
     const ghost = this.interiorGhostProp;
     if (!ghost || !this.interiorGhostValidation?.ok) {
       const message = this.interiorGhostValidation?.errors[0]?.message || '배치 가능한 초록색 위치로 옮겨주세요.';
@@ -1780,7 +1845,7 @@ export class ShowcaseApp {
   }
 
   private isEditableFurnitureProp(prop: ApartmentInteriorProp | undefined): boolean {
-    if (!prop) return false;
+    if (!prop || this.readOnlyShare) return false;
     const local = this.localInteriorProps.find((candidate) => candidate === prop
       || String(candidate.id || '') === String(prop.id || ''));
     return isUserPlacedFurnitureProp(local);
@@ -1992,6 +2057,10 @@ export class ShowcaseApp {
   }
 
   private transformLocalProp(action: 'rotate-left' | 'rotate-right' | 'mirror' | 'delete'): void {
+    if (this.readOnlyShare) {
+      this.toast('공유 열람 모드에서는 가구를 변경할 수 없습니다.', 'notice');
+      return;
+    }
     const prop = this.ensureEditableSelectedProp();
     if (!prop) {
       this.get<HTMLElement>('#furniture-status').textContent = '사용자가 가구배치에서 추가한 가구만 이동·회전·삭제할 수 있습니다.';
@@ -2021,6 +2090,10 @@ export class ShowcaseApp {
   }
 
   private toggleFurnitureWallSnap(): void {
+    if (this.readOnlyShare) {
+      this.toast('공유 열람 모드에서는 가구를 변경할 수 없습니다.', 'notice');
+      return;
+    }
     const ghost = this.interiorGhostProp;
     const selected = ghost || this.selectedSceneProp();
     if (!selected) return;
@@ -2057,7 +2130,7 @@ export class ShowcaseApp {
   }
 
   private saveInteriorLayout(message: string): void {
-    if (!this.world) return;
+    if (!this.world || this.readOnlyShare) return;
     const layout: LocalInteriorLayoutV1 = {
       schemaVersion: 1,
       mapId: this.world.entry.id,
@@ -2115,6 +2188,7 @@ export class ShowcaseApp {
   private async selectMap(mapId: string, updateUrl = true): Promise<void> {
     const map = this.catalog.maps.find((entry) => entry.id === mapId);
     if (!map) return;
+    if (this.readOnlyShare && this.sharedState && map.id !== this.sharedState.mapId) return;
     this.planVariant = planVariantDefinition(map.unitType, this.planVariant).variant;
     this.stopInspectionLaser('map-change');
     this.cancelInteriorGhost('', false);
@@ -2154,7 +2228,9 @@ export class ShowcaseApp {
     }
     this.resetActors();
     const compatibleMapOptions = compatibleOptions(this.catalog.bOptions, map.unitType);
-    const storedSelectedOptionIds = readSelectedOptions(map.id).filter((id) =>
+    const storedSelectedOptionIds = (this.sharedState?.mapId === map.id
+      ? this.sharedState.selectedOptionIds
+      : readSelectedOptions(map.id)).filter((id) =>
       compatibleMapOptions.some((option) => option.id === id),
     );
     this.selectedOptionIds = canonicalizeBundangMinusOptionSelection(
@@ -2162,11 +2238,13 @@ export class ShowcaseApp {
       storedSelectedOptionIds,
     );
     if (this.selectedOptionIds.join('\u0000') !== storedSelectedOptionIds.join('\u0000')) {
-      writeSelectedOptions(map.id, this.selectedOptionIds);
+      if (!this.readOnlyShare) writeSelectedOptions(map.id, this.selectedOptionIds);
     }
     synchronizeBundangMinusOptionWorldCollision(world, this.selectedOptionIds);
     this.renderer.setSelectedOptions(this.selectedOptionIds);
-    this.localInteriorProps = readLayout(map.id, new Set(this.interiorAssets.map((asset) => asset.assetId))).props;
+    this.localInteriorProps = this.sharedState?.mapId === map.id
+      ? sharedFurnitureProps(this.sharedState, this.interiorAssets)
+      : readLayout(map.id, new Set(this.interiorAssets.map((asset) => asset.assetId))).props;
     this.selectedLocalPropId = '';
     this.selectedScenePropSnapshot = null;
     this.pendingInteriorAssetId = '';
@@ -2199,6 +2277,10 @@ export class ShowcaseApp {
   }
 
   private async selectPlanVariant(variant: ApartmentPlanVariant): Promise<void> {
+    if (this.readOnlyShare) {
+      this.toast('공유 열람 모드에서는 평면 타입을 변경할 수 없습니다.', 'notice');
+      return;
+    }
     const definition = planVariantDefinition(this.currentMap.unitType, variant);
     if (definition.variant === this.planVariant) return;
     this.planVariant = definition.variant;
@@ -2285,6 +2367,7 @@ export class ShowcaseApp {
   }
 
   private updateQuery(): void {
+    if (this.readOnlyShare) return;
     const url = new URL(window.location.href);
     url.searchParams.set('map', this.currentMap.id);
     url.searchParams.set('actor', this.activeActor);
@@ -2306,7 +2389,7 @@ export class ShowcaseApp {
     ];
     element.innerHTML = controls.map((control, index) => `
       <span class="hotbar-slot-wrap" data-slot-wrap="${index}">
-        <button type="button" class="hotbar-slot hotbar-control ${control.active ? 'is-active' : ''}" data-slot="${index}" data-hotbar-action="${control.id}" ${control.id === 'common-teleport' ? 'data-skill-id="common-teleport"' : ''} aria-label="${index + 1}번 ${escapeHtml(control.label)}">
+        <button type="button" class="hotbar-slot hotbar-control ${control.active ? 'is-active' : ''}" data-slot="${index}" data-hotbar-action="${control.id}" ${control.id === 'common-teleport' ? 'data-skill-id="common-teleport"' : ''} aria-label="${index + 1}번 ${escapeHtml(control.label)}" ${this.readOnlyShare && index > 0 ? 'disabled' : ''}>
           <span class="slot-number">${index + 1}</span>
           ${control.icon}<span class="skill-glyph">${escapeHtml(control.glyph)}</span>
           ${control.state ? `<span class="hotbar-control-state">${escapeHtml(control.state)}</span>` : ''}
@@ -2341,6 +2424,10 @@ export class ShowcaseApp {
       this.activateSkill('common-teleport', target);
       return;
     }
+    if (this.readOnlyShare) {
+      this.toast('공유 열람 모드에서는 텔레포트 외 핫바 기능을 변경할 수 없습니다.', 'notice');
+      return;
+    }
     if (index === 1) {
       const transformationWasActive = this.pigmyTransformationActive;
       this.pigmyTransformationActive = false;
@@ -2355,6 +2442,10 @@ export class ShowcaseApp {
       return;
     }
     if (index === 2) {
+      if (this.readOnlyShare) {
+        this.toast('공유 열람 모드에서는 평면 타입을 변경할 수 없습니다.', 'notice');
+        return;
+      }
       const variants = availablePlanVariants(this.currentMap.unitType);
       const currentIndex = Math.max(0, variants.indexOf(this.planVariant));
       const next = variants[(currentIndex + 1) % variants.length] || 'A';
@@ -2559,13 +2650,17 @@ export class ShowcaseApp {
       ? selectedOptions.map((option) => `<span>${escapeHtml(option.label)}${isBundangMinusOption(option) ? ' · 감액 별도' : ''}</span>`).join('')
       : '<span>기본 마감</span>';
     this.get<HTMLElement>('#stage-option-count').textContent = `${selectedOptions.length}개`;
-    this.get<HTMLButtonElement>('#stage-option-clear').hidden = selectedOptions.length === 0;
+    const stageOptionClear = this.get<HTMLButtonElement>('#stage-option-clear');
+    stageOptionClear.hidden = selectedOptions.length === 0;
+    stageOptionClear.disabled = this.readOnlyShare;
     this.get<HTMLElement>('#stage-option-total').innerHTML = `${numberFormat.format(total)}<small>원</small>`;
     const saleCalculatorContext = readSaleCalculatorHouseholdContext();
     const saleCalculatorButton = this.get<HTMLButtonElement>('#open-sale-calculator');
     const calculatorMatchesMap = saleCalculatorContext?.unitType === this.currentMap.unitType;
-    saleCalculatorButton.disabled = selectedOptions.length === 0;
-    saleCalculatorButton.title = selectedOptions.length === 0
+    saleCalculatorButton.disabled = selectedOptions.length === 0 || this.readOnlyShare;
+    saleCalculatorButton.title = this.readOnlyShare
+      ? '공유 열람 모드에서는 분양가 계산기를 열 수 없습니다.'
+      : selectedOptions.length === 0
       ? '옵션을 하나 이상 선택하면 분양가 계산기를 열 수 있습니다.'
       : calculatorMatchesMap
         ? '선택 옵션을 반영해 분양가 계산기를 엽니다.'
@@ -2573,7 +2668,7 @@ export class ShowcaseApp {
     this.get<HTMLElement>('#stage-option-chips').innerHTML = selectedOptions.length
       ? selectedOptions.map((option) => `<span class="stage-option-chip ${this.selectedStageOptionId === option.id ? 'is-world-selected' : ''}" data-stage-option-select="${escapeHtml(option.id)}">
           <button type="button" class="stage-option-select" data-stage-option-select="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 인게임 구성 선택"><b>${escapeHtml(option.label)}</b><em>${isBundangMinusOption(option) ? '감액 별도' : `+${numberFormat.format(option.price)}원`}</em></button>
-          <button type="button" class="stage-option-remove" data-stage-option-remove="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 바로 삭제">×</button>
+          <button type="button" class="stage-option-remove" data-stage-option-remove="${escapeHtml(option.id)}" aria-label="${escapeHtml(option.label)} 바로 삭제" ${this.readOnlyShare ? 'disabled' : ''}>×</button>
         </span>`).join('')
       : '<span><b>기본 마감</b><em>+0원</em></span>';
     this.paintPaletteViewToggle();
@@ -2627,6 +2722,11 @@ export class ShowcaseApp {
   }
 
   private commitSelectedOptions(): void {
+    if (this.readOnlyShare) {
+      this.toast('공유 열람 모드에서는 옵션을 변경할 수 없습니다.', 'notice');
+      this.renderOptions();
+      return;
+    }
     if (this.selectedStageOptionId && !this.selectedOptionIds.includes(this.selectedStageOptionId)) {
       this.selectedStageOptionId = '';
       this.selectedLocalPropId = '';
@@ -2668,6 +2768,7 @@ export class ShowcaseApp {
   }
 
   private removeStageOptionImmediately(options: BOptionEntry[], optionId: string): void {
+    if (this.readOnlyShare) return;
     if (this.optionChangePending) return;
     const intent = optionSelectionIntent(options, this.selectedOptionIds, optionId);
     if (!intent.option || intent.kind !== 'deselect') return;
@@ -2676,6 +2777,7 @@ export class ShowcaseApp {
   }
 
   private async toggleOptionWithConfirmation(options: BOptionEntry[], optionId: string): Promise<void> {
+    if (this.readOnlyShare) return;
     if (this.optionChangePending) {
       this.renderOptions();
       return;
@@ -2748,6 +2850,7 @@ export class ShowcaseApp {
   }
 
   private async removeSelectedOptionWithConfirmation(options: BOptionEntry[], optionId: string): Promise<void> {
+    if (this.readOnlyShare) return;
     if (this.optionChangePending) return;
     const intent = optionSelectionIntent(options, this.selectedOptionIds, optionId);
     if (!intent.option || intent.kind !== 'deselect') return;
@@ -2773,6 +2876,7 @@ export class ShowcaseApp {
   }
 
   private async clearAllSelectedOptionsWithConfirmation(): Promise<void> {
+    if (this.readOnlyShare) return;
     if (this.optionChangePending || this.selectedOptionIds.length === 0) return;
     this.optionChangePending = true;
     try {
@@ -2827,19 +2931,20 @@ export class ShowcaseApp {
       ? `<img src="${escapeHtml(resolveProjectUrl(option.previewUrl))}" alt="" loading="lazy" />`
       : '';
     const minusOptionLocked = this.selectedOptionIds.includes(BUNDANG_MINUS_OPTION_ID);
+    const locked = minusOptionLocked || this.readOnlyShare;
     return `
-      <article class="option-card system-ac-card ${active ? 'is-selected' : ''} ${active?.id === this.selectedStageOptionId ? 'is-world-linked' : ''} ${minusOptionLocked ? 'is-option-locked' : ''}" data-system-ac-tier="${tier}" data-option-card-id="${escapeHtml(active?.id || option?.id || '')}" ${minusOptionLocked ? 'aria-disabled="true"' : ''}>
+      <article class="option-card system-ac-card ${active ? 'is-selected' : ''} ${active?.id === this.selectedStageOptionId ? 'is-world-linked' : ''} ${locked ? 'is-option-locked' : ''}" data-system-ac-tier="${tier}" data-option-card-id="${escapeHtml(active?.id || option?.id || '')}" ${locked ? 'aria-disabled="true"' : ''}>
         <span class="option-preview ${option?.previewUrl ? '' : 'is-fallback'}">${preview}<i>空</i><em>${active ? '적용됨' : '2대부터'}</em></span>
         <span class="option-copy">
           <span class="option-category">시스템에어컨</span>
           <b>시스템에어컨 · ${tier === 'premium' ? '고급형' : '일반형'}</b>
-          <small>거실 기본 설치 후 침실 순서대로 대수를 추가합니다.</small>
+          <small>${minusOptionLocked ? '마이너스 옵션과 함께 선택할 수 없습니다.' : '거실 기본 설치 후 침실 순서대로 대수를 추가합니다.'}</small>
           <strong>${active && option ? `+ ${numberFormat.format(option.price)}원` : '2대부터 선택'}</strong>
         </span>
         <span class="system-ac-stepper" aria-label="${tier === 'premium' ? '고급형' : '일반형'} 설치 대수">
-          <button type="button" data-system-ac-adjust="decrease" data-system-ac-tier="${tier}" ${active && !minusOptionLocked ? '' : 'disabled'} aria-label="설치 대수 1 감소">−</button>
+          <button type="button" data-system-ac-adjust="decrease" data-system-ac-tier="${tier}" ${active && !locked ? '' : 'disabled'} aria-label="설치 대수 1 감소">−</button>
           <output>${count ? `${count}대` : '미적용'}</output>
-          <button type="button" data-system-ac-adjust="increase" data-system-ac-tier="${tier}" ${canIncrease && !minusOptionLocked ? '' : 'disabled'} aria-label="설치 대수 1 증가">＋</button>
+          <button type="button" data-system-ac-adjust="increase" data-system-ac-tier="${tier}" ${canIncrease && !locked ? '' : 'disabled'} aria-label="설치 대수 1 증가">＋</button>
         </span>
       </article>`;
   }
@@ -2848,6 +2953,7 @@ export class ShowcaseApp {
     const selected = this.selectedOptionIds.includes(option.id);
     const minusOptionLocked = this.selectedOptionIds.includes(BUNDANG_MINUS_OPTION_ID)
       && !isBundangMinusOption(option);
+    const locked = minusOptionLocked || this.readOnlyShare;
     const dependencyLabels = option.requires
       .map((required) => allOptions.find((candidate) => candidate.id === required)?.label || required)
       .join(', ');
@@ -2863,7 +2969,7 @@ export class ShowcaseApp {
       ? `<strong class="minus-option-discounts"><span>공급가 감액 −${numberFormat.format(discountMetadata.supplyPriceWon)}원</span><span>발코니 감액 −${numberFormat.format(discountMetadata.balconyExtensionWon)}원</span><em>현재 옵션 합계 제외</em></strong>`
       : `<strong>+ ${numberFormat.format(option.price)}원${option.activePriceVariantLabel ? `<em class="price-variant-label">${escapeHtml(option.activePriceVariantLabel)}</em>` : ''}</strong>`;
     return `
-      <label class="option-card ${selected ? 'is-selected' : ''} ${this.selectedStageOptionId === option.id ? 'is-world-linked' : ''} ${minusOptionLocked ? 'is-option-locked' : ''}" data-option-card-id="${escapeHtml(option.id)}" ${minusOptionLocked ? 'aria-disabled="true"' : ''}>
+      <label class="option-card ${selected ? 'is-selected' : ''} ${this.selectedStageOptionId === option.id ? 'is-world-linked' : ''} ${locked ? 'is-option-locked' : ''}" data-option-card-id="${escapeHtml(option.id)}" ${locked ? 'aria-disabled="true"' : ''}>
         <span class="option-preview ${option.previewUrl ? '' : 'is-fallback'}">${preview}<i>${escapeHtml(option.category.slice(0, 1))}</i><em>${selected ? '적용됨' : 'PREVIEW'}</em></span>
         <span class="option-copy">
           <span class="option-category">${escapeHtml(option.category)}</span>
@@ -2872,7 +2978,7 @@ export class ShowcaseApp {
           ${dependencyCopy ? `<span class="dependency">+ ${escapeHtml(dependencyCopy)} 필요</span>` : ''}
           ${priceMarkup}
         </span>
-        <input type="checkbox" data-option-id="${escapeHtml(option.id)}" ${selected ? 'checked' : ''} ${minusOptionLocked ? 'disabled' : ''} />
+        <input type="checkbox" data-option-id="${escapeHtml(option.id)}" ${selected ? 'checked' : ''} ${locked ? 'disabled' : ''} />
         <span class="check-ui" aria-hidden="true"></span>
       </label>
     `;
@@ -3027,6 +3133,36 @@ export class ShowcaseApp {
     }
     this.animationFrame = requestAnimationFrame(this.tick);
   };
+
+  private async copyReadOnlyShareLink(): Promise<void> {
+    try {
+      const state = this.sharedState || createBundangReadOnlyShare({
+        mapId: this.currentMap.id,
+        unitType: this.currentMap.unitType,
+        planVariant: this.planVariant,
+        livingFacing: planVariantDefinition(this.currentMap.unitType, this.planVariant).livingFacing,
+        selectedOptionIds: this.selectedOptionIds,
+        furniture: this.localInteriorProps.filter(isUserPlacedFurnitureProp),
+      });
+      const url = bundangReadOnlyShareUrl(resolveProjectUrl(''), state);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const field = document.createElement('textarea');
+        field.value = url;
+        field.style.position = 'fixed';
+        field.style.opacity = '0';
+        document.body.append(field);
+        field.select();
+        if (!document.execCommand('copy')) throw new Error('copy failed');
+        field.remove();
+      }
+      this.toast('개인정보 없는 읽기 전용 공유 링크를 복사했습니다.', 'success');
+    } catch (error) {
+      console.warn('[bunfirvil] share link copy failed', error);
+      this.toast('공유 링크를 만들지 못했습니다. 배치 가구 수를 확인해 주세요.', 'notice');
+    }
+  }
 
   private paintCooldowns(time: number): void {
     this.get<HTMLElement>('#hotbar').querySelectorAll<HTMLElement>('.hotbar-slot[data-skill-id]').forEach((slot) => {

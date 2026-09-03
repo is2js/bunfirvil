@@ -17,15 +17,15 @@
       </a>
       <nav class="topnav" aria-label="주요 메뉴">
         <a href="../"><span>LIVE</span> 놀이터</a>
-        <a data-operator-only href="../manage/">검수맵 관리</a>
-        <a data-operator-only href="../building-admin/">건축물 관리</a>
-        <a data-operator-only href="../interior-admin/">인테리어 관리</a>
+        <a data-operator-only hidden href="../manage/">검수맵 관리</a>
+        <a data-operator-only hidden href="../building-admin/">건축물 관리</a>
+        <a data-operator-only hidden href="../interior-admin/">인테리어 관리</a>
         <a class="is-active" href="./" aria-current="page">가이드</a>
       </nav>
-      <span class="markdown-chip">MARKDOWN · STATIC</span>
+      <span class="markdown-chip" data-operator-only hidden>MARKDOWN · STATIC</span>
     </header>
 
-    <div class="guide-banner" role="note">
+    <div class="guide-banner" role="note" data-operator-only hidden>
       <b>문서형 가이드</b>
       <span>Markdown 파일을 추가하면 가이드 목록에 자동으로 포함됩니다.</span>
     </div>
@@ -38,7 +38,7 @@
           <span id="guideCount">0 DOCUMENTS</span>
         </header>
         <nav id="guideList" class="guide-list"></nav>
-        <div class="guide-extension-note">
+        <div class="guide-extension-note" data-operator-only hidden>
           <b>가이드 추가</b>
           <p><code>src/guides/content</code>에 front matter가 포함된 <code>.md</code> 파일을 추가하세요.</p>
         </div>
@@ -53,12 +53,12 @@
           <h2 id="guideTitle">가이드를 불러오는 중입니다</h2>
           <p id="guideSummary"></p>
           <div class="guide-actions">
-            <a id="guideEditLink" data-operator-only href="#" target="_blank" rel="noreferrer">GitHub에서 Markdown 수정</a>
+            <a id="guideEditLink" data-operator-only hidden href="#" target="_blank" rel="noreferrer">GitHub에서 Markdown 수정</a>
             <a href="../">놀이터로 돌아가기</a>
           </div>
         </header>
         <div id="markdownBody" class="markdown-body"></div>
-        <details class="markdown-source">
+        <details class="markdown-source" data-operator-only hidden>
           <summary>Markdown 원문 보기</summary>
           <pre id="markdownSource"></pre>
         </details>

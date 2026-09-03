@@ -8,6 +8,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
+    "preview:commit": "pwsh -NoProfile -File scripts/preview-committed-pages.ps1",
     "sync:assets": "pwsh -NoProfile -File scripts/sync-from-pvp.ps1",
     "test": "vitest run",
     "test:unit": "vitest run",
@@ -17,6 +18,7 @@
     "validate": "npm run test:unit && npm run build && npm run verify:dist"
   },
   "dependencies": {
+    "fflate": "^0.8.2",
     "three": "^0.179.1"
   },
   "devDependencies": {

@@ -594,8 +594,8 @@ export function isWalkable(world: WorldData | null, x: number, y: number): boole
   const roundedX = Math.round(x);
   const roundedY = Math.round(y);
   const insideWorld = roundedX >= 0 && roundedY >= 0 && roundedX < world.width && roundedY < world.height;
-  const inside55BPlan = !insideWorld && world.objects.some((object) => {
-    if (String(object.unitTypeId || '') !== '55B') return false;
+  const insideApartmentPlan = !insideWorld && world.objects.some((object) => {
+    if (object.type !== 'enterable-apartment-unit-v1') return false;
     const polygon = (object.geometry?.floorPolygon || []).flatMap((value) => {
       const point = finitePoint(value);
       return point ? [apartmentUnitWorldPoint(object, point)] : [];
@@ -614,7 +614,7 @@ export function isWalkable(world: WorldData | null, x: number, y: number): boole
     return inside;
   });
   return (
-    (insideWorld || inside55BPlan) &&
+    (insideWorld || insideApartmentPlan) &&
     !world.blocked.has(cellKey(roundedX, roundedY))
   );
 }
@@ -626,15 +626,13 @@ interface CollisionPoint {
 
 export interface BundangTraversalOpeningV1 {
   schemaVersion: 1;
-  unitType: '55B';
-  openingIds: readonly string[];
+  openingTypes: readonly string[];
   clearanceCells: number;
 }
 
 export const BUNDANG_TRAVERSAL_OPENINGS: BundangTraversalOpeningV1 = {
   schemaVersion: 1,
-  unitType: '55B',
-  openingIds: ['bathroom-2-west-opening', 'bedroom-2-north-opening'],
+  openingTypes: ['interior-door', 'entry-door', 'passage'],
   clearanceCells: 0.52,
 };
 
@@ -672,11 +670,10 @@ function collisionDistance(point: CollisionPoint, start: CollisionPoint, end: Co
 }
 
 function traversalOpenings(object: WorldObject): Array<{ start: CollisionPoint; end: CollisionPoint }> {
-  if (String(object.unitTypeId || '') !== BUNDANG_TRAVERSAL_OPENINGS.unitType) return [];
+  if (object.type !== 'enterable-apartment-unit-v1') return [];
   return (object.geometry?.openings || []).flatMap((value) => {
     const opening = value as Record<string, unknown>;
-    if (!BUNDANG_TRAVERSAL_OPENINGS.openingIds.includes(String(opening.id || ''))) return [];
-    if (!['interior-door', 'passage'].includes(String(opening.type || ''))) return [];
+    if (!BUNDANG_TRAVERSAL_OPENINGS.openingTypes.includes(String(opening.type || ''))) return [];
     const start = worldCollisionPoint(object, opening.a);
     const end = worldCollisionPoint(object, opening.b);
     return start && end ? [{ start, end }] : [];

@@ -2,15 +2,15 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { apartmentUnitWorldPoint } from './apartment-transform';
-import { applyPlanVariant } from './plan-variants';
+import { applyPlanVariant, availablePlanVariants } from './plan-variants';
 import type { ApartmentPointObject, StaticMapEntry, WorldChunk, WorldData, WorldObject } from './types';
-import { canTraverse, isWalkable } from './world';
+import { canTraverse, crossesApartmentWall, isWalkable } from './world';
 
-function load55BWorld(): WorldData {
+function loadWorld(unitType: string): WorldData {
   const publicRoot = resolve(process.cwd(), 'public');
   const catalog = JSON.parse(readFileSync(join(publicRoot, 'generated', 'catalog.v1.json'), 'utf8')) as { maps: StaticMapEntry[] };
-  const entry = catalog.maps.find((map) => map.unitType === '55B');
-  if (!entry) throw new Error('55B map is missing');
+  const entry = catalog.maps.find((map) => map.unitType === unitType);
+  if (!entry) throw new Error(`${unitType} map is missing`);
   const manifestPath = join(publicRoot, ...entry.manifestUrl.split('/'));
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   const blocked = new Set<string>();
@@ -20,26 +20,13 @@ function load55BWorld(): WorldData {
     const width = Number(chunk.size?.width || 16);
     const originX = Number(chunk.origin?.x || 0);
     const originY = Number(chunk.origin?.y || 0);
-    for (const index of chunk.blockedCellIndices || []) {
-      blocked.add(`${originX + index % width},${originY + Math.floor(index / width)}`);
-    }
+    for (const index of chunk.blockedCellIndices || []) blocked.add(`${originX + index % width},${originY + Math.floor(index / width)}`);
     objects.push(...(chunk.objects || []));
   }
   return {
-    entry,
-    manifest,
-    width: entry.width,
-    height: entry.height,
-    chunkWidth: 16,
-    chunkHeight: 16,
-    palette: new Map(),
-    tiles: new Map(),
-    blocked,
-    objects,
-    loadedChunkCount: 16,
-    requestedChunkCount: 16,
-    minimap: null,
-    sourceMode: 'chunks',
+    entry, manifest, width: entry.width, height: entry.height,
+    chunkWidth: 16, chunkHeight: 16, palette: new Map(), tiles: new Map(), blocked, objects,
+    loadedChunkCount: 16, requestedChunkCount: 16, minimap: null, sourceMode: 'chunks',
   };
 }
 
@@ -57,11 +44,7 @@ function roomCells(apartment: WorldObject, roomId: string): string[] {
   return [...cells];
 }
 
-function reaches(world: WorldData, starts: string[], goals: string[]): boolean {
-  const goalSet = new Set(goals.filter((key) => {
-    const [x, y] = key.split(',').map(Number);
-    return isWalkable(world, x, y);
-  }));
+function reachableKeys(world: WorldData, starts: string[]): Set<string> {
   const queue = starts.filter((key) => {
     const [x, y] = key.split(',').map(Number);
     return isWalkable(world, x, y);
@@ -71,7 +54,6 @@ function reaches(world: WorldData, starts: string[], goals: string[]): boolean {
     .filter(([dx, dy]) => dx !== 0 || dy !== 0);
   while (queue.length) {
     const key = queue.shift() as string;
-    if (goalSet.has(key)) return true;
     const [x, y] = key.split(',').map(Number);
     for (const [dx, dy] of directions) {
       const next = `${x + dx},${y + dy}`;
@@ -80,17 +62,42 @@ function reaches(world: WorldData, starts: string[], goals: string[]): boolean {
       queue.push(next);
     }
   }
-  return false;
+  return visited;
 }
 
-describe('55B runtime traversal openings', () => {
-  it.each(['A', 'B'] as const)('connects the %s entrance to bathroom 2 and bedroom 2', (variant) => {
-    const world = load55BWorld();
-    applyPlanVariant(world, variant);
+describe('Bundang runtime traversal openings', () => {
+  for (const unitType of ['51A', '55A', '55B', '59A']) {
+    for (const variant of availablePlanVariants(unitType)) {
+      it(`connects ${unitType}-${variant} entrance to every interior room`, () => {
+        const world = loadWorld(unitType);
+        applyPlanVariant(world, variant);
+        const apartment = world.objects.find((object) => object.type === 'enterable-apartment-unit-v1') as WorldObject;
+        const reached = reachableKeys(world, roomCells(apartment, 'entry'));
+        for (const room of apartment.geometry?.roomZones || []) {
+          const roomId = String((room as ApartmentPointObject).id || '');
+          const candidates = roomCells(apartment, roomId).filter((key) => {
+            const [x, y] = key.split(',').map(Number);
+            return isWalkable(world, x, y);
+          });
+          expect(candidates.some((key) => reached.has(key)), `${unitType}-${variant}:${roomId}`).toBe(true);
+        }
+      });
+    }
+  }
+
+  it('does not turn a normal wall segment into a passage', () => {
+    const world = loadWorld('55B');
+    applyPlanVariant(world, 'A');
     const apartment = world.objects.find((object) => object.type === 'enterable-apartment-unit-v1') as WorldObject;
-    const starts = roomCells(apartment, 'entry');
-    expect(reaches(world, starts, roomCells(apartment, 'bathroom-2'))).toBe(true);
-    expect(reaches(world, starts, roomCells(apartment, 'bedroom-2'))).toBe(true);
-    expect(apartment.geometry?.wallSegments?.length).toBeGreaterThan(0);
+    const wall = (apartment.geometry?.wallSegments || []).find((value) => String((value as ApartmentPointObject).id || '').includes('outer-north')) as ApartmentPointObject | undefined;
+    expect(wall).toBeTruthy();
+    const a = apartmentUnitWorldPoint(apartment, wall?.a as [number, number]);
+    const b = apartmentUnitWorldPoint(apartment, wall?.b as [number, number]);
+    const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const dx = b.x - a.x; const dy = b.y - a.y;
+    const length = Math.hypot(dx, dy) || 1;
+    expect(crossesApartmentWall(world.objects,
+      midpoint.x - dy / length, midpoint.y + dx / length,
+      midpoint.x + dy / length, midpoint.y - dx / length)).toBe(true);
   });
 });

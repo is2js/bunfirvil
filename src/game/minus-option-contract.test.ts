@@ -62,6 +62,22 @@ describe('마이너스 옵션 선택·견적 계약', () => {
     expect(ordinaryIntent.exclusivesToRemove).toEqual([]);
   });
 
+  it('시스템에어컨도 다른 유상 옵션과 동일하게 마이너스 옵션과 배타 처리한다', () => {
+    const systemAc = {
+      ...ordinary,
+      id: 'system-ac-2-general',
+      label: '시스템에어컨 · 일반형 2대',
+      category: '시스템에어컨',
+    };
+    const withSystemAc = [BUNDANG_MINUS_OPTION_ENTRY, systemAc] as BOptionEntry[];
+    expect(optionSelectionIntent(withSystemAc, [systemAc.id], BUNDANG_MINUS_OPTION_ID).nextSelection)
+      .toEqual([BUNDANG_MINUS_OPTION_ID]);
+    expect(optionSelectionIntent(withSystemAc, [BUNDANG_MINUS_OPTION_ID], systemAc.id).kind)
+      .toBe('invalid');
+    expect(canonicalizeBundangMinusOptionSelection(withSystemAc, [BUNDANG_MINUS_OPTION_ID, systemAc.id]))
+      .toEqual([BUNDANG_MINUS_OPTION_ID]);
+  });
+
   it('discount-metadata-only는 선택돼도 현재 옵션 합계에 반영하지 않는다', () => {
     expect(resolvedOptionPrice(BUNDANG_MINUS_OPTION_ENTRY, '55A', [])).toEqual({ price: 0 });
     expect(calculateOptionPrice(options, [BUNDANG_MINUS_OPTION_ID])).toBe(0);
