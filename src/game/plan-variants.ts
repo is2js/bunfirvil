@@ -4,6 +4,7 @@ import {
   type NumericPoint,
 } from './apartment-transform';
 import type { WorldData, WorldObject } from './types';
+import { pointTouchesBundangTraversalOpening } from './world';
 
 export type ApartmentPlanVariant = 'A' | 'B' | 'C' | 'D';
 export type ApartmentLivingFacing = 'south-east' | 'south-west';
@@ -265,7 +266,8 @@ export function applyPlanVariant(world: WorldData, variant: ApartmentPlanVariant
   };
   applyPlanVariantInteriorOverrides(apartment, definition.variant);
 
-  const transformedBlockedCells = transformAbsoluteCells(apartment, sourceTransform, sourceBlockedCells);
+  const transformedBlockedCells = transformAbsoluteCells(apartment, sourceTransform, sourceBlockedCells)
+    .filter((cell) => !pointTouchesBundangTraversalOpening([apartment], cell));
   if (transformedBlockedCells.length) {
     apartment.blockedCells = transformedBlockedCells;
     world.blocked.clear();

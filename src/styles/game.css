@@ -310,6 +310,12 @@ input:focus-visible {
   font-size: 10px;
 }
 
+.viewer-household-actions .icon-button {
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
 .control-deck {
   min-height: 56px;
   padding: 7px 9px 7px 14px;
@@ -1655,7 +1661,9 @@ input:focus-visible {
 }
 
 .palette-tabs { height: 36px; flex: 0 0 auto; display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid rgba(143, 185, 179, .12); }
-.palette-tabs button { border: 0; border-right: 1px solid rgba(143, 185, 179, .08); color: #718681; background: rgba(2, 11, 14, .54); font-size: 11px; font-weight: 800; }
+.palette-tabs button { border: 0; border-right: 1px solid rgba(143, 185, 179, .08); color: #718681; background: rgba(2, 11, 14, .54); font-size: 11px; font-weight: 800; cursor: pointer; transition: color 140ms ease, background 140ms ease; }
+.palette-tabs button:hover,
+.palette-tabs button:focus-visible { color: #d8e9e5; background: rgba(92, 211, 189, .075); outline: none; }
 .palette-tabs button.is-active { color: #edd498; background: rgba(225, 185, 99, .08); box-shadow: inset 0 -2px #bd9951; }
 .palette-viewbar { min-height: 34px; padding: 5px 9px; flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(143, 185, 179, .1); background: rgba(2, 11, 14, .34); }
 .palette-viewbar span { color: #718681; font: 750 9px ui-monospace, monospace; }
@@ -2549,6 +2557,12 @@ button.household-cell:focus-visible { z-index: 2; outline: 2px solid #183d62; ou
   margin: 0 auto;
   padding: clamp(18px, 2vw, 28px) clamp(14px, 2.5vw, 32px) 36px;
 }
+.household-selector-shell:not(.household-overview-shell) .household-selector-main {
+  min-height: calc(100dvh - 190px);
+  display: grid;
+  place-items: center;
+}
+.household-wizard-shell { width: 100%; }
 .household-overview-shell .household-selector-main { width: min(1560px, 100%); }
 .household-selector-intro {
   margin-bottom: 14px;
@@ -2829,6 +2843,10 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
   .household-header-action small { display: block; }
   .household-selector-shell { padding-bottom: 108px; }
   .household-overview-shell { padding-bottom: 0; }
+  .household-selector-shell:not(.household-overview-shell) .household-selector-main {
+    min-height: calc(100dvh - 150px);
+    place-items: start center;
+  }
   .household-selector-main { padding: 14px 12px 28px; }
   .household-selector-intro { padding: 15px; grid-template-columns: 1fr; align-items: stretch; gap: 11px; border-radius: 8px; }
   .household-selector-intro h1 { font-size: 20px; }

@@ -252,6 +252,7 @@ export class ShowcaseApp {
   private pendingSceneSelection: PendingSceneSelection | null = null;
   private cameraTrackingPaused = false;
   private animationFrame = 0;
+  private suspended = false;
   private lastMetricPaint = 0;
   private assetCount = 0;
   private mapLoadToken = 0;
@@ -356,6 +357,7 @@ export class ShowcaseApp {
   }
 
   destroy(): void {
+    if (this.destroyed) return;
     this.destroyed = true;
     this.stopInspectionLaser('destroy');
     this.cancelInteriorGhost('', false);
@@ -364,6 +366,21 @@ export class ShowcaseApp {
     cancelAnimationFrame(this.optionFocusFrame);
     this.effectPlayer?.destroy();
     this.threeRenderer?.dispose();
+  }
+
+  suspend(): void {
+    if (this.destroyed || this.suspended) return;
+    this.suspended = true;
+    this.pressedKeys.clear();
+    cancelAnimationFrame(this.animationFrame);
+    this.animationFrame = 0;
+  }
+
+  resume(): void {
+    if (this.destroyed || !this.suspended) return;
+    this.suspended = false;
+    this.pressedKeys.clear();
+    if (!this.animationFrame && this.world) this.animationFrame = requestAnimationFrame(this.tick);
   }
 
   private get<T extends Element>(selector: string): T {
@@ -440,6 +457,8 @@ export class ShowcaseApp {
           <section class="play-column" aria-label="RPG 렌더링 쇼케이스">
             ${operator ? '' : `<div class="viewer-household-actions">
               <button type="button" id="choose-household" class="deck-text-button">세대 다시 선택</button>
+              <button type="button" id="viewer-reset-position" class="icon-button" title="캐릭터 위치 초기화" aria-label="캐릭터 위치 초기화">↺</button>
+              <button type="button" id="viewer-open-help" class="icon-button" title="놀이터 조작법" aria-label="놀이터 조작법">?</button>
             </div>`}
             <div class="control-deck ${operator ? '' : 'is-user-hidden'}">
               <label class="select-field">
@@ -461,8 +480,8 @@ export class ShowcaseApp {
               </div>
               <div class="deck-actions">
                 <button type="button" id="${operator ? 'choose-household' : 'operator-choose-household'}" class="deck-text-button">세대 다시 선택</button>
-                <button type="button" id="reset-position" class="icon-button" title="스폰 위치로 돌아가기" aria-label="스폰 위치로 돌아가기">↺</button>
-                <button type="button" id="open-help" class="icon-button" title="조작 도움말" aria-label="조작 도움말">?</button>
+                <button type="button" id="reset-position" class="icon-button" title="캐릭터 위치 초기화" aria-label="캐릭터 위치 초기화">↺</button>
+                <button type="button" id="open-help" class="icon-button" title="놀이터 조작법" aria-label="놀이터 조작법">?</button>
               </div>
             </div>
 
@@ -657,16 +676,16 @@ export class ShowcaseApp {
         <form method="dialog">
           <button class="dialog-close" value="close" aria-label="닫기">×</button>
           <p class="eyebrow">CONTROL GUIDE</p>
-          <h2>로컬 렌더 랩 조작법</h2>
+          <h2>놀이터 조작법</h2>
           <div class="help-grid">
-            <div><span class="help-icon">⌨</span><b>캐릭터 이동</b><p>WASD 또는 방향키로 8방향 이동합니다. 정적 chunk의 막힌 셀은 통과하지 않습니다.</p></div>
-            <div><span class="help-icon">1–6</span><b>스킬 재생</b><p>1번 또는 휠 클릭은 현재 커서 위치로 텔레포트합니다. 2–4번은 전투 모션과 효과를 재생하며 5–6번은 빈 슬롯입니다.</p></div>
-            <div><span class="help-icon">옵션</span><b>옵션 프리뷰</b><p>옵션 팔레트 선택은 맵의 미리보기 프롭과 견적에 반영되고 이 브라우저에 저장됩니다.</p></div>
-            <div><span class="help-icon">GHOST</span><b>가구 설치·이동</b><p>가구 목록을 누르거나 재배치를 시작하면 반투명 GHOST가 마우스를 따라갑니다. 초록은 설치 가능, 빨강은 벽·문·구조물·가구와 겹친 불가 위치입니다. 좌클릭으로 확정하고 우클릭 또는 Esc로 취소합니다.</p></div>
-            <div><span class="help-icon">L</span><b>벽 자석·회전</b><p>GHOST 상태에서 L을 누르면 가까운 벽·코너 자석을 켜거나 끕니다. Shift+휠로 90도 회전하며, 빈 맵은 손바닥 드래그로 이동하고 Ctrl+휠로 확대·축소합니다.</p></div>
-            <div><span class="help-icon">J</span><b>레이저 자동·2점 실측</b><p>첫 J는 자동 실측을 켜고, 이후 J마다 자동 ↔ 2점 실측을 전환합니다. 2점 실측은 벽·설비·가구 면에 붙는 시작점 고스트를 클릭한 뒤 원하는 공간 방향을 가리켜 처음 닿는 반대편 마감면까지 잽니다. 내부벽은 커서가 향한 방 쪽 마감면에서 시작하며 L은 마우스 방향에 가까운 X/Y축 직선 자석, Shift+휠은 수동 축 전환, Esc는 종료입니다.</p></div>
+            <div><span class="help-icon">⌨</span><b>한 셀 이동·기본 공격</b><p>WASD 또는 방향키로 한 셀씩 이동하며 키 조합으로 8방향을 사용합니다. Space는 기본 공격입니다.</p></div>
+            <div><span class="help-icon">1–4</span><b>놀이터 핫바</b><p>1 텔레포트(또는 휠 클릭), 2 돌범·피치 성별 전환, 3 거실 방향 전환, 4 피그미 변신을 실행합니다.</p></div>
+            <div><span class="help-icon">옵션</span><b>옵션 프리뷰</b><p>옵션 선택은 맵 프롭과 견적에 즉시 반영되어 이 브라우저에 저장됩니다. 기본 인테리어와 옵션 구성은 이동·회전·삭제할 수 없습니다.</p></div>
+            <div><span class="help-icon">GHOST</span><b>사용자 가구 배치</b><p>가구 카드를 누르면 고스트가 커서를 따라갑니다. 초록은 설치 가능, 빨강은 설치 불가이며 좌클릭으로 확정하고 우클릭 또는 Esc로 취소합니다.</p></div>
+            <div><span class="help-icon">L</span><b>화면·가구 조작</b><p>빈 맵을 드래그해 이동하고 Ctrl+휠로 확대·축소합니다. 사용자 가구는 재배치할 수 있고 L은 벽 자석, Shift+휠은 회전, Delete는 삭제입니다.</p></div>
+            <div><span class="help-icon">J</span><b>레이저 실측</b><p>J 또는 좌하단 버튼으로 자동·2점 실측을 사용합니다. L은 직선 자석, Shift+휠은 축 전환, Esc는 현재 측정 취소입니다.</p></div>
           </div>
-          <p class="dialog-note">이 사이트는 시각·성능 검수용입니다. 피해, 명중, MP, 사용자 인증과 공용 저장은 처리하지 않습니다.</p>
+          <p class="dialog-note">평면도와 사이버주택전시관을 바탕으로 만든 추론 가상공간이며 게시 자료는 참고용입니다. 옵션과 가구 배치는 현재 브라우저에만 저장됩니다.</p>
         </form>
       </dialog>
 
@@ -802,13 +821,16 @@ export class ShowcaseApp {
       this.paintZoom(zoom);
     }, { signal });
 
-    this.get<HTMLButtonElement>('#reset-position').addEventListener('click', () => {
+    const resetActorPosition = (): void => {
       this.resumeCameraTracking();
       this.resetActors();
       this.toast('두 캐릭터를 스폰 위치로 이동했습니다.', 'notice');
-    }, { signal });
+    };
+    this.mount.querySelectorAll<HTMLButtonElement>('#reset-position, #viewer-reset-position')
+      .forEach((button) => button.addEventListener('click', resetActorPosition, { signal }));
     const dialog = this.get<HTMLDialogElement>('#help-dialog');
-    this.get<HTMLButtonElement>('#open-help').addEventListener('click', () => dialog.showModal(), { signal });
+    this.mount.querySelectorAll<HTMLButtonElement>('#open-help, #viewer-open-help')
+      .forEach((button) => button.addEventListener('click', () => dialog.showModal(), { signal }));
     this.get<HTMLButtonElement>('#choose-household').addEventListener('click', () => {
       clearHouseholdVerificationSession();
       clearSaleCalculatorContext();
@@ -2955,7 +2977,8 @@ export class ShowcaseApp {
   }
 
   private readonly tick = (time: number): void => {
-    if (this.destroyed) return;
+    this.animationFrame = 0;
+    if (this.destroyed || this.suspended) return;
     this.frameMetrics.push(time);
     for (const actor of this.actors.values()) this.advanceActorTravel(actor, time);
     this.moveActiveActor(time);

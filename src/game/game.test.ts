@@ -14,6 +14,7 @@ import {
 import type { BOptionEntry } from './types';
 import { canTraverse, crossesApartmentWall, expandTileRuns, livingRoomSpawnCells } from './world';
 import { travelLockedDirection } from './grid';
+import { applyPlanVariant } from './plan-variants';
 import {
   apartmentPropPlacement,
   apartmentSolidBlockVisualFootprint,
@@ -152,6 +153,54 @@ describe('game-local state helpers', () => {
     } as unknown as WorldData;
     expect(canTraverse(cornerWorld, 0, 0, 1, 1)).toBe(false);
     expect(canTraverse({ ...cornerWorld, blocked: new Set() }, 0, 0, 1, 1)).toBe(true);
+  });
+
+  it.each(['A', 'B'] as const)('keeps the 55B %s bathroom-2 and bedroom-2 openings passable without removing their walls', (variant) => {
+    const apartment: WorldObject = {
+      type: 'enterable-apartment-unit-v1',
+      unitTypeId: '55B',
+      originCell: { x: 30, y: 30 },
+      transform: { rotationDeg: 0, mirrorX: false, mirrorY: false },
+      blockedCells: [{ x: 32, y: 32 }, { x: 34, y: 34 }, { x: 32, y: 30 }],
+      geometry: {
+        cellSizeMeters: .5,
+        floorPolygon: [[-1, -1], [4, -1], [4, 4], [-1, 4]],
+        openings: [
+          { id: 'bathroom-2-west-opening', type: 'interior-door', a: [1, .5], b: [1, 1.5] },
+          { id: 'bedroom-2-north-opening', type: 'interior-door', a: [1.5, 2], b: [2.5, 2] },
+        ],
+        wallSegments: [
+          { id: 'bathroom-before', a: [1, -1], b: [1, .5], baseMeters: 0 },
+          { id: 'bathroom-after', a: [1, 1.5], b: [1, 3], baseMeters: 0 },
+          { id: 'bedroom-before', a: [-1, 2], b: [1.5, 2], baseMeters: 0 },
+          { id: 'bedroom-after', a: [2.5, 2], b: [4, 2], baseMeters: 0 },
+        ],
+      },
+    };
+    const entry = { id: '55b', unitType: '55B', spawn: { x: 30, y: 30 } } as WorldData['entry'];
+    const world = {
+      entry,
+      objects: [apartment],
+      blocked: new Set(apartment.blockedCells?.map((cell) => `${cell.x},${cell.y}`)),
+      width: 64,
+      height: 64,
+    } as WorldData;
+    applyPlanVariant(world, variant);
+    const cell = (point: [number, number]) => {
+      const value = apartmentUnitWorldPoint(apartment, point);
+      return { x: Math.round(value.x), y: Math.round(value.y) };
+    };
+    const bathroomOutside = cell([.5, .5]);
+    const bathroomOpening = cell([1, 1]);
+    const bedroomOutside = cell([1.5, 1.5]);
+    const bedroomOpening = cell([2, 2]);
+    const wallOutside = cell([.5, -.5]);
+    const wallBody = cell([1, 0]);
+
+    expect(canTraverse(world, bathroomOutside.x, bathroomOutside.y, bathroomOpening.x, bathroomOpening.y)).toBe(true);
+    expect(canTraverse(world, bedroomOutside.x, bedroomOutside.y, bedroomOpening.x, bedroomOpening.y)).toBe(true);
+    expect(canTraverse(world, wallOutside.x, wallOutside.y, wallBody.x, wallBody.y)).toBe(false);
+    expect(apartment.geometry?.wallSegments).toHaveLength(4);
   });
 
   it('places both actors around the transformed living-room center', () => {

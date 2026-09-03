@@ -159,6 +159,7 @@ export function waitForHouseholdSelection(
     mount.innerHTML = `<div class="household-selector-shell app-shell">
       ${householdShellHeader(catalog.exportId, fallback)}
       <main class="household-selector-main">
+        <div class="household-wizard-shell">
         <section class="household-selector-intro" id="household-selector-intro">
           <div class="household-selector-intro-copy">
             <nav class="household-wizard-progress" aria-label="세대 선택 단계">
@@ -203,6 +204,7 @@ export function waitForHouseholdSelection(
             </div>
           </div>
         </section>
+        </div>
       </main>
       <aside class="household-selection-dock" id="household-selection-dock" aria-live="polite" hidden>
         <div><small>선택 세대</small><b id="household-selection-summary">동·층·호를 선택해 주세요.</b></div>

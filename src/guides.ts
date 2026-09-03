@@ -37,8 +37,10 @@ try {
   get<HTMLElement>('#guideSummary').textContent = active.summary;
   get<HTMLElement>('#markdownBody').innerHTML = renderGuideMarkdown(active.body);
   get<HTMLElement>('#markdownSource').textContent = active.raw;
-  const fileName = active.sourcePath.split('/').pop() || `${active.id}.md`;
-  get<HTMLAnchorElement>('#guideEditLink').href = `https://github.com/is2js/bunfirvil/edit/main/src/guides/content/${encodeURIComponent(fileName)}`;
+  if (operator) {
+    const fileName = active.sourcePath.split('/').pop() || `${active.id}.md`;
+    get<HTMLAnchorElement>('#guideEditLink').href = `https://github.com/is2js/bunfirvil/edit/main/src/guides/content/${encodeURIComponent(fileName)}`;
+  }
 } catch (error) {
   const region = get<HTMLElement>('#guideError');
   region.hidden = false;

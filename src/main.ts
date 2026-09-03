@@ -21,4 +21,11 @@ app.start().catch((error: unknown) => {
   `;
 });
 
-window.addEventListener('pagehide', () => app.destroy(), { once: true });
+window.addEventListener('pagehide', (event: PageTransitionEvent) => {
+  if (event.persisted) app.suspend();
+  else app.destroy();
+});
+
+window.addEventListener('pageshow', (event: PageTransitionEvent) => {
+  if (event.persisted) app.resume();
+});
