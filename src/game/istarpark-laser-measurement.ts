@@ -53,6 +53,7 @@ export interface InspectionLaserMeasurement {
 export interface InspectionLaserInput {
   anchorPlanPoint?: [number, number] | { x?: number; y?: number };
   axis?: InspectionLaserAxis;
+  axisLock?: InspectionLaserAxis | null;
   geometry?: any;
   props?: any[] | null;
   assets?: any[];
@@ -926,6 +927,30 @@ function directionalCalibrationContactMatches(hit = null, obstacleId = "") {
   return hitId === String(obstacleId || "") || hitId.startsWith("dimension-boundary:");
 }
 
+function directionalLaserDirectionIsSurfaceTangent(startHit = null, startObstacle = null, direction = []) {
+  if (startHit?.valid !== true || !startObstacle?.polygon?.length) return false;
+  const surfacePoint = point(startHit.point);
+  const rayDirection = point(direction);
+  const segments = startObstacle.polygon.map((segmentStart, index) => {
+    const segmentEnd = startObstacle.polygon[(index + 1) % startObstacle.polygon.length];
+    const nearest = nearestPointOnSegment(surfacePoint, segmentStart, segmentEnd);
+    return {
+      start: point(segmentStart),
+      end: point(segmentEnd),
+      distance: Math.hypot(nearest[0] - surfacePoint[0], nearest[1] - surfacePoint[1]),
+    };
+  });
+  const nearestDistance = Math.min(...segments.map((segment) => segment.distance));
+  return segments.some((segment) => {
+    if (segment.distance > nearestDistance + 0.00001) return false;
+    const dx = segment.end[0] - segment.start[0];
+    const dy = segment.end[1] - segment.start[1];
+    const length = Math.hypot(dx, dy);
+    if (length <= EPSILON) return false;
+    return Math.abs(dx * rayDirection[1] - dy * rayDirection[0]) / length <= 0.00001;
+  });
+}
+
 function directionalLaserStartHit({
   startHit = null,
   startObstacle = null,
@@ -934,6 +959,7 @@ function directionalLaserStartHit({
 } = {}) {
   if (startHit?.valid !== true || !startObstacle?.polygon?.length) return startHit;
   if (!["wall", "service-wall"].includes(String(startObstacle.kind || ""))) return startHit;
+  const normalizedAxisLock = axisLock === "x" || axisLock === "y" ? axisLock : null;
   const rawSourcePlanPoint = point(startHit.sourcePlanPoint || startHit.point);
   const sourcePlanPoint = startObstacle.kind === "wall" && startObstacle.centerLine?.length === 2
     ? nearestPointOnSegment(
@@ -946,8 +972,9 @@ function directionalLaserStartHit({
     startObstacle.kind !== "wall"
     && !istarparkLaserPointInPolygon(sourcePlanPoint, startObstacle.polygon)
   ) return startHit;
-  const direction = directionalLaserVector(sourcePlanPoint, pointerPlanPoint, axisLock);
+  const direction = directionalLaserVector(sourcePlanPoint, pointerPlanPoint, normalizedAxisLock);
   if (!direction) return startHit;
+  if (directionalLaserDirectionIsSurfaceTangent(startHit, startObstacle, direction)) return startHit;
   const exits = [];
   for (let index = 0; index < startObstacle.polygon.length; index += 1) {
     const intersection = raySegmentIntersection(
@@ -1168,6 +1195,102 @@ export function measureIstarparkLaserDirectionalGap({
     distanceMeters: Number(distanceMeters.toFixed(6)),
     distanceMm,
     label: `${distanceMm}mm · ${calibratedStartHit.label} ↔ ${endHit.label}`,
+  };
+}
+
+export function measureIstarparkLaserFreePointPair({
+  startHit = null,
+  startPlanPoint = [],
+  endPlanPoint = [],
+  geometry = {},
+  props = null,
+  assets = [],
+  axisLock = null,
+  laserHeightMeters = ISTARPARK_LASER_HEIGHT_METERS,
+}: any = {}): InspectionLaserMeasurement {
+  const measurementHeight = Math.max(0, finite(laserHeightMeters, ISTARPARK_LASER_HEIGHT_METERS));
+  const resolvedStartHit = startHit?.valid === true
+    ? startHit
+    : snapIstarparkLaserPoint({
+      candidatePlanPoint: startPlanPoint,
+      geometry,
+      props,
+      assets,
+      maxSnapDistanceMeters: null,
+      requireSurface: true,
+      laserHeightMeters: measurementHeight,
+    });
+  if (resolvedStartHit?.valid !== true) {
+    return {
+      valid: false,
+      reason: resolvedStartHit?.reason || "surface-required",
+      measurementMode: "point-pair-free",
+      startHit: resolvedStartHit,
+    };
+  }
+  const normalizedAxisLock = axisLock === "x" || axisLock === "y" ? axisLock : null;
+  const obstacles = istarparkLaserObstacles({
+    geometry,
+    props,
+    assets,
+    laserHeightMeters: measurementHeight,
+  });
+  const startObstacle = obstacles.find((obstacle) => (
+    String(obstacle.id || "") === String(resolvedStartHit.obstacleId || "")
+  ));
+  const rawEndPoint = point(endPlanPoint);
+  const directionalStartHit = directionalLaserStartHit({
+    startHit: resolvedStartHit,
+    startObstacle,
+    pointerPlanPoint: rawEndPoint,
+    axisLock: normalizedAxisLock,
+  });
+  const freeEndPoint = normalizedAxisLock === "x"
+    ? [rawEndPoint[0], directionalStartHit.point[1]]
+    : normalizedAxisLock === "y"
+      ? [directionalStartHit.point[0], rawEndPoint[1]]
+      : rawEndPoint;
+  const distanceMeters = Math.hypot(
+    freeEndPoint[0] - directionalStartHit.point[0],
+    freeEndPoint[1] - directionalStartHit.point[1],
+  );
+  if (distanceMeters < 0.01 - EPSILON) {
+    return {
+      valid: false,
+      reason: "too-short",
+      measurementMode: "point-pair-free",
+      startHit: directionalStartHit,
+    };
+  }
+  const endHit = {
+    valid: true,
+    point: freeEndPoint.map((value) => Number(value.toFixed(6))),
+    sourcePlanPoint: rawEndPoint,
+    constrainedPlanPoint: freeEndPoint,
+    snapped: false,
+    snapDistanceMeters: 0,
+    obstacleId: "",
+    kind: "free-point",
+    label: "자유 지점",
+  };
+  const distanceMm = Math.round(distanceMeters * 1000);
+  return {
+    valid: true,
+    measurementMode: "point-pair-free",
+    axis: normalizedAxisLock || "free",
+    laserHeightMeters: measurementHeight,
+    startHit: directionalStartHit,
+    endHit,
+    negativeHit: directionalStartHit,
+    positiveHit: endHit,
+    anchorPlanPoint: [
+      Number(((directionalStartHit.point[0] + endHit.point[0]) / 2).toFixed(6)),
+      Number(((directionalStartHit.point[1] + endHit.point[1]) / 2).toFixed(6)),
+    ],
+    sourceAnchorPlanPoint: rawEndPoint,
+    distanceMeters: Number(distanceMeters.toFixed(6)),
+    distanceMm,
+    label: `${distanceMm}mm · ${directionalStartHit.label} ↔ ${endHit.label}`,
   };
 }
 

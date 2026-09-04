@@ -1081,7 +1081,10 @@ export class ThreeWorldRenderer {
     this.canvas.dataset.inspectionLaserVisible = 'true';
     this.canvas.dataset.inspectionLaserDistanceMm = String(Math.round(finite(measurement.distanceMm)));
     this.canvas.dataset.inspectionLaserAxis = String(measurement.axis || 'free');
-    this.canvas.dataset.inspectionLaserPhase = measurement.measurementMode === 'point-ray' ? 'point-ray' : 'automatic';
+    this.canvas.dataset.inspectionLaserPhase = measurement.measurementMode === 'point-ray'
+      || measurement.measurementMode === 'point-pair-free'
+      ? measurement.measurementMode
+      : 'automatic';
     return true;
   }
 

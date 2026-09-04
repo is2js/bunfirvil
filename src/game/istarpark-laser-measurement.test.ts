@@ -1,15 +1,17 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   ISTARPARK_LASER_HEIGHT_METERS,
   istarparkLaserAxisTowardPointer,
   istarparkLaserObstacles,
   measureIstarparkLaserDirectionalGap,
+  measureIstarparkLaserFreePointPair,
   measureIstarparkLaserGap,
   snapIstarparkLaserPoint,
 } from './istarpark-laser-measurement';
+import { ShowcaseApp } from './app';
 import {
   BUNDANG_MINUS_OPTION_PACKAGE_ID,
   refineBundangOptionProps,
@@ -26,6 +28,8 @@ const room = {
     { id: 'south', a: [0, 3], b: [4, 3], thicknessMeters: .2 },
   ],
 };
+
+const appSource = readFileSync(new URL('./app.ts', import.meta.url), 'utf8');
 
 const finishCalibratedRoom = {
   ...room,
@@ -161,6 +165,177 @@ describe('이스타파크 레이저 실측 계약', () => {
       startHit: { obstacleId: 'west' },
       endHit: { obstacleId: 'center-cabinet', point: [1.5, 1.5] },
     });
+  });
+
+  it('L OFF 2점 실측은 첫 면만 보정하고 두 번째 자유 좌표에서 끝난다', () => {
+    const startHit = snapIstarparkLaserPoint({
+      candidatePlanPoint: [0, 1.5],
+      geometry: room,
+      maxSnapDistanceMeters: null,
+      requireSurface: true,
+    });
+    const result = measureIstarparkLaserFreePointPair({
+      startHit,
+      endPlanPoint: [2, 2.5],
+      geometry: room,
+    });
+    expect(result).toMatchObject({
+      valid: true,
+      measurementMode: 'point-pair-free',
+      axis: 'free',
+      endHit: {
+        point: [2, 2.5],
+        sourcePlanPoint: [2, 2.5],
+        constrainedPlanPoint: [2, 2.5],
+        snapped: false,
+      },
+    });
+    expect(result.endHit?.obstacleId).toBe('');
+
+    const acrossFurniture = measureIstarparkLaserFreePointPair({
+      startHit,
+      endPlanPoint: [4.5, 1.5],
+      geometry: room,
+      props: [{
+        id: 'center-cabinet', assetId: 'cabinet',
+        positionMeters: [2, 1.5], dimensionsMeters: [1, 1, 2],
+      }],
+    });
+    expect(acrossFurniture).toMatchObject({
+      valid: true,
+      distanceMm: 4400,
+      endHit: { point: [4.5, 1.5], obstacleId: '' },
+    });
+  });
+
+  it('Shift 자유 실측은 로컬 X/Y 네 방향으로 투영하고 벽 접선 시작점을 보존한다', () => {
+    const startHit = snapIstarparkLaserPoint({
+      candidatePlanPoint: [0, 1.5],
+      geometry: room,
+      maxSnapDistanceMeters: null,
+      requireSurface: true,
+    });
+    expect(startHit).toMatchObject({ obstacleId: 'west', point: [.1, 1.5] });
+
+    expect(measureIstarparkLaserFreePointPair({
+      startHit,
+      endPlanPoint: [2, 2.5],
+      axisLock: 'x',
+      geometry: room,
+    })).toMatchObject({
+      valid: true,
+      axis: 'x',
+      distanceMm: 1900,
+      startHit: { point: [.1, 1.5] },
+      endHit: {
+        point: [2, 1.5],
+        sourcePlanPoint: [2, 2.5],
+        constrainedPlanPoint: [2, 1.5],
+      },
+    });
+
+    expect(measureIstarparkLaserFreePointPair({
+      startHit,
+      endPlanPoint: [-2, .5],
+      axisLock: 'x',
+      geometry: room,
+    })).toMatchObject({
+      valid: true,
+      axis: 'x',
+      distanceMm: 1900,
+      startHit: { point: [-.1, 1.5] },
+      endHit: {
+        point: [-2, 1.5],
+        sourcePlanPoint: [-2, .5],
+        constrainedPlanPoint: [-2, 1.5],
+      },
+    });
+
+    for (const [rawEndPoint, expectedEndPoint, distanceMm] of [
+      [[2, 2.5], [.1, 2.5], 1000],
+      [[2, .5], [.1, .5], 1000],
+    ] as const) {
+      expect(measureIstarparkLaserFreePointPair({
+        startHit,
+        endPlanPoint: rawEndPoint,
+        axisLock: 'y',
+        geometry: room,
+      })).toMatchObject({
+        valid: true,
+        axis: 'y',
+        distanceMm,
+        startHit: { point: [.1, 1.5] },
+        endHit: {
+          point: expectedEndPoint,
+          sourcePlanPoint: rawEndPoint,
+          constrainedPlanPoint: expectedEndPoint,
+        },
+      });
+    }
+  });
+
+  it('설비벽 면과 평행한 Shift 직선도 선택한 시작 면을 보존한다', () => {
+    const geometry = {
+      ...room,
+      solidBlocks: [{
+        id: 'service-column',
+        structuralRole: 'service-wall',
+        footprintPolygonMeters: [[1, 1], [2, 1], [2, 3], [1, 3]],
+      }],
+    };
+    const startHit = snapIstarparkLaserPoint({
+      candidatePlanPoint: [1, 2],
+      geometry,
+      maxSnapDistanceMeters: null,
+      requireSurface: true,
+    });
+    const result = measureIstarparkLaserFreePointPair({
+      startHit,
+      endPlanPoint: [4, 2.8],
+      axisLock: 'y',
+      geometry,
+    });
+    expect(startHit).toMatchObject({ kind: 'service-wall', point: [1, 2] });
+    expect(result).toMatchObject({
+      valid: true,
+      distanceMm: 800,
+      startHit: { point: [1, 2] },
+      endHit: { point: [1, 2.8] },
+    });
+  });
+
+  it('앱은 Shift 정지 커서 갱신·클릭 축 snapshot·L 우선순위를 유지한다', () => {
+    const app = new ShowcaseApp({} as HTMLElement) as any;
+    app.inspectionLaser.active = true;
+    app.inspectionLaser.phase = 'await-second';
+    app.inspectionLaser.lineSnap = false;
+    app.inspectionLaser.firstPlanPoint = [0, 0];
+    app.inspectionLaser.firstHit = {
+      valid: true,
+      point: [10, 0],
+      sourcePlanPoint: [0, 10],
+    };
+    app.refreshInspectionLaserMeasurement = vi.fn();
+
+    app.setInspectionLaserPointPairShiftAxisHeld(true);
+    expect(app.inspectionLaser.pointPairShiftAxisHeld).toBe(true);
+    expect(app.refreshInspectionLaserMeasurement).toHaveBeenCalledTimes(1);
+    expect(app.resolveInspectionLaserFreePointAxis([9, 4])).toBe('x');
+    app.inspectionLaser.lineSnap = true;
+    expect(app.resolveInspectionLaserFreePointAxis([9, 4])).toBeNull();
+
+    const scheduleSource = appSource.slice(
+      appSource.indexOf('private scheduleInspectionLaserMeasurement'),
+      appSource.indexOf('private refreshInspectionLaserMeasurement'),
+    );
+    expect(scheduleSource.indexOf('setInspectionLaserPointPairShiftAxisHeld(event.shiftKey === true, false)'))
+      .toBeLessThan(scheduleSource.indexOf('if (this.inspectionLaser.frameRequest) return'));
+    expect(appSource).toMatch(/secondPointAxisLock = this\.resolveInspectionLaserFreePointAxis\(context\.planPoint\)/);
+    expect(appSource).toMatch(/phase === 'complete'[\s\S]*?secondPointAxisLock/);
+    expect(appSource).toMatch(/lineSnap[\s\S]*?measureIstarparkLaserDirectionalGap[\s\S]*?measureIstarparkLaserFreePointPair/);
+    expect(appSource).toMatch(/keyup[\s\S]*?key === 'shift'[\s\S]*?setInspectionLaserPointPairShiftAxisHeld\(false\)/);
+    expect(appSource).toMatch(/window\.addEventListener\('blur'[\s\S]*?setInspectionLaserPointPairShiftAxisHeld\(false\)/);
+    expect(appSource).toMatch(/!this\.inspectionLaser\.lineSnap && this\.inspectionLaser\.phase !== 'hover'/);
   });
 
   it('내부벽 시작점은 커서가 향한 공간 쪽 벽 두께를 제외한다', () => {
