@@ -173,7 +173,7 @@ const SKILL_GLYPHS: Record<string, string> = {
 };
 
 function isFormTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, .stage-option-chips button, .stage-option-clear, [contenteditable="true"]'));
+  return target instanceof Element && Boolean(target.closest('input, textarea, select, button, a[href], summary, [role="button"], [contenteditable]:not([contenteditable="false"])'));
 }
 
 function mapLabelShort(map: StaticMapEntry): string {
@@ -302,7 +302,7 @@ export class ShowcaseApp {
     const requestedDeepLink = hasRequestedMap ? new URL(window.location.href) : null;
     const existingVerification = readHouseholdVerificationSession();
     this.authenticatedNickname = existingVerification?.nickname || '';
-    if (!hasRequestedMap || !existingVerification) {
+    if (!hasRequestedMap || !existingVerification || (!this.readOnlyShare && existingVerification.scope === 'share' && existingVerification.role !== 'operator')) {
       let verificationConfig: HouseholdVerificationConfigV1;
       try {
         verificationConfig = await loadHouseholdVerificationConfig();
@@ -325,7 +325,7 @@ export class ShowcaseApp {
       );
       const selection = verification.selection;
       this.authenticatedNickname = verification.nickname;
-      writeHouseholdVerificationSession(verification.role, verification.nickname);
+      writeHouseholdVerificationSession(verification.role, verification.nickname, undefined, Date.now(), this.readOnlyShare ? 'share' : 'playground');
       // 계산기는 인증 세대의 타입과 가격 층 구간만 사용한다. 동·호·닉네임은 저장하지 않는다.
       if (selection) writeSaleCalculatorHouseholdContext(selection.unitType, selection.floor);
       if (requestedDeepLink) {
@@ -972,7 +972,10 @@ export class ShowcaseApp {
     this.get<HTMLButtonElement>('#inspection-laser-clear').addEventListener('click', () => this.clearInspectionLaserPointPair(true), { signal });
 
     window.addEventListener('keydown', (event) => {
-      if (isFormTarget(event.target)) return;
+      if (event.defaultPrevented || event.isComposing || isFormTarget(event.target) || this.mount.querySelector('dialog[open]')) {
+        this.pressedKeys.clear();
+        return;
+      }
       const key = event.key.toLowerCase();
       if (key === 'j' && this.inspectionLaserSupported()) {
         event.preventDefault();
@@ -2091,10 +2094,13 @@ export class ShowcaseApp {
       this.selectedLocalPropId = '';
       this.selectedScenePropSnapshot = null;
       this.furnitureContextMenuOpen = false;
-    } else if (action === 'mirror') {
-      prop.mirrored = !prop.mirrored;
     } else {
-      prop.yawDeg = ((finiteNumber(prop.yawDeg) + (action === 'rotate-left' ? -90 : 90)) % 360 + 360) % 360;
+      const candidate = { ...prop, positionMeters: [...(prop.positionMeters || [])] };
+      if (action === 'mirror') candidate.mirrored = !prop.mirrored;
+      else candidate.yawDeg = ((finiteNumber(prop.yawDeg) + (action === 'rotate-left' ? -90 : 90)) % 360 + 360) % 360;
+      if (!this.validateFurnitureEdit(candidate)) return;
+      Object.assign(prop, candidate);
+      this.selectedScenePropSnapshot = { ...candidate };
     }
     this.saveInteriorLayout(action === 'delete' ? '선택 가구를 삭제했습니다.' : '가구 변형을 로컬 저장했습니다.');
   }
@@ -2106,6 +2112,22 @@ export class ShowcaseApp {
     const asset = this.interiorAssets.find((candidate) => candidate.assetId === prop.assetId);
     const result = snapFurnitureToNearestWall({ ...prop, positionMeters: point }, apartment.geometry, asset);
     return result?.positionMeters || point;
+  }
+
+  private validateFurnitureEdit(candidate: ApartmentInteriorProp): boolean {
+    const apartment = this.activeApartment();
+    if (!apartment?.geometry) return false;
+    const result = validateInteriorPlacement({
+      prop: candidate, geometry: apartment.geometry,
+      props: this.threeRenderer?.getRenderedProps() || this.localInteriorProps,
+      assets: this.interiorAssets, ignorePropId: String(candidate.id || ''),
+    });
+    if (!result.ok) {
+      const message = result.errors[0]?.message || '다른 위치에서 다시 시도해 주세요.';
+      this.get<HTMLElement>('#furniture-status').textContent = `가구 변경을 저장하지 않았습니다. ${message}`;
+      this.toast('배치할 수 없어 기존 가구 위치와 방향을 유지합니다.', 'notice');
+    } else if (result.roomZoneId) candidate.roomZoneId = result.roomZoneId;
+    return result.ok;
   }
 
   private toggleFurnitureWallSnap(): void {
@@ -2142,7 +2164,13 @@ export class ShowcaseApp {
     }
     const prop = this.ensureEditableSelectedProp();
     if (!prop) return;
-    prop.positionMeters = snapped.positionMeters;
+    const candidate = { ...prop, positionMeters: [...snapped.positionMeters] };
+    if (!this.validateFurnitureEdit(candidate)) {
+      this.furnitureWallSnapEnabled = false;
+      this.updateFurnitureToolbar();
+      return;
+    }
+    Object.assign(prop, candidate);
     this.selectedScenePropSnapshot = { ...prop, positionMeters: [...snapped.positionMeters] };
     this.saveInteriorLayout(`위치 자석 ON · ${snapped.wallId} 벽면에 가구를 붙였습니다.`);
     this.toast('위치 자석 ON · 가까운 벽면에 배치했습니다.', 'success');
@@ -2780,8 +2808,10 @@ export class ShowcaseApp {
     this.setPaletteTab('furniture');
     requestAnimationFrame(() => {
       const list = this.get<HTMLElement>('#furniture-list');
-      const card = [...list.querySelectorAll<HTMLElement>('[data-furniture-asset]')]
-        .find((candidate) => candidate.dataset.furnitureAsset === assetId);
+      const card = [...list.querySelectorAll<HTMLElement>('[data-furniture-asset], [data-furniture-prop-id]')]
+        .find((candidate) => this.readOnlyShare
+          ? candidate.dataset.furniturePropId === prop.id
+          : candidate.dataset.furnitureAsset === assetId);
       if (!card) return;
       card.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
     });
@@ -3068,6 +3098,7 @@ export class ShowcaseApp {
   }
 
   private moveActiveActor(time: number): void {
+    if (this.mount.querySelector('dialog[open]') || isFormTarget(document.activeElement)) this.pressedKeys.clear();
     if (this.paletteTab === 'furniture') return;
     const actor = this.actors.get(this.activeActor);
     if (!actor || !this.world) return;

@@ -17,6 +17,15 @@ class MemoryStorage {
 }
 
 describe('분양가 계산기 세션 컨텍스트', () => {
+  it.each(['51a', '55a'])('preserves all four %s variants on calculator return', (type) => {
+    for (const variant of ['A', 'B', 'C', 'D']) {
+      const storage = new MemoryStorage();
+      writeSaleCalculatorHouseholdContext(type.toUpperCase(), 5, storage);
+      const returnUrl = `/bunfirvil/?map=bundang-first-village-${type}-prototype&actor=200&variant=${variant}`;
+      expect(writeSaleCalculatorLaunchContext({ schemaVersion: 1, applicantRoute: 'main-subscription', optionIds: ['design-wall'], returnUrl }, storage)?.returnUrl).toBe(returnUrl);
+      expect(readSaleCalculatorLaunchContext(storage)?.returnUrl).toBe(returnUrl);
+    }
+  });
   it.each([
     [1, '1'], [2, '2'], [3, '3'], [4, '4'], [5, '5+'], [25, '5+'],
   ] as const)('실제 %s층은 가격 구간 %s으로 변환한다', (floor, expected) => {

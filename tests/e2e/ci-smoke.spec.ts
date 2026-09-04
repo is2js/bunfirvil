@@ -34,13 +34,18 @@ test('smokes household selection, deployed maps, read-only sharing, living-room 
     const request = JSON.parse(route.request().postData() || '{}') as Record<string, unknown>;
     expect(route.request().method()).toBe('POST');
     expect(route.request().headers()['content-type']).toContain('text/plain');
-    expect(request).toMatchObject({ schemaVersion: 1, action: 'verifyHousehold', buildingId: '105' });
-    expect(['51A', '59A']).toContain(request.unitType);
+    expect(request).toMatchObject({ schemaVersion: 1, buildingId: '105' });
+    expect(['verifyHousehold', 'verifyShareViewer']).toContain(request.action);
+    if (request.action === 'verifyShareViewer') expect(request.unitType).toBe('');
+    else expect(['51A', '59A']).toContain(request.unitType);
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
         schemaVersion: 1,
         ok: true,
+        authRevision: 2,
+        operatorVerified: verificationMode === 'match',
+        scope: request.action === 'verifyShareViewer' ? 'share' : 'playground',
         verified: verificationMode === 'match',
         operator: verificationMode === 'match',
         requested: false,
@@ -84,6 +89,8 @@ test('smokes household selection, deployed maps, read-only sharing, living-room 
     provider: 'google-apps-script',
     verifiedAt: Date.now(),
     role: 'operator',
+    authRevision: 2,
+    scope: 'playground',
   })));
   await page.goto('./households/');
   await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 전체 동·호 현황' })).toBeVisible();
@@ -151,7 +158,7 @@ test('smokes household selection, deployed maps, read-only sharing, living-room 
   expect(await page.evaluate(() => {
     const parsed = JSON.parse(sessionStorage.getItem('bunfirvil:household-verification:v1') || '{}') as Record<string, unknown>;
     return { keys: Object.keys(parsed).sort(), schemaVersion: parsed.schemaVersion, provider: parsed.provider };
-  })).toEqual({ keys: ['nickname', 'provider', 'role', 'schemaVersion', 'verifiedAt'], schemaVersion: 1, provider: 'google-apps-script' });
+  })).toEqual({ keys: ['authRevision', 'nickname', 'provider', 'role', 'schemaVersion', 'scope', 'verifiedAt'], schemaVersion: 1, provider: 'google-apps-script' });
 
   await page.evaluate(() => sessionStorage.removeItem('bunfirvil:household-verification:v1'));
   await page.goto('./?map=bundang-first-village-55b-prototype&actor=200&variant=B');

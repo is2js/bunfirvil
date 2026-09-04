@@ -19,6 +19,11 @@ const catalog = {
 const assets = [{ assetId: 'sofa', displayNameKo: '소파', category: '거실', defaultDimensionsMeters: [2, 1, 1], materialVariantIds: ['oak'] }];
 
 describe('read-only share', () => {
+  it('keeps original v1 links without an author readable', () => {
+    const legacy = { schemaVersion: 1, mapId: catalog.maps[0].id, unitType: '55B', planVariant: 'A', livingFacing: 'south-west', selectedOptionIds: [], furniture: [] };
+    expect(validateBundangReadOnlyShare(legacy, catalog, assets).sharedByNickname).toBe('공유자');
+    expect(() => validateBundangReadOnlyShare({ ...legacy, sharedByNickname: '' }, catalog, assets)).toThrow();
+  });
   it('round-trips only the allowed showcase state', () => {
     const state = createBundangReadOnlyShare({
       sharedByNickname: '돌범',

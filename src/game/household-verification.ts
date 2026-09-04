@@ -5,8 +5,9 @@ export const HOUSEHOLD_VERIFICATION_PROVIDER = 'google-apps-script' as const;
 const GOOGLE_APPS_SCRIPT_EXEC_URL = /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/i;
 
 export type HouseholdVerificationRole = 'verified' | 'operator';
-export type HouseholdVerificationStatus = 'not_found' | 'requested' | 'verified' | 'operator';
-export type HouseholdVerificationAction = 'verifyHousehold' | 'requestHouseholdVerification';
+export type HouseholdVerificationStatus = 'not_found' | 'requested' | 'verified' | 'operator' | 'rejected';
+export type HouseholdVerificationAction = 'verifyHousehold' | 'verifyShareViewer' | 'requestHouseholdVerification';
+export type HouseholdVerificationScope = 'playground' | 'share';
 
 export interface HouseholdVerificationConfigV1 {
   schemaVersion: 1;
@@ -22,6 +23,7 @@ export interface HouseholdVerificationRequestV1 {
   buildingId: string;
   unitType: string;
   nickname: string;
+  operatorCode?: string;
 }
 
 export interface HouseholdVerificationResponseV1 {
@@ -32,6 +34,7 @@ export interface HouseholdVerificationResponseV1 {
   requested: boolean;
   status: HouseholdVerificationStatus;
   code?: string;
+  scope?: HouseholdVerificationScope;
 }
 
 export interface HouseholdVerificationSessionV1 {
@@ -39,11 +42,13 @@ export interface HouseholdVerificationSessionV1 {
   provider: typeof HOUSEHOLD_VERIFICATION_PROVIDER;
   verifiedAt: number;
   role: HouseholdVerificationRole;
+  authRevision?: 2;
+  scope?: HouseholdVerificationScope;
   /** 현재 탭에서 공유 링크 작성자 표시에만 사용하며 localStorage에는 기록하지 않는다. */
   nickname?: string;
 }
 
-export type HouseholdVerificationErrorCode = 'not-configured' | 'timeout' | 'network' | 'invalid-response';
+export type HouseholdVerificationErrorCode = 'not-configured' | 'timeout' | 'network' | 'invalid-response' | 'backend-update-required' | 'request_capacity' | 'rate_limited';
 
 export class HouseholdVerificationError extends Error {
   constructor(readonly code: HouseholdVerificationErrorCode) {
@@ -114,31 +119,41 @@ async function sendHouseholdVerification(
     schemaVersion: 1,
     action,
     buildingId: normalizeHouseholdBuilding(input.buildingId),
-    unitType: normalizeHouseholdUnitType(input.unitType),
+    unitType: action === 'verifyShareViewer' ? '' : normalizeHouseholdUnitType(input.unitType),
     nickname: normalizeHouseholdNickname(input.nickname),
+    ...(input.operatorCode ? { operatorCode: input.operatorCode.trim() } : {}),
   };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.timeoutMs);
   let response: Response;
+  let payload: unknown;
   try {
     response = await fetchImpl(config.endpoint, {
       method: 'POST', cache: 'no-store', credentials: 'omit', redirect: 'follow', referrerPolicy: 'no-referrer',
       headers: { Accept: 'application/json', 'Content-Type': 'text/plain;charset=UTF-8' },
       body: JSON.stringify(request), signal: controller.signal,
     });
+    if (!response.ok) throw new HouseholdVerificationError('network');
+    try { payload = await response.json(); }
+    catch {
+      if (controller.signal.aborted) throw new HouseholdVerificationError('timeout');
+      throw new HouseholdVerificationError('invalid-response');
+    }
   } catch (error) {
+    if (error instanceof HouseholdVerificationError) throw error;
     if (controller.signal.aborted || error instanceof DOMException && error.name === 'AbortError') throw new HouseholdVerificationError('timeout');
     throw new HouseholdVerificationError('network');
   } finally { clearTimeout(timer); }
-  if (!response.ok) throw new HouseholdVerificationError('network');
-
-  let payload: unknown;
-  try { payload = await response.json(); } catch { throw new HouseholdVerificationError('invalid-response'); }
   const row = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload as Record<string, unknown> : null;
-  const validStatus = row && ['not_found', 'requested', 'verified', 'operator'].includes(String(row.status));
+  if (row?.ok === false && (row.code === 'request_capacity' || row.code === 'rate_limited')) throw new HouseholdVerificationError(row.code);
+  const validStatus = row && ['not_found', 'requested', 'verified', 'operator', 'rejected'].includes(String(row.status));
   if (!row || row.schemaVersion !== 1 || typeof row.ok !== 'boolean' || typeof row.verified !== 'boolean'
     || typeof row.operator !== 'boolean' || !validStatus) throw new HouseholdVerificationError('invalid-response');
   if (!row.ok) throw new HouseholdVerificationError('network');
+  if (row.operator && (row.authRevision !== 2 || row.operatorVerified !== true)
+    || action === 'verifyShareViewer' && (row.authRevision !== 2 || row.scope !== 'share')) throw new HouseholdVerificationError('backend-update-required');
+  if (row.verified !== (row.status === 'verified' || row.status === 'operator')
+    || row.operator !== (row.status === 'operator')) throw new HouseholdVerificationError('invalid-response');
   return {
     schemaVersion: 1,
     ok: true,
@@ -146,6 +161,7 @@ async function sendHouseholdVerification(
     operator: row.operator,
     requested: row.requested === true,
     status: row.status as HouseholdVerificationStatus,
+    scope: action === 'verifyShareViewer' ? 'share' : 'playground',
     ...(typeof row.code === 'string' ? { code: row.code } : {}),
   };
 }
@@ -166,6 +182,14 @@ export function requestHouseholdVerification(
   return sendHouseholdVerification(config, 'requestHouseholdVerification', input, fetchImpl);
 }
 
+export function verifyShareViewer(
+  config: HouseholdVerificationConfigV1,
+  input: Omit<HouseholdVerificationRequestV1, 'schemaVersion' | 'action' | 'unitType'>,
+  fetchImpl: typeof fetch = fetch,
+): Promise<HouseholdVerificationResponseV1> {
+  return sendHouseholdVerification(config, 'verifyShareViewer', { ...input, unitType: '' }, fetchImpl);
+}
+
 export function readHouseholdVerificationSession(storage: SessionStoragePort | null = browserSessionStorage()): HouseholdVerificationSessionV1 | null {
   if (!storage) return null;
   try {
@@ -173,12 +197,19 @@ export function readHouseholdVerificationSession(storage: SessionStoragePort | n
     if (!parsed || parsed.schemaVersion !== 1 || parsed.provider !== HOUSEHOLD_VERIFICATION_PROVIDER
       || typeof parsed.verifiedAt !== 'number' || !Number.isFinite(parsed.verifiedAt) || parsed.verifiedAt <= 0
       || (parsed.role !== 'verified' && parsed.role !== 'operator')) return null;
+    // Old nickname-only operator sessions must authenticate again.
+    if (parsed.role === 'operator' && parsed.authRevision !== 2) {
+      storage.removeItem(HOUSEHOLD_VERIFICATION_SESSION_KEY);
+      return null;
+    }
     const nickname = normalizeHouseholdNickname(parsed.nickname);
     return {
       schemaVersion: 1,
       provider: HOUSEHOLD_VERIFICATION_PROVIDER,
       verifiedAt: parsed.verifiedAt,
       role: parsed.role,
+      ...(parsed.authRevision === 2 ? { authRevision: 2 as const } : {}),
+      scope: parsed.scope === 'share' ? 'share' : 'playground',
       ...(nickname && Array.from(nickname).length <= 20 ? { nickname } : {}),
     };
   } catch { return null; }
@@ -193,6 +224,7 @@ export function writeHouseholdVerificationSession(
   nickname = '',
   storage: SessionStoragePort | null = browserSessionStorage(),
   verifiedAt = Date.now(),
+  scope: HouseholdVerificationScope = 'playground',
 ): HouseholdVerificationSessionV1 | null {
   if (!storage) return null;
   const normalizedNickname = normalizeHouseholdNickname(nickname);
@@ -201,6 +233,8 @@ export function writeHouseholdVerificationSession(
     provider: HOUSEHOLD_VERIFICATION_PROVIDER,
     verifiedAt,
     role,
+    authRevision: 2,
+    scope,
     ...(normalizedNickname && Array.from(normalizedNickname).length <= 20 ? { nickname: normalizedNickname } : {}),
   };
   storage.setItem(HOUSEHOLD_VERIFICATION_SESSION_KEY, JSON.stringify(session));

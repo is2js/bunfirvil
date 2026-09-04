@@ -29,3 +29,11 @@ window.addEventListener('pagehide', (event: PageTransitionEvent) => {
 window.addEventListener('pageshow', (event: PageTransitionEvent) => {
   if (event.persisted) app.resume();
 });
+
+// Pasting a share for the currently open map changes only the fragment. Re-run
+// authentication and token validation rather than showing the previous scene.
+window.addEventListener('hashchange', (event: HashChangeEvent) => {
+  const oldHash = new URL(event.oldURL).hash;
+  const newHash = new URL(event.newURL).hash;
+  if (oldHash !== newHash && (oldHash.startsWith('#share=') || newHash.startsWith('#share='))) window.location.reload();
+});

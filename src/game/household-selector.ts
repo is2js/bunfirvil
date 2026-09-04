@@ -12,6 +12,8 @@ import {
   householdVerificationConfigured,
   requestHouseholdVerification,
   verifyHousehold,
+  verifyShareViewer,
+  HouseholdVerificationError,
   type HouseholdVerificationConfigV1,
   type HouseholdVerificationRole,
 } from './household-verification';
@@ -204,10 +206,16 @@ export function waitForHouseholdSelection(
               <label><span>닉네임</span><input id="household-nickname" type="text" maxlength="20" autocomplete="off" placeholder="닉네임 입력" /></label>
               <button type="button" id="household-verify-nickname" disabled>인증 확인</button>
             </div>
+            <div id="household-operator-code-group" class="household-operator-code" hidden>
+              <label for="household-operator-code">운영자 인증코드</label>
+              <input id="household-operator-code" type="password" maxlength="128" autocomplete="off" placeholder="별도 운영자 인증코드" />
+              <small>공개 닉네임과 다른 코드를 입력하세요. 코드가 공유 링크나 브라우저 저장소에 저장되지는 않습니다.</small>
+            </div>
             <output id="household-nickname-status" aria-live="polite"></output>
-            <div class="household-registration-request">
+            <div class="household-registration-request" ${shareAuthentication ? 'hidden' : ''}>
               <button type="button" id="household-request-verification" disabled>해당 닉네임으로 등록 요청</button>
             </div>
+            ${shareAuthentication ? `<p class="household-share-registration">미등록 회원은 <a href="${resolveProjectUrl('')}" target="_blank" rel="noopener">본인 세대를 선택해 등록 요청</a>한 뒤 이 화면에서 다시 인증해 주세요.</p>` : ''}
           </div>
         </section>
         </div>
@@ -238,6 +246,8 @@ export function waitForHouseholdSelection(
     const verifyNickname = mount.querySelector<HTMLButtonElement>('#household-verify-nickname');
     const requestVerification = mount.querySelector<HTMLButtonElement>('#household-request-verification');
     const nicknameStatus = mount.querySelector<HTMLOutputElement>('#household-nickname-status');
+    const operatorGroup = mount.querySelector<HTMLElement>('#household-operator-code-group')!;
+    const operatorInput = mount.querySelector<HTMLInputElement>('#household-operator-code')!;
     if (!picker || !detail || !nicknameStage || !rows || !title || !description || !legend || !buildingStep || (!shareAuthentication && !unitStep) || !nicknameStep || !selectedBuilding || !nicknameBuilding || !dock || !summary || !enter || !nicknameInput || !verifyNickname || !requestVerification || !nicknameStatus) throw new Error('세대 선택 화면을 구성하지 못했습니다.');
     let chosenBuildingId: string | null = null;
     let nickname = '';
@@ -261,6 +271,8 @@ export function waitForHouseholdSelection(
     const revealVerifiedDock = (): void => {
       if (!nicknameVerified) return;
       nicknameInput.disabled = true;
+      operatorInput.value = '';
+      operatorInput.disabled = true;
       verifyNickname.disabled = true;
       requestVerification.disabled = true;
       nicknameStep.classList.add('is-complete');
@@ -274,7 +286,7 @@ export function waitForHouseholdSelection(
       if (shareAuthentication) {
         const nicknameText = nickname.trim() ? ` · ${nickname.trim()}` : '';
         summary.textContent = chosenBuildingId
-          ? `${chosenBuildingId}동 · ${shareAuthentication.unitType}${nicknameText}`
+          ? `${chosenBuildingId}동${nicknameText} · 공유 열람 인증`
           : '동과 닉네임을 확인해 주세요.';
         enter.disabled = !nicknameVerified;
         return;
@@ -294,6 +306,9 @@ export function waitForHouseholdSelection(
       verificationAttempt += 1;
       nicknameVerified = false;
       verifiedRole = null;
+      operatorInput.value = '';
+      operatorInput.disabled = false;
+      operatorGroup.hidden = true;
       if (clearNickname) {
         nickname = '';
         nicknameInput.value = '';
@@ -402,7 +417,7 @@ export function waitForHouseholdSelection(
         ? '동과 닉네임 인증 후 공유받은 놀이터를 읽기 전용으로 열람할 수 있습니다.'
         : '선택한 세대에서 사용할 닉네임을 입력하고 인증을 확인해 주세요.';
       nicknameBuilding.textContent = shareAuthentication
-        ? `${chosenBuildingId}동 선택됨 · ${shareAuthentication.unitType}`
+        ? `${chosenBuildingId}동 선택됨 · 공유 열람`
         : `${selected!.buildingId}동 ${selected!.householdNumber}호 선택됨`;
       buildingStep.classList.remove('is-current');
       buildingStep.classList.add('is-complete');
@@ -458,6 +473,8 @@ export function waitForHouseholdSelection(
     });
 
     nicknameInput.addEventListener('input', () => {
+      operatorGroup.hidden = true;
+      operatorInput.value = '';
       verificationAttempt += 1;
       nickname = nicknameInput.value;
       nicknameVerified = false;
@@ -474,100 +491,77 @@ export function waitForHouseholdSelection(
       updateSelectionSummary();
     });
 
-    verifyNickname.addEventListener('click', async () => {
+    const authenticate = async (register: boolean): Promise<void> => {
+      if (register && shareAuthentication) return;
       const candidate = nickname.trim();
-      const selectedBuildingId = selected?.buildingId || chosenBuildingId || '';
-      const selectedUnitType = selected?.unitType || shareAuthentication?.unitType || '';
-      if (!candidate || !selectedBuildingId || !selectedUnitType || !householdVerificationConfigured(verificationConfig)) return;
-      const selectedKey = `${selectedBuildingId}:${selectedUnitType}`;
+      const buildingId = selected?.buildingId || chosenBuildingId || '';
+      const unitType = selected?.unitType || '';
+      if (!candidate || !buildingId || (!shareAuthentication && !unitType) || !householdVerificationConfigured(verificationConfig)) return;
       const attempt = ++verificationAttempt;
       verifyNickname.disabled = true;
       requestVerification.disabled = true;
-      verifyNickname.setAttribute('aria-busy', 'true');
-      nicknameStatus.textContent = '닉네임을 확인하고 있습니다.';
+      operatorInput.disabled = true;
+      const button = register ? requestVerification : verifyNickname;
+      button.setAttribute('aria-busy', 'true');
+      nicknameStatus.textContent = register ? '닉네임 등록을 요청하고 있습니다.' : '닉네임을 확인하고 있습니다.';
       try {
-        const response = await verifyHousehold(verificationConfig, {
-          buildingId: selectedBuildingId,
-          unitType: selectedUnitType,
-          nickname: candidate,
-        });
-        if (attempt !== verificationAttempt
-          || nickname.trim() !== candidate
-          || `${selected?.buildingId || chosenBuildingId || ''}:${selected?.unitType || shareAuthentication?.unitType || ''}` !== selectedKey) return;
+        const input = { buildingId, unitType, nickname: candidate, operatorCode: operatorInput.value };
+        const response = shareAuthentication
+          ? await verifyShareViewer(verificationConfig, input)
+          : register ? await requestHouseholdVerification(verificationConfig, input) : await verifyHousehold(verificationConfig, input);
+        if (attempt !== verificationAttempt || nickname.trim() !== candidate) return;
         nicknameVerified = response.verified;
         verifiedRole = response.operator ? 'operator' : response.verified ? 'verified' : null;
         verifyNickname.textContent = response.verified ? '인증 완료' : '다시 확인';
-        nicknameStatus.textContent = response.operator
-          ? '운영자 인증이 완료되었습니다. 관리 메뉴를 사용할 수 있습니다.'
-          : response.verified
-            ? '세대 및 닉네임 인증이 완료되었습니다.'
-            : response.status === 'requested'
-              ? '등록 요청이 확인 대기 중입니다.'
-              : '선택한 동·타입과 닉네임을 확인할 수 없습니다.';
+        if (response.code === 'operator_code_required') {
+          operatorGroup.hidden = false;
+          nicknameStatus.textContent = '운영자 인증코드를 입력해 주세요. 반복 실패 시 10분 후 다시 시도하세요.';
+        } else if (response.code === 'operator_setup_required') {
+          nicknameStatus.textContent = '운영자 인증코드가 설정되지 않았습니다. Sheet의 분퍼빌 회원 관리 메뉴에서 먼저 설정해 주세요.';
+        } else if (response.code === 'membership_suspended') {
+          nicknameStatus.textContent = '인증할 수 없습니다. 운영자에게 회원 상태를 확인해 주세요.';
+        } else {
+          nicknameStatus.textContent = response.operator ? '운영자 인증이 완료되었습니다. 관리 메뉴를 사용할 수 있습니다.'
+            : response.verified ? (shareAuthentication ? '공유 열람 인증이 완료되었습니다.' : '세대 및 닉네임 인증이 완료되었습니다.')
+            : response.status === 'requested' ? '등록 요청이 확인 대기 중입니다. 승인 후 인증 확인을 눌러 주세요.'
+            : response.status === 'rejected' ? '등록 요청이 반려되었습니다. 운영자에게 문의해 주세요.'
+            : shareAuthentication ? '선택한 동과 닉네임의 회원 정보를 확인할 수 없습니다.' : '선택한 동·타입과 닉네임을 확인할 수 없습니다.';
+        }
         revealVerifiedDock();
-      } catch {
+      } catch (error) {
         if (attempt !== verificationAttempt) return;
         nicknameVerified = false;
         verifiedRole = null;
         verifyNickname.textContent = '다시 확인';
-        nicknameStatus.textContent = '인증 서비스를 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
+        const code = error instanceof HouseholdVerificationError ? error.code : '';
+        nicknameStatus.textContent = code === 'backend-update-required' ? '인증 서비스 업데이트가 필요합니다. 운영자가 새 Code.gs를 배포한 뒤 다시 시도해 주세요.'
+          : code === 'rate_limited' ? '등록 요청이 너무 빠릅니다. 1분 후 다시 시도해 주세요.'
+          : code === 'request_capacity' ? '현재 등록 요청 접수량이 많습니다. 운영자에게 문의해 주세요.'
+          : '인증 서비스를 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
       } finally {
         if (attempt === verificationAttempt) {
-          verifyNickname.removeAttribute('aria-busy');
+          button.removeAttribute('aria-busy');
+          operatorInput.disabled = nicknameVerified;
           verifyNickname.disabled = nicknameVerified;
-          requestVerification.disabled = nicknameVerified;
+          requestVerification.disabled = nicknameVerified || Boolean(shareAuthentication);
           updateSelectionSummary();
+          if (!operatorGroup.hidden && !nicknameVerified) operatorInput.focus();
         }
       }
+    };
+    verifyNickname.addEventListener('click', () => { void authenticate(false); });
+    requestVerification.addEventListener('click', () => { void authenticate(true); });
+    operatorInput.addEventListener('input', () => {
+      verificationAttempt += 1;
+      verifyNickname.disabled = false;
     });
-
-    requestVerification.addEventListener('click', async () => {
-      const candidate = nickname.trim();
-      const selectedBuildingId = selected?.buildingId || chosenBuildingId || '';
-      const selectedUnitType = selected?.unitType || shareAuthentication?.unitType || '';
-      if (!candidate || !selectedBuildingId || !selectedUnitType || !householdVerificationConfigured(verificationConfig)) return;
-      const selectedKey = `${selectedBuildingId}:${selectedUnitType}`;
-      const attempt = ++verificationAttempt;
-      verifyNickname.disabled = true;
-      requestVerification.disabled = true;
-      requestVerification.setAttribute('aria-busy', 'true');
-      nicknameStatus.textContent = '닉네임 등록을 요청하고 있습니다.';
-      try {
-        const response = await requestHouseholdVerification(verificationConfig, {
-          buildingId: selectedBuildingId,
-          unitType: selectedUnitType,
-          nickname: candidate,
-        });
-        if (attempt !== verificationAttempt || nickname.trim() !== candidate
-          || `${selected?.buildingId || chosenBuildingId || ''}:${selected?.unitType || shareAuthentication?.unitType || ''}` !== selectedKey) return;
-        nicknameVerified = response.verified;
-        verifiedRole = response.operator ? 'operator' : response.verified ? 'verified' : null;
-        nicknameStatus.textContent = response.operator
-          ? '이미 운영자로 인증되어 있습니다.'
-          : response.verified
-            ? '이미 인증된 정보입니다. 쇼케이스로 이동할 수 있습니다.'
-            : '등록 요청이 접수되었습니다. 운영자가 상태를 인증됨으로 바꾼 뒤 인증 확인을 눌러 주세요.';
-        revealVerifiedDock();
-      } catch {
-        if (attempt !== verificationAttempt) return;
-        nicknameVerified = false;
-        verifiedRole = null;
-        nicknameStatus.textContent = '등록 요청 서비스를 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
-      } finally {
-        if (attempt === verificationAttempt) {
-          requestVerification.removeAttribute('aria-busy');
-          verifyNickname.disabled = nicknameVerified;
-          requestVerification.disabled = nicknameVerified;
-          updateSelectionSummary();
-        }
-      }
-    });
-
-    nicknameInput.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' || event.isComposing) return;
-      event.preventDefault();
-      if (!verifyNickname.disabled) verifyNickname.click();
-    });
+    for (const input of [nicknameInput, operatorInput]) {
+      input.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' || event.isComposing) return;
+        event.preventDefault();
+        if (!verifyNickname.disabled) verifyNickname.click();
+      });
+    }
 
     const onPopState = (): void => {
       if (shareAuthentication) {

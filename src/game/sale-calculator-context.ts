@@ -70,7 +70,8 @@ function sameOriginReturnUrl(value: unknown): string | null {
     const variant = url.searchParams.get('variant');
     if (map && SALE_CALCULATOR_RETURN_MAP_IDS.has(map)) safeQuery.set('map', map);
     if (actor === '100' || actor === '200') safeQuery.set('actor', actor);
-    if (variant === 'A' || variant === 'B') safeQuery.set('variant', variant);
+    if (variant === 'A' || variant === 'B'
+      || ((variant === 'C' || variant === 'D') && (map === 'bundang-first-village-51a-prototype' || map === 'bundang-first-village-55a-prototype'))) safeQuery.set('variant', variant);
     const query = safeQuery.toString();
     return `${basePath}${query ? `?${query}` : ''}`;
   } catch { return null; }

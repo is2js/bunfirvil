@@ -321,6 +321,7 @@ input:focus-visible {
   min-height: 56px;
   padding: 7px 9px 7px 14px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 18px;
   border: 1px solid var(--line);
@@ -409,6 +410,8 @@ input:focus-visible {
 
 .deck-actions {
   display: flex;
+  flex-shrink: 0;
+  margin-left: auto;
   gap: 8px;
 }
 
@@ -2944,3 +2947,9 @@ button.household-cell.is-selected::after { content: '✓'; position: absolute; t
   .household-selection-dock.is-authenticated { min-height: 146px; padding-block: 20px; }
   .household-selection-dock button { min-height: 46px; padding-block: 10px; font-size: 14px; }
 }
+.household-operator-code { display: grid; gap: 8px; margin-top: 16px; color: var(--ink); }
+.household-operator-code[hidden], .household-registration-request[hidden] { display: none; }
+.household-operator-code label { color: var(--gold); font-weight: 700; }
+.household-operator-code input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--ink); font: inherit; }
+.household-operator-code small, .household-share-registration { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.household-share-registration a { color: var(--gold); text-decoration: underline; }

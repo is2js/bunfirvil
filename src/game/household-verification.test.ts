@@ -11,6 +11,7 @@ import {
   readHouseholdVerificationSession,
   requestHouseholdVerification,
   verifyHousehold,
+  verifyShareViewer,
   writeHouseholdVerificationSession,
   type HouseholdVerificationConfigV1,
 } from './household-verification';
@@ -78,12 +79,37 @@ describe('household Google Sheet verification', () => {
     const storage = new MemoryStorage();
     writeHouseholdVerificationSession('operator', ' 피치 ', storage, 1_789_000_000_000);
     const raw = storage.getItem(HOUSEHOLD_VERIFICATION_SESSION_KEY) || '';
-    expect(raw).toBe('{"schemaVersion":1,"provider":"google-apps-script","verifiedAt":1789000000000,"role":"operator","nickname":"피치"}');
+    expect(JSON.parse(raw)).toEqual({ schemaVersion: 1, provider: 'google-apps-script', verifiedAt: 1789000000000, role: 'operator', authRevision: 2, scope: 'playground', nickname: '피치' });
     expect(raw).not.toMatch(/105|55A|2501/);
     expect(householdVerificationIsOperator(storage)).toBe(true);
     expect(readHouseholdVerificationSession(storage)?.role).toBe('operator');
     expect(readHouseholdVerificationSession(storage)?.nickname).toBe('피치');
     clearHouseholdVerificationSession(storage);
     expect(readHouseholdVerificationSession(storage)).toBeNull();
+  });
+
+  it('rejects old nickname-only operator responses and sessions', async () => {
+    const fetchMock = async () => new Response(JSON.stringify({ schemaVersion: 1, ok: true, verified: true, operator: true, status: 'operator' }));
+    await expect(verifyHousehold(config, { buildingId: '105', unitType: '55A', nickname: 'operator' }, fetchMock)).rejects.toMatchObject({ code: 'backend-update-required' });
+    const storage = new MemoryStorage();
+    storage.setItem(HOUSEHOLD_VERIFICATION_SESSION_KEY, JSON.stringify({ schemaVersion: 1, provider: 'google-apps-script', verifiedAt: 100, role: 'operator' }));
+    expect(readHouseholdVerificationSession(storage)).toBeNull();
+  });
+
+  it('separates share viewer membership from the shared apartment type', async () => {
+    const fetchMock = async (_: URL | RequestInfo, init?: RequestInit) => {
+      expect(JSON.parse(String(init?.body))).toEqual({ schemaVersion: 1, action: 'verifyShareViewer', buildingId: '105', unitType: '', nickname: '이웃' });
+      return new Response(JSON.stringify({ schemaVersion: 1, authRevision: 2, ok: true, verified: true, operator: false, status: 'verified', scope: 'share' }));
+    };
+    expect((await verifyShareViewer(config, { buildingId: '105', nickname: '이웃' }, fetchMock)).scope).toBe('share');
+    const storage = new MemoryStorage();
+    writeHouseholdVerificationSession('verified', '이웃', storage, Date.now(), 'share');
+    expect(readHouseholdVerificationSession(storage)?.scope).toBe('share');
+    expect(storage.getItem(HOUSEHOLD_VERIFICATION_SESSION_KEY)).not.toMatch(/operatorCode|unitType|buildingId/);
+  });
+
+  it('does not accept inconsistent privilege responses', async () => {
+    const fetchMock = async () => new Response(JSON.stringify({ schemaVersion: 1, ok: true, verified: true, operator: false, status: 'requested' }));
+    await expect(verifyHousehold(config, { buildingId: '105', unitType: '55A', nickname: '이웃' }, fetchMock)).rejects.toMatchObject({ code: 'invalid-response' });
   });
 });

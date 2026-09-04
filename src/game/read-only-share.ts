@@ -145,7 +145,8 @@ export function validateBundangReadOnlyShare(
 ): BundangReadOnlyShareV1 {
   const row = record(value);
   if (!row || row.schemaVersion !== 1) throw new BundangShareError('invalid-state');
-  const sharedByNickname = normalizeSharedNickname(row.sharedByNickname);
+  // Initial v1 links did not include an author. Keep those links readable.
+  const sharedByNickname = row.sharedByNickname === undefined ? '공유자' : normalizeSharedNickname(row.sharedByNickname);
   const mapId = String(row.mapId || '');
   const unitType = String(row.unitType || '').toUpperCase();
   const planVariant = String(row.planVariant || '').toUpperCase() as ApartmentPlanVariant;
