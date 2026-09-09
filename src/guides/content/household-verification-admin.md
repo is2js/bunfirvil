@@ -1,17 +1,25 @@
 ---
 id: household-verification-admin
-title: 세대 인증 설치·운영
-shortTitle: 인증 운영
+title: 인증·회원 운영 개정판
+shortTitle: 인증·회원 운영
 category: 운영자
 summary: 가입요청·회원 시트 분리, 드롭다운 승인과 운영자 별도 코드 설치 방법입니다.
-updatedAt: 2026-09-04
+updatedAt: 2026-09-09
 order: 90
 operatorOnly: true
 ---
 
-# 세대 인증 설치·운영
+# 인증·회원 운영 개정판
 
 이 코드는 **같은 비공개 스프레드시트 안의 가입요청 / 인증명단 두 탭**을 사용합니다. 웹사이트는 명단을 내려받지 않습니다. 일반 회원 인증은 동·타입·닉네임을, 공유 열람 인증은 보는 사람의 동·닉네임을 확인합니다. 층·호수는 전송하지 않습니다.
+
+## 현재 운영 계약
+
+- `가입요청`은 신청·승인·반려 이력을 남기는 접수 탭입니다.
+- `인증명단`은 실제 인증 판정에 사용하는 회원 탭입니다. 상태는 `인증됨 / 운영자 / 중지`만 사용합니다.
+- 일반 회원은 동·타입·닉네임이 일치해야 하며, 운영자는 고유 닉네임과 별도 운영자 코드가 모두 맞아야 전역 접근합니다.
+- 공유 열람은 보는 사람의 동·닉네임만 확인하고, 인증을 통과해도 공유 놀이터는 읽기 전용입니다.
+- Spreadsheet ID, 실제 회원 데이터, 운영자 코드·해시는 저장소와 공개 설정에 넣지 않습니다.
 
 ## 기존 사이트 업데이트 순서 — 먼저 Google, 다음 Pages
 
@@ -93,3 +101,14 @@ operatorOnly: true
 
 - [Google 웹앱 배포](https://developers.google.com/apps-script/guides/web)
 - [설치형 편집 트리거](https://developers.google.com/apps-script/guides/triggers/installable)
+
+## 다음 개정 때 확인할 순서
+
+1. 스프레드시트를 복사해 백업하고 `backend/apps-script/Code.gs`를 수정합니다.
+2. 열 이름·상태·요청 action을 바꿨다면 Apps Script뿐 아니라 프런트 인증 클라이언트, mock, 계약 테스트와 이 문서를 함께 수정합니다.
+3. 실제 명단 대신 임시 행으로 등록 요청, 승인, 일반 인증, 운영자 인증, 공유 인증을 확인합니다.
+4. **Apps Script 기존 배포를 새 버전으로 먼저 갱신**합니다. `/exec` 주소가 바뀐 경우에만 `public/config/household-verification.v1.json`을 수정합니다.
+5. `npm run local:check`와 `npm run local:pages`로 Pages 배포 전 상태를 확인합니다.
+6. Google 쪽 새 응답 계약이 정상임을 확인한 뒤 Bunfirvil `main`을 push하고 Pages 완료를 확인합니다.
+
+이 순서를 지키면 구형 Apps Script와 새 프런트가 잠시 섞여 운영자 권한이나 공유 인증이 잘못 판정되는 시간을 피할 수 있습니다.
