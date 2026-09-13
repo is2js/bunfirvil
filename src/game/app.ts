@@ -91,6 +91,7 @@ import {
   writeSelectedOptions,
 } from './options';
 import { ActorView } from './sprite';
+import { ChildCompanionView, CHILD_AGE_LABELS, MAX_CHILD_COMPANIONS, childCompanionOffset, type ChildAgeGroup, type ChildCompanionChoice, type ChildGender } from './child-companion';
 import { resetAllBunfirvilLocalData, resetCurrentMapOptionsAndLayout } from '../shared/storage';
 import type { ThreeWorldRenderer as ThreeWorldRendererInstance } from './three-world';
 import type {
@@ -224,6 +225,8 @@ export class ShowcaseApp {
   private effectPlayer!: ManifestEffectPlayer;
   private activeActor: CharacterKey = '100';
   private pigmyTransformationActive = false;
+  private childCompanionChoices: ChildCompanionChoice[] = [];
+  private readonly childCompanionViews: ChildCompanionView[] = [];
   private readonly actors = new Map<CharacterKey, ActorState>();
   private readonly actorViews = new Map<CharacterKey, ActorView>();
   private readonly pressedKeys = new Set<string>();
@@ -415,6 +418,7 @@ export class ShowcaseApp {
     cancelAnimationFrame(this.animationFrame);
     cancelAnimationFrame(this.optionFocusFrame);
     this.effectPlayer?.destroy();
+    this.childCompanionViews.forEach((view) => view.element.remove());
     this.threeRenderer?.dispose();
   }
 
@@ -733,7 +737,7 @@ export class ShowcaseApp {
           <h2>놀이터 조작법</h2>
           <div class="help-grid">
             <div><span class="help-icon">⌨</span><b>한 셀 이동·기본 공격</b><p>WASD 또는 방향키로 한 셀씩 이동하며 키 조합으로 8방향을 사용합니다. Space는 기본 공격입니다.</p></div>
-            <div><span class="help-icon">1–4</span><b>놀이터 핫바</b><p>1 텔레포트(또는 휠 클릭)는 2초 간격으로 세대 내부에서만 이동합니다. 2 돌범·피치 성별 전환, 3 거실 방향 전환, 4 피그미 변신을 실행합니다.</p></div>
+            <div><span class="help-icon">1–5</span><b>놀이터 핫바</b><p>1 텔레포트(또는 휠 클릭)는 2초 간격으로 세대 내부에서만 이동합니다. 2 돌범·피치 성별 전환, 3 거실 방향 전환, 4 피그미 변신, 5 자녀 인형 소환을 실행합니다.</p></div>
             <div><span class="help-icon">옵션</span><b>옵션 프리뷰</b><p>옵션 선택은 맵 프롭과 견적에 즉시 반영되어 이 브라우저에 저장됩니다. 기본 인테리어와 옵션 구성은 이동·회전·삭제할 수 없습니다.</p></div>
             <div><span class="help-icon">GHOST</span><b>사용자 가구 배치</b><p>가구 카드를 누르면 고스트가 커서를 따라갑니다. 초록은 설치 가능, 빨강은 설치 불가이며 좌클릭으로 확정하고 우클릭 또는 Esc로 취소합니다.</p></div>
             <div><span class="help-icon">L</span><b>화면·가구 조작</b><p>빈 맵을 드래그해 이동하고 Ctrl+휠로 확대·축소합니다. 사용자 가구는 재배치할 수 있고 L은 벽 자석, Shift+휠은 회전, Delete는 삭제입니다.</p></div>
@@ -779,7 +783,11 @@ export class ShowcaseApp {
     const layer = this.get<HTMLElement>('#actor-layer');
     for (const fallback of fallbackEntries) {
       const sourceEntry = entries.get(fallback.key) || fallback;
-      const entry = { ...sourceEntry, label: CHARACTER_DISPLAY_NAMES[fallback.key] };
+      const entry = {
+        ...sourceEntry,
+        label: CHARACTER_DISPLAY_NAMES[fallback.key],
+        manifestUrl: `assets/showcase-characters/${fallback.key}/animation.json`,
+      };
       const actor: ActorState = {
         key: entry.key,
         label: entry.label,
@@ -1041,7 +1049,7 @@ export class ShowcaseApp {
         this.activateSkill('basic-attack');
         return;
       }
-      if (/^[1-4]$/.test(key)) {
+      if (/^[1-5]$/.test(key)) {
         event.preventDefault();
         this.activateHotbarSlot(Number(key) - 1, this.cursorScreenPoint);
         return;
@@ -2555,6 +2563,7 @@ export class ShowcaseApp {
       { id: 'showcase-gender-toggle', label: '성별 전환', icon: `<img src="${escapeHtml(resolveProjectUrl('assets/showcase-controls/lk-custom-023.png'))}" alt="" />`, glyph: '↺', state: '', active: this.activeActor === '200' },
       { id: 'showcase-plan-toggle', label: '평면 타입 전환', icon: '', glyph: `${this.planVariant}→${nextPlanVariant}`, state: '', active: planVariantIndex > 0 },
       { id: 'showcase-pigmy-toggle', label: '변신', icon: '<span class="pigmy-hotbar-icon" aria-hidden="true"></span>', glyph: '', state: this.pigmyTransformationActive ? 'ON' : '', active: this.pigmyTransformationActive },
+      { id: 'showcase-children', label: '자녀 인형', icon: '<span class="child-hotbar-icon" aria-hidden="true"></span>', glyph: '', state: this.childCompanionChoices.length ? String(this.childCompanionChoices.length) : '', active: this.childCompanionChoices.length > 0 },
     ];
     element.innerHTML = controls.map((control, index) => `
       <span class="hotbar-slot-wrap" data-slot-wrap="${index}">
@@ -2635,7 +2644,75 @@ export class ShowcaseApp {
       this.actorViews.forEach((view, key) => view.setTransformed(key === this.activeActor && this.pigmyTransformationActive));
       this.renderHotbar();
       this.toast(this.pigmyTransformationActive ? '피그미 변신 ON' : `${CHARACTER_DISPLAY_NAMES[this.activeActor]}로 돌아왔습니다.`, 'success');
+      return;
     }
+    if (index === 4) {
+      this.openChildCompanionWizard();
+    }
+  }
+
+  private setChildCompanions(choices: ChildCompanionChoice[]): void {
+    this.childCompanionViews.forEach((view) => view.element.remove());
+    this.childCompanionViews.length = 0;
+    this.childCompanionChoices = choices.map((choice) => ({ ...choice }));
+    const layer = this.get<HTMLElement>('#actor-layer');
+    choices.forEach((choice, index) => {
+      const view = new ChildCompanionView(choice, index);
+      this.childCompanionViews.push(view);
+      layer.append(view.element);
+    });
+    this.renderHotbar();
+    this.toast(choices.length ? `자녀 인형 ${choices.length}명을 소환했습니다.` : '자녀 인형을 해제했습니다.', 'success');
+  }
+
+  private openChildCompanionWizard(): void {
+    if (this.readOnlyShare) return;
+    const dialog = document.createElement('dialog');
+    dialog.className = 'child-companion-dialog';
+    dialog.setAttribute('aria-label', '자녀 인형 소환');
+    const choices = this.childCompanionChoices.length
+      ? this.childCompanionChoices.map((choice) => ({ ...choice }))
+      : [{ age: 'infant' as ChildAgeGroup, gender: 'boy' as ChildGender }];
+    let step = 0;
+    const render = (): void => {
+      if (step === 0) {
+        dialog.innerHTML = `<div class="child-wizard-header"><small>자녀 인형 · 1단계</small><h2>자녀수 선택</h2><button type="button" data-child-action="close" aria-label="닫기">×</button></div>
+          <p>소환할 자녀 인형의 수를 선택해 주세요.</p>
+          <div class="child-count-control"><button type="button" data-child-action="minus" aria-label="자녀수 줄이기" ${choices.length <= 1 ? 'disabled' : ''}>−</button><strong>${choices.length}</strong><button type="button" data-child-action="plus" aria-label="자녀수 늘리기" ${choices.length >= MAX_CHILD_COMPANIONS ? 'disabled' : ''}>+</button></div>
+          <div class="child-wizard-actions">${this.childCompanionChoices.length ? '<button type="button" data-child-action="dismiss">소환 해제</button>' : ''}<button type="button" data-child-action="next">다음</button></div>`;
+        return;
+      }
+      const choice = choices[step - 1];
+      dialog.innerHTML = `<div class="child-wizard-header"><small>자녀 인형 · ${step + 1}/${choices.length + 1}단계</small><h2>${step}번째 자녀</h2><button type="button" data-child-action="close" aria-label="닫기">×</button></div>
+        <fieldset><legend>연령대</legend><div class="child-wizard-options">${(Object.entries(CHILD_AGE_LABELS) as [ChildAgeGroup, string][]).map(([age, label]) => `<label><input type="radio" name="child-age" value="${age}" ${choice.age === age ? 'checked' : ''}><span>${label}</span></label>`).join('')}</div></fieldset>
+        <fieldset><legend>성별</legend><div class="child-wizard-options"><label><input type="radio" name="child-gender" value="boy" ${choice.gender === 'boy' ? 'checked' : ''}><span>남</span></label><label><input type="radio" name="child-gender" value="girl" ${choice.gender === 'girl' ? 'checked' : ''}><span>녀</span></label></div></fieldset>
+        <div class="child-wizard-actions"><button type="button" data-child-action="back">이전</button><button type="button" data-child-action="next">${step === choices.length ? '소환' : '다음 자녀'}</button></div>`;
+    };
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) { dialog.close(); return; }
+      const action = (event.target as HTMLElement).closest<HTMLElement>('[data-child-action]')?.dataset.childAction;
+      if (!action) return;
+      if (action === 'close') { dialog.close(); return; }
+      if (action === 'dismiss') { this.setChildCompanions([]); dialog.close(); return; }
+      if (action === 'plus' && choices.length < MAX_CHILD_COMPANIONS) choices.push({ age: 'infant', gender: 'boy' });
+      if (action === 'minus' && choices.length > 1) choices.pop();
+      if (action === 'back') step = Math.max(0, step - 1);
+      if (action === 'next') {
+        if (step === choices.length) { this.setChildCompanions(choices); dialog.close(); return; }
+        step += 1;
+      }
+      render();
+    });
+    dialog.addEventListener('change', (event) => {
+      if (step < 1) return;
+      const input = event.target as HTMLInputElement;
+      if (input.name === 'child-age') choices[step - 1].age = input.value as ChildAgeGroup;
+      if (input.name === 'child-gender') choices[step - 1].gender = input.value as ChildGender;
+    });
+    dialog.addEventListener('close', () => dialog.remove(), { once: true });
+    this.mount.append(dialog);
+    render();
+    dialog.showModal();
   }
 
   private apartmentTeleportDestination(requestedWorld: { x: number; y: number } | null): { x: number; y: number } | null {
@@ -3327,6 +3404,10 @@ export class ShowcaseApp {
     this.actorViews.forEach((view, key) => {
       const actor = this.actors.get(key);
       if (actor) view.update(actor, this.renderer.project(actor.displayX, actor.displayY), time, actorWorldScale);
+    });
+    if (active) this.childCompanionViews.forEach((view, index) => {
+      const offset = childCompanionOffset(index);
+      view.update(active, this.renderer.project(active.displayX + offset.x, active.displayY + offset.y), time, actorWorldScale);
     });
     this.minimap.render(active ? [active] : [], this.activeActor, time);
     if (this.selectedLocalPropId) this.updateFurnitureToolbar();

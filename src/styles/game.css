@@ -1150,7 +1150,7 @@ input:focus-visible {
   min-width: 310px;
   position: absolute;
   left: 18px;
-  right: 265px;
+  right: 324px;
   bottom: 18px;
   z-index: 2009;
   display: flex;
@@ -1391,7 +1391,7 @@ input:focus-visible {
   left: auto;
   right: 22px;
   bottom: 22px;
-  width: 231px;
+  width: 290px;
   height: 66px;
   padding: 4px 0 8px;
   border: 0;
@@ -1405,10 +1405,10 @@ input:focus-visible {
 .active-actor-card { display: none; }
 
 .hotbar {
-  width: 231px;
+  width: 290px;
   height: 66px;
   display: grid;
-  grid-template-columns: repeat(4, 54px);
+  grid-template-columns: repeat(5, 54px);
   gap: 5px;
   overflow: visible;
 }
@@ -1556,6 +1556,68 @@ input:focus-visible {
 .hotbar-control[data-hotbar-action="showcase-pigmy-toggle"].is-active {
   animation: hotbar-persistent-aura 1.25s ease-in-out infinite;
 }
+
+.child-hotbar-icon {
+  position: absolute;
+  inset: 5px;
+  width: 44px;
+  height: 44px;
+  background: url("/bunfirvil/assets/showcase-characters/dolls/n021/idle-s.png") left top / 88px 44px no-repeat;
+  image-rendering: pixelated;
+}
+
+.child-companion {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  margin: -39px 0 0 -22px;
+  pointer-events: none;
+  transform-origin: 50% 86%;
+  filter: drop-shadow(0 5px 3px rgba(0,0,0,.5));
+}
+
+.child-companion-sprite {
+  display: block;
+  width: 44px;
+  height: 44px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.child-companion-dialog {
+  width: min(440px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
+  padding: 22px;
+  overflow-y: auto;
+  border: 1px solid rgba(215, 188, 119, .55);
+  border-radius: 10px;
+  color: #e8e5d9;
+  background: linear-gradient(160deg, #26332f, #101b1b 60%, #0a1112);
+  box-shadow: 0 25px 70px rgba(0,0,0,.6);
+}
+.child-companion-dialog::backdrop { background: rgba(0, 5, 8, .72); backdrop-filter: blur(4px); }
+.child-wizard-header { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px 8px; }
+.child-wizard-header > small { grid-column: 1; color: #8ddcc9; font-size: 12px; }
+.child-wizard-header > h2 { grid-column: 1; grid-row: 2; margin: 0; font-size: 21px; }
+.child-wizard-header > button { grid-column: 2; grid-row: 1 / 3; border: 0; color: #d5d9d2; background: transparent; font-size: 26px; cursor: pointer; }
+.child-companion-dialog p { margin: 17px 0; color: #adbbb5; font-size: 14px; }
+.child-count-control { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 22px 0; }
+.child-count-control strong { min-width: 42px; color: #f0d18b; font-size: 34px; text-align: center; }
+.child-count-control button { width: 42px; height: 42px; border: 1px solid rgba(141,220,201,.45); border-radius: 7px; color: #e8fff7; background: rgba(83,173,152,.15); font-size: 24px; cursor: pointer; }
+.child-count-control button:disabled { opacity: .36; cursor: not-allowed; }
+.child-companion-dialog fieldset { margin: 15px 0; padding: 0; border: 0; }
+.child-companion-dialog legend { margin-bottom: 8px; color: #ced9d3; font-size: 14px; font-weight: 800; }
+.child-wizard-options { display: flex; flex-wrap: wrap; gap: 7px; }
+.child-wizard-options label { cursor: pointer; }
+.child-wizard-options input { position: absolute; opacity: 0; }
+.child-wizard-options span { min-height: 39px; padding: 9px 12px; display: inline-flex; align-items: center; border: 1px solid rgba(174,194,184,.25); border-radius: 6px; color: #b9c7be; background: rgba(255,255,255,.04); font-size: 14px; }
+.child-wizard-options input:checked + span { border-color: #7fe1c9; color: #f2fffa; background: rgba(77,182,153,.25); box-shadow: 0 0 0 1px rgba(127,225,201,.18); }
+.child-wizard-options input:focus-visible + span { outline: 2px solid #f0d18b; outline-offset: 2px; }
+.child-wizard-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 23px; }
+.child-wizard-actions button { min-height: 39px; padding: 8px 14px; border: 1px solid rgba(149,181,168,.3); border-radius: 6px; color: #d9e8de; background: rgba(255,255,255,.05); font-size: 14px; font-weight: 800; cursor: pointer; }
+.child-wizard-actions button:last-child { border-color: rgba(127,225,201,.65); color: #eafff7; background: rgba(71,173,148,.26); }
 
 .hotbar-control[data-hotbar-action="showcase-plan-toggle"] .skill-glyph {
   width: 100%;
@@ -2219,7 +2281,7 @@ input:focus-visible {
   .showcase-layout { display: flex; flex-direction: column; }
   .option-panel { height: auto; max-height: 720px; }
   .option-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .combat-dock { width: 231px; justify-content: flex-end; }
+  .combat-dock { width: 290px; justify-content: flex-end; }
   .hotbar { min-width: 0; justify-content: flex-end; }
   .hotbar-slot { width: 54px; }
 }
@@ -2249,8 +2311,8 @@ input:focus-visible {
   .map-identity { left: 8px; top: 8px; max-width: calc(100% - 155px); }
   .map-identity > div { max-width: 145px; }
   .active-actor-card { display: none; }
-  .combat-dock { right: 8px; width: 215px; height: 64px; bottom: 8px; padding: 4px 0 8px; overflow: visible; justify-content: flex-end; }
-  .hotbar { width: 215px; min-width: 215px; height: 64px; grid-template-columns: repeat(4, 50px); }
+  .combat-dock { right: 8px; width: 270px; height: 64px; bottom: 8px; padding: 4px 0 8px; overflow: visible; justify-content: flex-end; }
+  .hotbar { width: 270px; min-width: 270px; height: 64px; grid-template-columns: repeat(5, 50px); }
   .hotbar-slot-wrap { width: 50px; height: 52px; }
   .hotbar-slot { width: 50px; height: 52px; }
   .stage-bottom-left { left: 8px; bottom: 84px; width: calc(100% - 16px); min-width: 0; }
