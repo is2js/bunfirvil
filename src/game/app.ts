@@ -544,7 +544,7 @@ export class ShowcaseApp {
 
             <div class="map-tabs ${operator && !this.readOnlyShare ? '' : 'is-user-hidden'}" role="tablist" aria-label="빠른 맵 선택">${mapTabs}</div>
 
-            <div class="game-stage" id="game-stage">
+            <div class="game-stage" id="game-stage" tabindex="-1" aria-label="놀이터 조작 화면">
               <canvas id="world-canvas" aria-label="Canvas2D 등각 투영 검수맵"></canvas>
               <canvas id="three-world-canvas" aria-label="Three.js PBR 검수맵" hidden></canvas>
               <div class="stage-scanlines" aria-hidden="true"></div>
@@ -1040,8 +1040,9 @@ export class ShowcaseApp {
         this.updateFurnitureToolbar();
         return;
       }
-      if (event.code === 'Space' && !event.repeat) {
+      if (event.code === 'Space') {
         event.preventDefault();
+        if (event.repeat) return;
         if (this.readOnlyShare) {
           this.toast('공유 열람 모드에서는 기본 공격을 사용할 수 없습니다.', 'notice');
           return;
@@ -1083,6 +1084,12 @@ export class ShowcaseApp {
       // 옵션 chip을 pointerdown에서 다시 그리면 뒤따르는 click 자체가 사라진다.
       if (target?.closest('.combat-dock,.map-identity,.floorplan-minimap,.stage-option-quote,.game-toast,.stage-zoom,.furniture-selection-toolbar')) return;
       if (target?.closest('.istarpark-laser-toggle,.istarpark-laser-hud')) return;
+      // Pointer capture and pan preventDefault can leave focus on the last HUD
+      // button. Explicitly hand keyboard control back to the scene.
+      if (event.button === 0 || event.button === 1) stage.focus({ preventScroll: true });
+      // Actors are buttons too: their native pointer focus otherwise steals
+      // keyboard control again after the scene focus above.
+      if (target?.closest('.rpg-actor')) event.preventDefault();
       if (this.inspectionLaser.active) {
         event.preventDefault();
         event.stopPropagation();
@@ -2578,7 +2585,12 @@ export class ShowcaseApp {
     `).join('');
 
     element.querySelectorAll<HTMLButtonElement>('.hotbar-slot').forEach((slot) => {
-      slot.addEventListener('click', () => this.activateHotbarSlot(Number(slot.dataset.slot), this.cursorScreenPoint), { signal: this.abortController.signal });
+      slot.addEventListener('click', (event) => {
+        // Keep keyboard activation accessible; pointer actions return control to
+        // the scene, which also becomes a dialog's focus-restoration target.
+        if (event.detail > 0) this.get<HTMLElement>('#game-stage').focus({ preventScroll: true });
+        this.activateHotbarSlot(Number(slot.dataset.slot), this.cursorScreenPoint);
+      }, { signal: this.abortController.signal });
     });
   }
 
