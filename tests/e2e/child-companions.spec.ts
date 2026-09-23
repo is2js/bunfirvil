@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('fifth slot summons configured children using PVP doll walk and idle sheets', async ({ page, context }) => {
+  test.setTimeout(120_000);
   await context.addInitScript(() => {
     sessionStorage.setItem('bunfirvil:household-verification:v1', JSON.stringify({
       schemaVersion: 1, provider: 'google-apps-script', verifiedAt: Date.now(),
@@ -32,6 +33,17 @@ test('fifth slot summons configured children using PVP doll walk and idle sheets
   await expect.poll(() => page.locator('.child-companion').first().getAttribute('data-motion'), { timeout: 5_000 }).toBe('walk');
   await expect.poll(() => page.locator('.child-companion').first().locator('.child-companion-sprite').evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('/dolls/n021/walk-');
   await page.keyboard.up('ArrowRight');
+  await expect(page.locator('.rpg-actor--100')).toHaveAttribute('data-motion', 'idle');
+  await expect(page.locator('.child-companion').first()).toHaveAttribute('data-motion', 'idle', { timeout: 8_000 });
+  await expect(page.locator('.child-companion').nth(1)).toHaveAttribute('data-motion', 'idle', { timeout: 8_000 });
+  const distances = await page.evaluate(() => {
+    const actor = document.querySelector<HTMLElement>('.rpg-actor--100')!;
+    return [...document.querySelectorAll<HTMLElement>('.child-companion')].map((child) => Math.max(
+      Math.abs(Number(child.dataset.worldX) - Number(actor.dataset.worldX)),
+      Math.abs(Number(child.dataset.worldY) - Number(actor.dataset.worldY)),
+    ));
+  });
+  expect(distances.every((distance) => distance <= 2.001)).toBe(true);
   await page.locator('[data-hotbar-action="showcase-children"]').click();
   await dialog.getByRole('button', { name: '소환 해제' }).click();
   await expect(page.locator('.child-companion')).toHaveCount(0);

@@ -12,16 +12,63 @@ export const CHILD_AGE_LABELS: Record<ChildAgeGroup, string> = {
 export const MAX_CHILD_COMPANIONS = 6;
 export const CHILD_DIRECTIONS: Direction[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 
-export function childCompanionOffset(index: number): { x: number; y: number } {
-  const side = index % 2 === 0 ? -1 : 1;
-  const row = Math.floor(index / 2);
-  return { x: side * (.42 + row * .11), y: .62 + row * .34 };
+export const CHILD_DISPLAY_SCALE = .92;
+export interface ChildFollowState {
+  x: number; y: number; updatedAt: number;
+  direction: Direction; motion: 'idle' | 'walk';
+}
+const FACING_WORLD: Record<Direction, [number, number]> = {
+  n: [-1, -1], ne: [0, -1], e: [1, -1], se: [1, 0],
+  s: [1, 1], sw: [0, 1], w: [-1, 1], nw: [-1, 0],
+};
+
+export function childCompanionOffset(index: number, facing: Direction): { x: number; y: number } {
+  const [dx, dy] = FACING_WORLD[facing];
+  const row = Math.ceil(index / 2);
+  const side = index === 0 ? 0 : (index % 2 ? -1 : 1) * (.32 + row * .08);
+  const trailing = 1 + row * .14;
+  const x = -dx * trailing - dy * side;
+  const y = -dy * trailing + dx * side;
+  const limit = Math.max(1, Math.abs(x) / 1.85, Math.abs(y) / 1.85);
+  return { x: x / limit, y: y / limit };
+}
+
+/** PVP nextMagicDollFollowCoordinate: exponential settling, clamped dt and
+ * two-cell leash. PVP's .5 coordinate cell is one Bunfirvil grid unit. */
+export function advanceChildFollow(
+  current: ChildFollowState | null, owner: { x: number; y: number },
+  facing: Direction, time: number, index = 0,
+): ChildFollowState {
+  const offset = childCompanionOffset(index, facing);
+  const desired = { x: owner.x + offset.x, y: owner.y + offset.y };
+  if (!current) return { ...desired, updatedAt: time, direction: facing, motion: 'idle' };
+  const elapsed = Math.max(0, Math.min(80, time - current.updatedAt));
+  if (!elapsed) return current;
+  const blend = 1 - Math.exp(-elapsed / (360 + index * 55));
+  let x = current.x + (desired.x - current.x) * blend;
+  let y = current.y + (desired.y - current.y) * blend;
+  const distance = Math.max(Math.abs(x - owner.x), Math.abs(y - owner.y));
+  if (distance > 2) {
+    x = owner.x + (x - owner.x) * 2 / distance;
+    y = owner.y + (y - owner.y) * 2 / distance;
+  }
+  const dx = x - current.x;
+  const dy = y - current.y;
+  const speed = Math.hypot(dx, dy) * 1000 / elapsed;
+  const walking = speed > (current.motion === 'walk' ? .10 : .18);
+  // Quantize the follower's own world travel, never the owner's sprite row.
+  const angle = Math.atan2(dx + dy, dx - dy);
+  const directions: Direction[] = ['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne'];
+  const direction = walking ? directions[(Math.round(angle / (Math.PI / 4)) + 8) % 8] : current.direction;
+  return { x, y, updatedAt: time, direction, motion: walking ? 'walk' : 'idle' };
 }
 
 export class ChildCompanionView {
   readonly element = document.createElement('span');
   private readonly sprite = document.createElement('span');
   private lastImage = '';
+  private follow: ChildFollowState | null = null;
+  private motionStartedAt = 0;
 
   constructor(readonly choice: ChildCompanionChoice, readonly index: number) {
     this.element.className = 'child-companion';
@@ -32,9 +79,14 @@ export class ChildCompanionView {
     this.element.append(this.sprite);
   }
 
-  update(actor: ActorState, point: ProjectedPoint, time: number, worldScale: number): void {
-    const motion = actor.travel || actor.motion === 'walk' ? 'walk' : 'idle';
-    const direction = travelLockedDirection(actor.direction, actor.travel);
+  reset(): void { this.follow = null; }
+
+  update(actor: ActorState, project: (x: number, y: number) => ProjectedPoint, time: number, worldScale: number): void {
+    const previous = this.follow;
+    this.follow = advanceChildFollow(previous, { x: actor.displayX, y: actor.displayY }, travelLockedDirection(actor.direction, actor.travel), time, this.index);
+    const { motion, direction, x, y } = this.follow;
+    if (!previous || previous.motion !== motion) this.motionStartedAt = time;
+    const point = project(x, y);
     const dollId = this.choice.gender === 'boy' ? 'n021' : 'n022';
     const image = resolveProjectUrl(`assets/showcase-characters/dolls/${dollId}/${motion}-${direction}.png`);
     if (image !== this.lastImage) {
@@ -43,14 +95,16 @@ export class ChildCompanionView {
     }
     const frames = motion === 'walk' ? 4 : 2;
     const duration = motion === 'walk' ? 250 : 360;
-    const frame = Math.floor(time / duration) % frames;
+    const frame = Math.floor((time - this.motionStartedAt) / duration) % frames;
     this.sprite.style.backgroundSize = `${frames * 44}px 44px`;
     this.sprite.style.backgroundPosition = `${-frame * 44}px 0`;
     const ageScale = { infant: .8, elementary: 1, middle: 1.17, high: 1.32 }[this.choice.age];
-    const scale = Math.max(.55, Math.min(2.2, worldScale * ageScale));
+    const scale = Math.max(.55, Math.min(2.2, worldScale * ageScale)) * CHILD_DISPLAY_SCALE;
     this.element.style.transform = `translate3d(${point.x}px, ${point.y}px, 0) scale(${scale})`;
     this.element.style.zIndex = String(1_000 + Math.round(point.y));
     this.element.dataset.motion = motion;
     this.element.dataset.direction = direction;
+    this.element.dataset.worldX = x.toFixed(4);
+    this.element.dataset.worldY = y.toFixed(4);
   }
 }

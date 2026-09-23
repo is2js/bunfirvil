@@ -91,7 +91,7 @@ import {
   writeSelectedOptions,
 } from './options';
 import { ActorView } from './sprite';
-import { ChildCompanionView, CHILD_AGE_LABELS, MAX_CHILD_COMPANIONS, childCompanionOffset, type ChildAgeGroup, type ChildCompanionChoice, type ChildGender } from './child-companion';
+import { ChildCompanionView, CHILD_AGE_LABELS, MAX_CHILD_COMPANIONS, type ChildAgeGroup, type ChildCompanionChoice, type ChildGender } from './child-companion';
 import { resetAllBunfirvilLocalData, resetCurrentMapOptionsAndLayout } from '../shared/storage';
 import type { ThreeWorldRenderer as ThreeWorldRendererInstance } from './three-world';
 import type {
@@ -2493,6 +2493,7 @@ export class ShowcaseApp {
 
   private resetActors(): void {
     if (!this.world) return;
+    this.childCompanionViews.forEach((view) => view.reset());
     const livingRoomSpawns = livingRoomSpawnCells(this.world);
     const first = livingRoomSpawns?.first || nearestWalkable(this.world, this.currentMap.spawn.x, this.currentMap.spawn.y);
     const second = livingRoomSpawns?.second || nearestWalkable(this.world, first.x + 2, first.y + 1);
@@ -2528,6 +2529,7 @@ export class ShowcaseApp {
   }
 
   private setActiveActor(key: CharacterKey, updateUrl = true): void {
+    if (key !== this.activeActor) this.childCompanionViews.forEach((view) => view.reset());
     if (!this.actors.has(key) && this.actors.size > 0) key = [...this.actors.keys()][0];
     this.activeActor = key;
     this.resumeCameraTracking();
@@ -2810,6 +2812,7 @@ export class ShowcaseApp {
     });
 
     if (skillId === 'common-teleport' && this.world && teleportDestination) {
+      this.childCompanionViews.forEach((view) => view.reset());
       this.spawnEffect('teleport-burst', from.x, from.y, 850);
       actor.x = teleportDestination.x;
       actor.y = teleportDestination.y;
@@ -3417,9 +3420,8 @@ export class ShowcaseApp {
       const actor = this.actors.get(key);
       if (actor) view.update(actor, this.renderer.project(actor.displayX, actor.displayY), time, actorWorldScale);
     });
-    if (active) this.childCompanionViews.forEach((view, index) => {
-      const offset = childCompanionOffset(index);
-      view.update(active, this.renderer.project(active.displayX + offset.x, active.displayY + offset.y), time, actorWorldScale);
+    if (active) this.childCompanionViews.forEach((view) => {
+      view.update(active, (x, y) => this.renderer.project(x, y), time, actorWorldScale);
     });
     this.minimap.render(active ? [active] : [], this.activeActor, time);
     if (this.selectedLocalPropId) this.updateFurnitureToolbar();
