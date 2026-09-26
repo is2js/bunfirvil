@@ -2323,6 +2323,47 @@ input:focus-visible {
   .app-footer { padding: 8px 14px; gap: 10px; flex-wrap: wrap; }
 }
 
+.touch-controls, .touch-ghost-actions, .touch-help, .touch-laser-axis, .stage-tip > .touch-tip { display: none; }
+
+@media (pointer: coarse), (max-width: 760px) {
+  .rpg-actor, #world-canvas, #three-world-canvas { touch-action: none; }
+  .game-stage { min-height: 700px; }
+  .touch-controls { display: block; position: absolute; inset: auto 8px 82px; height: 140px; z-index: 2010; pointer-events: none; }
+  .touch-move-pad { display: grid; grid-template-columns: repeat(3, 44px); gap: 2px; width: 136px; padding: 2px; border: 1px solid #557d74; border-radius: 16px; background: rgba(10, 30, 30, .88); touch-action: none; user-select: none; pointer-events: auto; }
+  .touch-move-pad span { display: grid; place-items: center; height: 44px; color: #c2f1e6; border-radius: 9px; font-size: 21px; background: rgba(100, 174, 154, .10); pointer-events: none; }
+  .touch-move-pad span:nth-child(5) { font-size: 12px; }
+  .touch-move-pad[data-direction="-1,-1"] span:nth-child(1), .touch-move-pad[data-direction="0,-1"] span:nth-child(2), .touch-move-pad[data-direction="1,-1"] span:nth-child(3),
+  .touch-move-pad[data-direction="-1,0"] span:nth-child(4), .touch-move-pad[data-direction="1,0"] span:nth-child(6),
+  .touch-move-pad[data-direction="-1,1"] span:nth-child(7), .touch-move-pad[data-direction="0,1"] span:nth-child(8), .touch-move-pad[data-direction="1,1"] span:nth-child(9) { color: #102b25; background: #8de1c9; }
+  .touch-action-buttons { position: absolute; right: 0; bottom: 8px; display: grid; gap: 8px; pointer-events: auto; }
+  .touch-action-buttons button, .touch-ghost-actions button { min-height: 44px; padding: 8px 12px; border: 1px solid #648d82; border-radius: 9px; background: #173b34; color: #d7f9ec; font-size: 13px; font-weight: 800; touch-action: manipulation; }
+  #touch-attack { min-height: 58px; background: #55302f; border-color: #ad6e62; color: #ffe0c9; }
+  .game-stage.has-interior-ghost .touch-controls { display: none; }
+  .game-stage.has-interior-ghost .touch-ghost-actions { position: absolute; bottom: 100px; left: 8px; right: 8px; z-index: 2011; display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; padding: 10px; border-radius: 9px; background: rgba(5, 24, 23, .94); }
+  .game-stage.is-furniture-ghost-invalid [data-touch-ghost="confirm"] { opacity: .55; }
+  .game-stage.is-interior-authoring .touch-move-pad, .game-stage[data-istarpark-laser-active="true"] .touch-move-pad { opacity: .35; }
+  .stage-bottom-left { left: 8px; right: 8px; bottom: 238px; width: auto; min-width: 0; }
+  .stage-option-chips { max-height: 70px; overflow-y: auto; }
+  .stage-tip { width: 100%; max-width: 100%; flex-wrap: wrap; white-space: normal; font-size: 11px; }
+  .stage-tip > span { display: none; }
+  .stage-tip > .touch-tip { display: inline-flex; }
+  .stage-tip .istarpark-laser-toggle { min-height: 44px; }
+  .stage-tip .istarpark-laser-toggle kbd { display: none; }
+  .combat-dock { right: 8px; bottom: 8px; width: 270px; }
+  .hotbar { width: 270px; min-width: 270px; grid-template-columns: repeat(5, 50px); }
+  .hotbar-slot-wrap, .hotbar-slot { width: 50px; }
+  .stage-zoom { top: 162px; right: 8px; grid-template-columns: 44px 52px 44px; }
+  .stage-zoom button { min-height: 44px; font-size: 19px; }
+  .stage-zoom span { font-size: 12px; }
+  .furniture-selection-toolbar { max-width: calc(100% - 16px); }
+  .furniture-selection-toolbar div { grid-template-columns: repeat(5, minmax(44px, 1fr)); }
+  .furniture-selection-toolbar button, .istarpark-laser-actions button { min-height: 44px; font-size: 12px; }
+  .furniture-selection-toolbar > small { display: none; }
+  .touch-help { display: block; line-height: 1.7; color: #cae7dd; }
+  .touch-laser-axis { display: inline-block; }
+  .help-grid > div:nth-child(1), .help-grid > div:nth-child(4), .help-grid > div:nth-child(5), .help-grid > div:nth-child(6) { display: none; }
+}
+
 /* 분퍼빌 동·층·호 정적 선택 게이트 */
 .household-selector-shell {
   min-height: 100dvh;

@@ -91,6 +91,7 @@ import {
   writeSelectedOptions,
 } from './options';
 import { ActorView } from './sprite';
+import { TouchMovementPad } from './touch-controls';
 import { ChildCompanionView, CHILD_AGE_LABELS, MAX_CHILD_COMPANIONS, type ChildAgeGroup, type ChildCompanionChoice, type ChildGender } from './child-companion';
 import { resetAllBunfirvilLocalData, resetCurrentMapOptionsAndLayout } from '../shared/storage';
 import type { ThreeWorldRenderer as ThreeWorldRendererInstance } from './three-world';
@@ -230,6 +231,8 @@ export class ShowcaseApp {
   private readonly actors = new Map<CharacterKey, ActorState>();
   private readonly actorViews = new Map<CharacterKey, ActorView>();
   private readonly pressedKeys = new Set<string>();
+  private touchMovement = { x: 0, y: 0 };
+  private touchPad?: TouchMovementPad;
   private readonly cooldowns = new Map<string, number>();
   private readonly frameMetrics = new FrameMetrics();
   private minimap!: FloorPlanMinimap;
@@ -425,6 +428,7 @@ export class ShowcaseApp {
   suspend(): void {
     if (this.destroyed || this.suspended) return;
     this.suspended = true;
+    this.touchPad?.reset();
     this.pressedKeys.clear();
     cancelAnimationFrame(this.animationFrame);
     this.animationFrame = 0;
@@ -575,6 +579,22 @@ export class ShowcaseApp {
                 <button type="button" id="zoom-reset" aria-label="화면 확대 초기화"><span id="zoom-value">100%</span></button>
                 <button type="button" id="zoom-in" aria-label="화면 확대">＋</button>
               </div>
+              <div class="touch-controls" aria-label="모바일 조작">
+                <div class="touch-move-pad" role="group" aria-label="누르고 움직이는 8방향 이동판">
+                  ${[['↖', -1, -1], ['↑', 0, -1], ['↗', 1, -1], ['←', -1, 0], ['이동', 0, 0], ['→', 1, 0], ['↙', -1, 1], ['↓', 0, 1], ['↘', 1, 1]].map(([label, x, y]) => `<span data-pad-direction="${x},${y}">${label}</span>`).join('')}
+                </div>
+                <div class="touch-action-buttons">
+                  <button type="button" id="touch-attack" ${this.readOnlyShare ? 'hidden' : ''}>공격</button>
+                  <button type="button" id="touch-cancel">취소·실측 종료</button>
+                </div>
+              </div>
+              <div class="touch-ghost-actions" aria-label="터치 가구 배치">
+                <button type="button" data-touch-ghost="rotate-left" aria-label="배치 가구 왼쪽 회전">↶</button>
+                <button type="button" data-touch-ghost="rotate-right" aria-label="배치 가구 오른쪽 회전">↷</button>
+                <button type="button" data-touch-ghost="snap">자석</button>
+                <button type="button" data-touch-ghost="confirm">배치 확정</button>
+                <button type="button" data-touch-ghost="cancel">취소</button>
+              </div>
 
               <div id="inspection-laser-hud" class="istarpark-laser-hud" aria-live="polite" hidden>
                 <output class="istarpark-laser-value" id="inspection-laser-value">— mm</output>
@@ -584,6 +604,7 @@ export class ShowcaseApp {
                   <button type="button" id="inspection-laser-point-mode" aria-pressed="false">2점 실측</button>
                   <button type="button" id="inspection-laser-line-snap" aria-pressed="false">L 직선 자석 OFF</button>
                   <button type="button" id="inspection-laser-clear" disabled>초기화</button>
+                  <button type="button" id="touch-laser-axis" class="touch-laser-axis">측정 축 전환</button>
                 </div>
                 <small id="inspection-laser-status" hidden>자동 실측 · J 한 번 더 2점 실측 · Esc 종료</small>
               </div>
@@ -609,6 +630,7 @@ export class ShowcaseApp {
 
               <div class="stage-bottom-left">
                 <div class="stage-tip" aria-label="인게임 단축키">
+                  <span class="touch-tip"><b>방향판 이동 · 한 손가락 화면 드래그 · ＋/− 확대</b></span>
                   <span><span class="shortcut-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>또는</span><kbd>방향키</kbd><b>이동</b></span>
                   <span class="shortcut-divider">· 빈 화면 드래그 ·</span>
                   <span><span class="shortcut-keys"><kbd>Ctrl</kbd><i>+</i><kbd>휠</kbd></span><b>확대·축소</b></span>
@@ -735,6 +757,7 @@ export class ShowcaseApp {
           <button class="dialog-close" value="close" aria-label="닫기">×</button>
           <p class="eyebrow">CONTROL GUIDE</p>
           <h2>놀이터 조작법</h2>
+          <p class="touch-help">모바일: 방향판을 누르고 있으면 이동하고 손가락을 떼면 멈춥니다. 한 손가락으로 맵을 드래그하고 ＋/−로 확대·축소하세요. 공격·핫바는 탭으로 실행합니다. 가구는 위치를 터치·드래그한 뒤 ‘배치 확정’을 누르고, 회전·자석·삭제는 화면 버튼을 사용하세요. 레이저는 버튼으로 켜고 측정 지점을 탭합니다. ‘취소·실측 종료’로 종료할 수 있습니다.</p>
           <div class="help-grid">
             <div><span class="help-icon">⌨</span><b>한 셀 이동·기본 공격</b><p>WASD 또는 방향키로 한 셀씩 이동하며 키 조합으로 8방향을 사용합니다. Space는 기본 공격입니다.</p></div>
             <div><span class="help-icon">1–5</span><b>놀이터 핫바</b><p>1 텔레포트(또는 휠 클릭)는 2초 간격으로 세대 내부에서만 이동합니다. 2 돌범·피치 성별 전환, 3 거실 방향 전환, 4 피그미 변신, 5 자녀 인형 소환을 실행합니다.</p></div>
@@ -981,6 +1004,11 @@ export class ShowcaseApp {
     this.get<HTMLButtonElement>('#inspection-laser-point-mode').addEventListener('click', () => this.toggleInspectionLaserPointMode(), { signal });
     this.get<HTMLButtonElement>('#inspection-laser-line-snap').addEventListener('click', () => this.toggleInspectionLaserLineSnap(), { signal });
     this.get<HTMLButtonElement>('#inspection-laser-clear').addEventListener('click', () => this.clearInspectionLaserPointPair(true), { signal });
+    this.get<HTMLButtonElement>('#touch-laser-axis').addEventListener('click', () => {
+      this.inspectionLaser.axis = this.inspectionLaser.axis === 'x' ? 'y' : 'x';
+      if (this.inspectionLaser.lineSnap && this.inspectionLaser.phase !== 'hover') this.inspectionLaser.lineSnapManualAxis = true;
+      this.refreshInspectionLaserMeasurement();
+    }, { signal });
 
     window.addEventListener('keydown', (event) => {
       if (event.defaultPrevented || event.isComposing || isFormTarget(event.target) || this.mount.querySelector('dialog[open]')) {
@@ -1070,7 +1098,34 @@ export class ShowcaseApp {
       this.setInspectionLaserPointPairShiftAxisHeld(false);
     }, { signal });
     const stage = this.get<HTMLElement>('#game-stage');
+    this.touchPad = new TouchMovementPad(this.get<HTMLElement>('.touch-move-pad'), (x, y) => {
+      this.touchMovement = { x, y };
+      if (x || y) stage.focus({ preventScroll: true });
+    }, signal);
+    this.get<HTMLButtonElement>('#touch-attack').addEventListener('click', () => {
+      if (this.readOnlyShare || this.inspectionLaser.active || this.interiorGhostProp) return;
+      stage.focus({ preventScroll: true });
+      this.activateSkill('basic-attack');
+    }, { signal });
+    const cancelTouchAction = (): void => {
+      this.touchPad?.reset();
+      if (this.inspectionLaser.active) this.stopInspectionLaser('touch');
+      if (this.interiorGhostProp) this.cancelInteriorGhost('배치를 취소했습니다.');
+    };
+    this.get<HTMLButtonElement>('#touch-cancel').addEventListener('click', cancelTouchAction, { signal });
+    this.mount.querySelectorAll<HTMLButtonElement>('[data-touch-ghost]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (this.readOnlyShare || !this.interiorGhostProp) return;
+        const action = button.dataset.touchGhost;
+        if (action === 'confirm') this.confirmInteriorGhost();
+        else if (action === 'cancel') cancelTouchAction();
+        else if (action === 'snap') this.toggleFurnitureWallSnap();
+        else if (action === 'rotate-left' || action === 'rotate-right') this.transformInteriorGhost(action);
+      }, { signal });
+    });
     stage.addEventListener('pointermove', (event) => {
+      if ((event.target as Element)?.closest('.touch-controls,.touch-ghost-actions')) return;
+      if (event.pointerType === 'touch' && !event.isPrimary) return;
       this.cursorScreenPoint = this.screenPoint(event.clientX, event.clientY);
       if (this.inspectionLaser.active) {
         this.scheduleInspectionLaserMeasurement(event);
@@ -1080,6 +1135,8 @@ export class ShowcaseApp {
     }, { signal });
     stage.addEventListener('pointerdown', (event) => {
       const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('.touch-controls,.touch-ghost-actions,.stage-tip')) return;
+      if (event.pointerType === 'touch' && !event.isPrimary) { event.preventDefault(); return; }
       // HUD/팔레트 조작은 맵 선택 해제나 패닝보다 먼저 종료한다. 특히 좌하단
       // 옵션 chip을 pointerdown에서 다시 그리면 뒤따르는 click 자체가 사라진다.
       if (target?.closest('.combat-dock,.map-identity,.floorplan-minimap,.stage-option-quote,.game-toast,.stage-zoom,.furniture-selection-toolbar')) return;
@@ -1094,6 +1151,7 @@ export class ShowcaseApp {
         event.preventDefault();
         event.stopPropagation();
         this.handleInspectionLaserPointerDown(event);
+        if (event.pointerType === 'touch' && this.inspectionLaser.phase === 'hover') this.refreshInspectionLaserMeasurement();
         return;
       }
       if (event.button === 0) {
@@ -1108,6 +1166,8 @@ export class ShowcaseApp {
       if (point) this.activateSkill('common-teleport', point);
     }, { signal });
     stage.addEventListener('pointermove', (event) => {
+      if ((event.target as Element)?.closest('.touch-controls,.touch-ghost-actions')) return;
+      if (event.pointerType === 'touch' && !event.isPrimary) return;
       if (!this.inspectionLaser.active) this.handleInteriorPointerMove(event);
     }, { signal });
     stage.addEventListener('pointerup', (event) => {
@@ -1914,7 +1974,7 @@ export class ShowcaseApp {
     const name = interiorSelectionName(prop, this.catalog.bOptions, this.interiorAssets);
     const wallSnap = this.furnitureWallSnapEnabled ? ' · 벽 자석 ON' : '';
     this.get<HTMLElement>('#furniture-status').textContent = valid
-      ? `${name} 배치 미리보기 · 설치 가능${wallSnap} · 좌클릭 확정 · 우클릭/Esc 취소`
+      ? `${name} 배치 미리보기 · 설치 가능${wallSnap} · ${window.matchMedia('(pointer: coarse), (max-width: 760px)').matches ? '위치 터치 후 배치 확정 버튼' : '좌클릭 확정 · 우클릭/Esc 취소'}`
       : `${name} 배치 미리보기 · 배치 불가: ${this.interiorGhostValidation.errors[0]?.message || '위치를 옮겨주세요.'}${wallSnap}`;
   }
 
@@ -2108,7 +2168,8 @@ export class ShowcaseApp {
     event.stopPropagation();
     if (this.interiorGhostProp) {
       if (point) this.updateInteriorGhost(point);
-      this.confirmInteriorGhost();
+      if (event.pointerType === 'touch') this.get<HTMLElement>('#game-stage').setPointerCapture(event.pointerId);
+      else this.confirmInteriorGhost();
       return true;
     }
     const canvas = this.get<HTMLCanvasElement>('#three-world-canvas');
@@ -2194,6 +2255,10 @@ export class ShowcaseApp {
   private handleInteriorPointerUp(event: PointerEvent): void {
     if (event.pointerId !== this.interiorDragPointer) return;
     this.interiorDragPointer = -1;
+    if (event.pointerType === 'touch' && this.interiorGhostProp) {
+      this.interiorDragMoved = false;
+      return;
+    }
     if (this.interiorDragMoved && this.interiorGhostMode === 'move') {
       if (!this.confirmInteriorGhost()) {
         this.get<HTMLElement>('#furniture-status').textContent = '빨간 GHOST 위치는 저장하지 않았습니다. 마우스로 초록 영역까지 옮긴 뒤 좌클릭하세요.';
@@ -2591,7 +2656,8 @@ export class ShowcaseApp {
         // Keep keyboard activation accessible; pointer actions return control to
         // the scene, which also becomes a dialog's focus-restoration target.
         if (event.detail > 0) this.get<HTMLElement>('#game-stage').focus({ preventScroll: true });
-        this.activateHotbarSlot(Number(slot.dataset.slot), this.cursorScreenPoint);
+        const touch = event instanceof PointerEvent && event.pointerType === 'touch';
+        this.activateHotbarSlot(Number(slot.dataset.slot), touch ? null : this.cursorScreenPoint);
       }, { signal: this.abortController.signal });
     });
   }
@@ -3301,12 +3367,13 @@ export class ShowcaseApp {
   }
 
   private moveActiveActor(time: number): void {
+    if (this.mount.querySelector('dialog[open]') || this.paletteTab === 'furniture' || this.inspectionLaser.active) this.touchPad?.reset();
     if (this.mount.querySelector('dialog[open]') || isFormTarget(document.activeElement)) this.pressedKeys.clear();
     if (this.paletteTab === 'furniture') return;
     const actor = this.actors.get(this.activeActor);
     if (!actor || !this.world) return;
-    const horizontal = Number(this.pressedKeys.has('d') || this.pressedKeys.has('arrowright')) - Number(this.pressedKeys.has('a') || this.pressedKeys.has('arrowleft'));
-    const vertical = Number(this.pressedKeys.has('s') || this.pressedKeys.has('arrowdown')) - Number(this.pressedKeys.has('w') || this.pressedKeys.has('arrowup'));
+    const horizontal = this.touchMovement.x || (Number(this.pressedKeys.has('d') || this.pressedKeys.has('arrowright')) - Number(this.pressedKeys.has('a') || this.pressedKeys.has('arrowleft')));
+    const vertical = this.touchMovement.y || (Number(this.pressedKeys.has('s') || this.pressedKeys.has('arrowdown')) - Number(this.pressedKeys.has('w') || this.pressedKeys.has('arrowup')));
     if (horizontal === 0 && vertical === 0) {
       if (!actor.travel) {
         actor.moving = false;
