@@ -2323,11 +2323,14 @@ input:focus-visible {
   .app-footer { padding: 8px 14px; gap: 10px; flex-wrap: wrap; }
 }
 
-.touch-controls, .touch-ghost-actions, .touch-help, .touch-laser-axis, .stage-tip > .touch-tip { display: none; }
+.touch-controls, .touch-ghost-actions, .touch-help, .touch-laser-axis, .stage-tip > .touch-tip, #mobile-options-toggle { display: none; }
+.stage-option-chips[hidden], .mobile-stage-summary[hidden] { display: none; }
 
 @media (pointer: coarse), (max-width: 760px) {
   .rpg-actor, #world-canvas, #three-world-canvas { touch-action: none; }
-  .game-stage { min-height: 700px; }
+  .game-stage { min-height: 520px; height: clamp(520px, 72svh, 680px); }
+  .showcase-layout { display: flex; flex-direction: column; }
+  .option-panel { width: 100%; height: auto; max-height: 720px; }
   .touch-controls { display: block; position: absolute; inset: auto 8px 82px; height: 140px; z-index: 2010; pointer-events: none; }
   .touch-move-pad { display: grid; grid-template-columns: repeat(3, 44px); gap: 2px; width: 136px; padding: 2px; border: 1px solid #557d74; border-radius: 16px; background: rgba(10, 30, 30, .88); touch-action: none; user-select: none; pointer-events: auto; }
   .touch-move-pad span { display: grid; place-items: center; height: 44px; color: #c2f1e6; border-radius: 9px; font-size: 21px; background: rgba(100, 174, 154, .10); pointer-events: none; }
@@ -2342,8 +2345,13 @@ input:focus-visible {
   .game-stage.has-interior-ghost .touch-ghost-actions { position: absolute; bottom: 100px; left: 8px; right: 8px; z-index: 2011; display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; padding: 10px; border-radius: 9px; background: rgba(5, 24, 23, .94); }
   .game-stage.is-furniture-ghost-invalid [data-touch-ghost="confirm"] { opacity: .55; }
   .game-stage.is-interior-authoring .touch-move-pad, .game-stage[data-istarpark-laser-active="true"] .touch-move-pad { opacity: .35; }
-  .stage-bottom-left { left: 8px; right: 8px; bottom: 238px; width: auto; min-width: 0; }
-  .stage-option-chips { max-height: 70px; overflow-y: auto; }
+  .mobile-stage-summary { margin-top: 10px; }
+  .mobile-stage-summary > .stage-bottom-left { position: static; inset: auto; width: 100%; min-width: 0; z-index: auto; }
+  .mobile-stage-summary .stage-option-quote { max-height: none; }
+  .mobile-stage-summary .stage-option-content { display: flex; flex-direction: column; overflow: hidden; }
+  .mobile-stage-summary .stage-option-chips { max-height: min(240px, 35svh); overflow-y: auto; padding-bottom: 8px; }
+  .mobile-stage-summary .stage-option-footer { border-left: 0; padding: 8px 0 0; grid-template-columns: auto 1fr; }
+  #mobile-options-toggle { display: inline-flex; align-items: center; min-height: 44px; padding: 5px 8px; border: 1px solid rgba(141,225,201,.3); border-radius: 6px; background: rgba(83,173,152,.1); color: #b8eee2; font-size: 12px; cursor: pointer; }
   .stage-tip { width: 100%; max-width: 100%; flex-wrap: wrap; white-space: normal; font-size: 11px; }
   .stage-tip > span { display: none; }
   .stage-tip > .touch-tip { display: inline-flex; }

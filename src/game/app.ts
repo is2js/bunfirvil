@@ -233,6 +233,8 @@ export class ShowcaseApp {
   private readonly pressedKeys = new Set<string>();
   private touchMovement = { x: 0, y: 0 };
   private touchPad?: TouchMovementPad;
+  private mobileLayout = false;
+  private mobileOptionsExpanded = false;
   private readonly cooldowns = new Map<string, number>();
   private readonly frameMetrics = new FrameMetrics();
   private minimap!: FloorPlanMinimap;
@@ -628,6 +630,7 @@ export class ShowcaseApp {
                 <small>manifest와 chunk를 조합하고 있습니다</small>
               </div>
 
+              <span id="stage-summary-anchor" hidden></span>
               <div class="stage-bottom-left">
                 <div class="stage-tip" aria-label="인게임 단축키">
                   <span class="touch-tip"><b>방향판 이동 · 한 손가락 화면 드래그 · ＋/− 확대</b></span>
@@ -643,7 +646,7 @@ export class ShowcaseApp {
                   </button>
                 </div>
                 <div class="stage-option-quote" aria-label="선택 옵션과 합계">
-                  <div class="stage-option-title"><span>선택 옵션</span><em id="stage-option-count">0개</em><button type="button" id="stage-option-clear" class="stage-option-clear" hidden>전체 옵션 해제</button></div>
+                  <div class="stage-option-title"><span>선택 옵션</span><em id="stage-option-count">0개</em><button type="button" id="mobile-options-toggle" aria-expanded="false" aria-controls="stage-option-chips">펼치기 ▾</button><button type="button" id="stage-option-clear" class="stage-option-clear" hidden>전체 옵션 해제</button></div>
                   <div class="stage-option-content">
                     <div class="stage-option-chips" id="stage-option-chips"><span>기본 마감</span></div>
                     <div class="stage-option-footer">
@@ -663,6 +666,7 @@ export class ShowcaseApp {
                 <div id="hotbar" class="hotbar" aria-label="쇼케이스 전환 핫바"></div>
               </div>
             </div>
+            <div id="mobile-stage-summary" class="mobile-stage-summary" hidden></div>
           </section>
 
           <aside class="option-panel" aria-label="옵션 팔레트">
@@ -757,7 +761,7 @@ export class ShowcaseApp {
           <button class="dialog-close" value="close" aria-label="닫기">×</button>
           <p class="eyebrow">CONTROL GUIDE</p>
           <h2>놀이터 조작법</h2>
-          <p class="touch-help">모바일: 방향판을 누르고 있으면 이동하고 손가락을 떼면 멈춥니다. 한 손가락으로 맵을 드래그하고 ＋/−로 확대·축소하세요. 공격·핫바는 탭으로 실행합니다. 가구는 위치를 터치·드래그한 뒤 ‘배치 확정’을 누르고, 회전·자석·삭제는 화면 버튼을 사용하세요. 레이저는 버튼으로 켜고 측정 지점을 탭합니다. ‘취소·실측 종료’로 종료할 수 있습니다.</p>
+          <p class="touch-help">모바일: 방향판을 누르면 캐릭터 중심으로 화면이 따라오고, 손을 떼면 멈춥니다. 맵을 드래그해 둘러본 뒤 방향판을 누르면 자동 추적이 재개됩니다. ＋/−는 확대·축소, 공격·핫바는 탭으로 실행합니다. 선택 옵션·합계·계산기는 맵 아래에 있으며 ‘펼치기’로 옵션 목록을 확인합니다. 가구는 위치를 터치·드래그한 뒤 ‘배치 확정’을 누르세요. 가구 편집·실측·설정 중에는 이동판이 멈춥니다. 레이저는 맵 아래 버튼으로 켜고 측정 지점을 탭하며 ‘취소·실측 종료’로 종료합니다.</p>
           <div class="help-grid">
             <div><span class="help-icon">⌨</span><b>한 셀 이동·기본 공격</b><p>WASD 또는 방향키로 한 셀씩 이동하며 키 조합으로 8방향을 사용합니다. Space는 기본 공격입니다.</p></div>
             <div><span class="help-icon">1–5</span><b>놀이터 핫바</b><p>1 텔레포트(또는 휠 클릭)는 2초 간격으로 세대 내부에서만 이동합니다. 2 돌범·피치 성별 전환, 3 거실 방향 전환, 4 피그미 변신, 5 자녀 인형 소환을 실행합니다.</p></div>
@@ -836,6 +840,7 @@ export class ShowcaseApp {
   }
 
   private bindEvents(): void {
+    this.bindResponsiveSummary();
     const signal = this.abortController.signal;
     this.get<HTMLSelectElement>('#map-select').addEventListener('change', (event) => {
       if (this.readOnlyShare) return;
@@ -1099,8 +1104,12 @@ export class ShowcaseApp {
     }, { signal });
     const stage = this.get<HTMLElement>('#game-stage');
     this.touchPad = new TouchMovementPad(this.get<HTMLElement>('.touch-move-pad'), (x, y) => {
+      if ((x || y) && !this.canTouchMove()) return;
       this.touchMovement = { x, y };
-      if (x || y) stage.focus({ preventScroll: true });
+      if (x || y) {
+        this.resumeCameraTracking();
+        stage.focus({ preventScroll: true });
+      }
     }, signal);
     this.get<HTMLButtonElement>('#touch-attack').addEventListener('click', () => {
       if (this.readOnlyShare || this.inspectionLaser.active || this.interiorGhostProp) return;
@@ -1277,6 +1286,48 @@ export class ShowcaseApp {
     this.cameraTrackingPaused = false;
     const stage = this.mount.querySelector<HTMLElement>('#game-stage');
     if (stage) stage.dataset.cameraTracking = 'follow';
+  }
+
+  private canTouchMove(): boolean {
+    return this.paletteTab !== 'furniture' && !this.interiorGhostProp
+      && !this.inspectionLaser.active && !this.mount.querySelector('dialog[open]');
+  }
+
+  private centerMobileActor(): void {
+    const actor = this.actors.get(this.activeActor);
+    if (!this.mobileLayout || !this.world || !actor) return;
+    this.resumeCameraTracking();
+    this.renderer.follow(actor, 1);
+  }
+
+  private paintMobileOptions(): void {
+    const expanded = !this.mobileLayout || this.mobileOptionsExpanded;
+    this.get<HTMLElement>('#stage-option-chips').hidden = !expanded;
+    const toggle = this.get<HTMLButtonElement>('#mobile-options-toggle');
+    toggle.setAttribute('aria-expanded', String(expanded));
+    toggle.textContent = expanded ? '접기 ▴' : '펼치기 ▾';
+  }
+
+  private bindResponsiveSummary(): void {
+    const signal = this.abortController.signal;
+    const media = window.matchMedia('(pointer: coarse), (max-width: 760px)');
+    const summary = this.get<HTMLElement>('.stage-bottom-left');
+    const host = this.get<HTMLElement>('#mobile-stage-summary');
+    const sync = (): void => {
+      this.mobileLayout = media.matches;
+      this.touchPad?.reset();
+      host.hidden = !this.mobileLayout;
+      if (this.mobileLayout) host.append(summary);
+      else this.get<HTMLElement>('#stage-summary-anchor').after(summary);
+      this.paintMobileOptions();
+      if (this.mobileLayout && !this.cameraTrackingPaused && this.canTouchMove()) this.centerMobileActor();
+    };
+    media.addEventListener('change', sync, { signal });
+    this.get<HTMLButtonElement>('#mobile-options-toggle').addEventListener('click', () => {
+      this.mobileOptionsExpanded = !this.mobileOptionsExpanded;
+      this.paintMobileOptions();
+    }, { signal });
+    sync();
   }
 
   private screenPoint(clientX: number, clientY: number): { x: number; y: number } | null {
@@ -1779,6 +1830,7 @@ export class ShowcaseApp {
   }
 
   private setPaletteTab(tab: 'options' | 'furniture'): void {
+    const wasFurniture = this.paletteTab === 'furniture';
     this.paletteTab = tab;
     this.furnitureContextMenuOpen = false;
     this.mount.querySelectorAll<HTMLElement>('[data-palette-tab]').forEach((button) =>
@@ -1802,6 +1854,7 @@ export class ShowcaseApp {
     this.paintPaletteViewToggle();
     this.renderFurniturePalette();
     this.updateFurnitureToolbar();
+    if (wasFurniture && tab === 'options' && this.canTouchMove()) this.centerMobileActor();
   }
 
   private paintPaletteViewToggle(): void {
@@ -2591,6 +2644,7 @@ export class ShowcaseApp {
       turnReadyAt: 0,
       queuedDirection: null,
     });
+    this.centerMobileActor();
   }
 
   private setActiveActor(key: CharacterKey, updateUrl = true): void {
@@ -2886,7 +2940,7 @@ export class ShowcaseApp {
       actor.displayY = actor.y;
       actor.travel = null;
       this.resumeCameraTracking();
-      this.renderer.follow(actor);
+      this.renderer.follow(actor, this.mobileLayout ? 1 : undefined);
       const projected = this.renderer.project(actor.x, actor.y);
       this.spawnEffect('teleport-burst is-arrival', projected.x, projected.y, 850);
       return;
@@ -3464,7 +3518,9 @@ export class ShowcaseApp {
       }
     }
     const active = this.actors.get(this.activeActor);
-    if (active && !this.cameraTrackingPaused && this.paletteTab !== 'furniture' && !this.selectedLocalPropId) this.renderer.follow(active);
+    if (active && !this.cameraTrackingPaused && this.paletteTab !== 'furniture'
+      && (!this.selectedLocalPropId || this.mobileLayout)
+      && (!this.mobileLayout || this.canTouchMove())) this.renderer.follow(active);
     this.threeRenderer?.setOcclusionFocus(active || null);
     try {
       this.renderer.render(time);
