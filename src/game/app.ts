@@ -582,12 +582,13 @@ export class ShowcaseApp {
                 <button type="button" id="zoom-in" aria-label="화면 확대">＋</button>
               </div>
               <div class="touch-controls" aria-label="모바일 조작">
-                <div class="touch-move-pad" role="group" aria-label="누르고 움직이는 8방향 이동판">
-                  ${[['↖', -1, -1], ['↑', 0, -1], ['↗', 1, -1], ['←', -1, 0], ['이동', 0, 0], ['→', 1, 0], ['↙', -1, 1], ['↓', 0, 1], ['↘', 1, 1]].map(([label, x, y]) => `<span data-pad-direction="${x},${y}">${label}</span>`).join('')}
+                <div class="touch-move-pad" role="group" aria-label="누르고 움직이는 8방향 조이스틱">
+                  <span class="joystick-arrow north" aria-hidden="true">⌃</span><span class="joystick-arrow east" aria-hidden="true">›</span>
+                  <span class="joystick-arrow south" aria-hidden="true">⌄</span><span class="joystick-arrow west" aria-hidden="true">‹</span>
+                  <span class="joystick-thumb" aria-hidden="true"></span>
                 </div>
                 <div class="touch-action-buttons">
-                  <button type="button" id="touch-attack" ${this.readOnlyShare ? 'hidden' : ''}>공격</button>
-                  <button type="button" id="touch-cancel">취소·실측 종료</button>
+                  <button type="button" id="touch-laser-toggle" aria-pressed="false" aria-label="레이저 실측 시작"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 8h16v8H4zM8 8v4m4-4v3m4-3v4"/></svg><span>실측</span></button>
                 </div>
               </div>
               <div class="touch-ghost-actions" aria-label="터치 가구 배치">
@@ -633,7 +634,7 @@ export class ShowcaseApp {
               <span id="stage-summary-anchor" hidden></span>
               <div class="stage-bottom-left">
                 <div class="stage-tip" aria-label="인게임 단축키">
-                  <span class="touch-tip"><b>방향판 이동 · 한 손가락 화면 드래그 · ＋/− 확대</b></span>
+                  <span class="touch-tip"><b>조이스틱 이동 · 화면 드래그 · ＋/− 확대 · 우하단 실측</b></span>
                   <span><span class="shortcut-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>또는</span><kbd>방향키</kbd><b>이동</b></span>
                   <span class="shortcut-divider">· 빈 화면 드래그 ·</span>
                   <span><span class="shortcut-keys"><kbd>Ctrl</kbd><i>+</i><kbd>휠</kbd></span><b>확대·축소</b></span>
@@ -761,7 +762,7 @@ export class ShowcaseApp {
           <button class="dialog-close" value="close" aria-label="닫기">×</button>
           <p class="eyebrow">CONTROL GUIDE</p>
           <h2>놀이터 조작법</h2>
-          <p class="touch-help">모바일: 방향판을 누르면 캐릭터 중심으로 화면이 따라오고, 손을 떼면 멈춥니다. 맵을 드래그해 둘러본 뒤 방향판을 누르면 자동 추적이 재개됩니다. ＋/−는 확대·축소, 공격·핫바는 탭으로 실행합니다. 선택 옵션·합계·계산기는 맵 아래에 있으며 ‘펼치기’로 옵션 목록을 확인합니다. 가구는 위치를 터치·드래그한 뒤 ‘배치 확정’을 누르세요. 가구 편집·실측·설정 중에는 이동판이 멈춥니다. 레이저는 맵 아래 버튼으로 켜고 측정 지점을 탭하며 ‘취소·실측 종료’로 종료합니다.</p>
+          <p class="touch-help">모바일: 왼쪽 아래 원형 조이스틱을 원하는 방향으로 누르거나 밀면 이동하며 캐릭터 중심으로 화면이 따라옵니다. 손을 떼거나 가운데로 돌아오면 멈춥니다. 맵을 드래그해 둘러본 뒤 조이스틱으로 이동하면 자동 추적이 재개됩니다. 우하단에는 지도만 표시하는 미니맵과 작은 ＋/− 확대·축소 버튼이 있습니다. ‘실측’을 눌러 레이저를 켜고 측정 지점을 탭하며, 같은 버튼의 ‘실측 종료’로 끕니다. 핫바는 탭으로 실행합니다. 선택 옵션·합계·계산기는 맵 아래에 있으며 ‘펼치기’로 목록을 확인합니다. 가구는 위치를 터치·드래그한 뒤 ‘배치 확정’을 누르세요. 가구 편집·실측·설정 중에는 조이스틱이 멈춥니다.</p>
           <div class="help-grid">
             <div><span class="help-icon">⌨</span><b>한 셀 이동·기본 공격</b><p>WASD 또는 방향키로 한 셀씩 이동하며 키 조합으로 8방향을 사용합니다. Space는 기본 공격입니다.</p></div>
             <div><span class="help-icon">1–5</span><b>놀이터 핫바</b><p>1 텔레포트(또는 휠 클릭)는 2초 간격으로 세대 내부에서만 이동합니다. 2 돌범·피치 성별 전환, 3 거실 방향 전환, 4 피그미 변신, 5 자녀 인형 소환을 실행합니다.</p></div>
@@ -1111,17 +1112,12 @@ export class ShowcaseApp {
         stage.focus({ preventScroll: true });
       }
     }, signal);
-    this.get<HTMLButtonElement>('#touch-attack').addEventListener('click', () => {
-      if (this.readOnlyShare || this.inspectionLaser.active || this.interiorGhostProp) return;
-      stage.focus({ preventScroll: true });
-      this.activateSkill('basic-attack');
-    }, { signal });
+    this.get<HTMLButtonElement>('#touch-laser-toggle').addEventListener('click', () => this.toggleInspectionLaser(), { signal });
     const cancelTouchAction = (): void => {
       this.touchPad?.reset();
       if (this.inspectionLaser.active) this.stopInspectionLaser('touch');
       if (this.interiorGhostProp) this.cancelInteriorGhost('배치를 취소했습니다.');
     };
-    this.get<HTMLButtonElement>('#touch-cancel').addEventListener('click', cancelTouchAction, { signal });
     this.mount.querySelectorAll<HTMLButtonElement>('[data-touch-ghost]').forEach((button) => {
       button.addEventListener('click', () => {
         if (this.readOnlyShare || !this.interiorGhostProp) return;
@@ -1630,6 +1626,13 @@ export class ShowcaseApp {
   private renderInspectionLaserHud(): void {
     const supported = this.inspectionLaserSupported();
     const active = supported && this.inspectionLaser.active;
+    const touchToggle = this.mount.querySelector<HTMLButtonElement>('#touch-laser-toggle');
+    if (touchToggle) {
+      touchToggle.hidden = !supported;
+      touchToggle.setAttribute('aria-pressed', String(active));
+      touchToggle.setAttribute('aria-label', active ? '레이저 실측 종료' : '레이저 실측 시작');
+      touchToggle.querySelector('span')!.textContent = active ? '실측 종료' : '실측';
+    }
     const toggle = this.mount.querySelector<HTMLButtonElement>('#inspection-laser-toggle');
     if (toggle) {
       toggle.hidden = !supported;

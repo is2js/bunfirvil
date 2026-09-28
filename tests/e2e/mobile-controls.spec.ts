@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
-test('touch drag, held direction, release, attack, zoom and furniture preview work without keyboard', async ({ page, context }) => {
+test('compact joystick, map, laser, zoom and furniture preview work without keyboard', async ({ page, context }) => {
   test.setTimeout(240_000);
   await context.addInitScript(() => {
     sessionStorage.setItem('bunfirvil:household-verification:v1', JSON.stringify({
@@ -25,6 +25,13 @@ test('touch drag, held direction, release, attack, zoom and furniture preview wo
     }), { timeout: 10_000 }).toBe(true);
   };
   await expectCentered();
+  await expect(page.locator('.map-identity')).toBeHidden();
+  await expect(page.locator('.minimap-title')).toBeHidden();
+  await expect(page.locator('.minimap-legend')).toBeHidden();
+  await expect(page.locator('#touch-attack, #touch-cancel')).toHaveCount(0);
+  expect((await pad.boundingBox())!.width).toBe(110);
+  expect((await page.locator('.stage-zoom').boundingBox())!.width).toBeLessThanOrEqual(108);
+  expect((await pad.evaluate(el => getComputedStyle(el).borderRadius))).toBe('50%');
   await expect(page.locator('#mobile-stage-summary .stage-option-quote')).toBeVisible();
   await expect(page.locator('#stage-option-chips')).toBeHidden();
   await expect(page.locator('#open-sale-calculator')).toBeVisible();
@@ -44,12 +51,7 @@ test('touch drag, held direction, release, attack, zoom and furniture preview wo
   await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + 20, y: box.y + box.height / 2 }] });
   await client.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
   await expect(pad).not.toHaveAttribute('data-direction', /.+/);
-  await page.evaluate(() => {
-    const actor = document.querySelector('.rpg-actor--100')!;
-    new MutationObserver(() => { if (actor.getAttribute('data-motion') === 'attack') actor.setAttribute('data-attack-seen', 'true'); }).observe(actor, { attributes: true, attributeFilter: ['data-motion'] });
-  });
-  await page.locator('#touch-attack').tap();
-  await expect(actor).toHaveAttribute('data-attack-seen', 'true');
+  await expect(pad).not.toHaveAttribute('style', /--stick-x/);
   await page.locator('#zoom-in').tap();
   await expect(page.locator('#zoom-value')).not.toHaveText('100%');
   await stage.scrollIntoViewIfNeeded();
@@ -81,15 +83,16 @@ test('touch drag, held direction, release, attack, zoom and furniture preview wo
   await page.locator('#mobile-options-toggle').tap();
   await expect(page.locator('#stage-option-chips')).toBeHidden();
   const total = await page.locator('#stage-option-total').textContent();
-  await page.locator('#inspection-laser-toggle').tap();
+  await page.locator('#touch-laser-toggle').tap();
   await expect(page.locator('#inspection-laser-hud')).toBeVisible();
-  await page.locator('#touch-cancel').tap();
+  await expect(page.locator('#touch-laser-toggle')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#touch-laser-toggle').tap();
   await expect(page.locator('#inspection-laser-hud')).toBeHidden();
   await page.locator('[data-palette-tab="furniture"]').tap();
   const beforeEdit = await actor.getAttribute('data-world-x');
   await pad.scrollIntoViewIfNeeded();
   const editPad = (await pad.boundingBox())!;
-  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: editPad.x + 120, y: editPad.y + 65 }] });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: editPad.x + editPad.width - 20, y: editPad.y + editPad.height / 2 }] });
   await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   expect(await actor.getAttribute('data-world-x')).toBe(beforeEdit);
   await page.locator('[data-furniture-asset]').first().tap();

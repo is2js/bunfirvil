@@ -8,8 +8,13 @@ export class TouchMovementPad {
       const rect = pad.getBoundingClientRect();
       const x = (event.clientX - rect.left) / rect.width * 2 - 1;
       const y = (event.clientY - rect.top) / rect.height * 2 - 1;
-      const dx = Math.abs(x) < .33 ? 0 : Math.sign(x);
-      const dy = Math.abs(y) < .33 ? 0 : Math.sign(y);
+      const distance = Math.hypot(x, y);
+      const angle = Math.round(Math.atan2(y, x) / (Math.PI / 4)) * Math.PI / 4;
+      const dx = distance < .25 ? 0 : Math.round(Math.cos(angle));
+      const dy = distance < .25 ? 0 : Math.round(Math.sin(angle));
+      const travel = Math.min(distance, 1) * 24;
+      pad.style.setProperty('--stick-x', `${distance ? x / distance * travel : 0}px`);
+      pad.style.setProperty('--stick-y', `${distance ? y / distance * travel : 0}px`);
       pad.dataset.direction = `${dx},${dy}`;
       onMove(dx, dy);
     };
@@ -42,6 +47,8 @@ export class TouchMovementPad {
     this.pointerId = null;
     if (id !== null && this.pad.hasPointerCapture(id)) this.pad.releasePointerCapture(id);
     delete this.pad.dataset.direction;
+    this.pad.style.removeProperty('--stick-x');
+    this.pad.style.removeProperty('--stick-y');
     this.onMove(0, 0);
   }
 }
