@@ -1,8 +1,12 @@
 import type { StaticMapEntry } from './types';
-import type { ApartmentPlanVariant } from './plan-variants';
+import {
+  planVariantDefinition,
+  type ApartmentPlanVariant,
+  type ApartmentLivingFacing,
+} from './plan-variant-definitions';
 
 export type BundangUnitType = '51A' | '55A' | '55B' | '59A';
-export type HouseholdFacing = 'south-east' | 'south-west';
+export type HouseholdFacing = ApartmentLivingFacing;
 export type VariantConfidence = 'pvp-authoritative' | 'site-plan-inferred';
 
 export interface BundangHouseholdLineV1 {
@@ -149,11 +153,6 @@ const BUILDING_LINES: Record<string, LineSeed[]> = {
   ],
 };
 
-function facingForLine(lineCount: number, lineId: number): HouseholdFacing {
-  const southEastLastLine = lineCount === 4 ? 2 : lineCount === 5 ? 2 : 3;
-  return lineId <= southEastLastLine ? 'south-east' : 'south-west';
-}
-
 function buildCatalog(): BundangHouseholdCatalogV1 {
   const buildings = Object.entries(BUILDING_LINES).map(([buildingId, seeds]) => {
     const variants = VARIANTS[buildingId];
@@ -168,7 +167,7 @@ function buildCatalog(): BundangHouseholdCatalogV1 {
         pilotisFloors: [...(seed.pilotisFloors || [])],
         lineId: index + 1,
         planVariant: variants[index],
-        facing: facingForLine(seeds.length, index + 1),
+        facing: planVariantDefinition(seed.unitType, variants[index]).livingFacing,
         confidence,
       })),
     };

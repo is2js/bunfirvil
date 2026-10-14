@@ -1,7 +1,7 @@
 import { strFromU8, strToU8, unzlibSync, zlibSync } from 'fflate';
 import { createLocalProp, type InteriorAssetEntry } from '../manage/interior-layout';
 import { canonicalizeBundangMinusOptionSelection, compatibleOptions } from './options';
-import { availablePlanVariants, planVariantDefinition, type ApartmentLivingFacing, type ApartmentPlanVariant } from './plan-variants';
+import { availablePlanVariants, planVariantDefinition, type ApartmentLivingFacing, type ApartmentPlanVariant } from './plan-variant-definitions';
 import type { ApartmentInteriorProp, ShowcaseCatalog } from './types';
 
 export const BUNDANG_SHARE_PREFIX = 'share=v1.';

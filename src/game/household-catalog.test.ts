@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { StaticMapEntry } from './types';
+import { planVariantDefinition } from './plan-variants';
 import {
   BUNDANG_HOUSEHOLD_CATALOG,
   hasValidMapQuery,
@@ -49,6 +50,29 @@ describe('Bundang household catalog', () => {
     expect(householdSelection('105', 25, 5, maps)).toMatchObject({ planVariant: 'C', facing: 'south-west' });
     expect(householdSelection('105', 25, 6, maps)).toMatchObject({ planVariant: 'D', facing: 'south-west' });
     expect(householdSelection('110', 25, 2, maps)).toMatchObject({ unitType: '55A', planVariant: 'C', facing: 'south-east' });
+  });
+
+  it('matches the rendered living-room facing across all 61 household lines', () => {
+    const lines = BUNDANG_HOUSEHOLD_CATALOG.buildings.flatMap((building) => building.lines);
+    expect(lines).toHaveLength(61);
+    for (const line of lines) {
+      expect(line.facing).toBe(planVariantDefinition(line.unitType, line.planVariant).livingFacing);
+    }
+    for (const buildingId of ['101', '102', '103', '106']) {
+      expect(householdSelection(buildingId, 2, 2, maps)).toMatchObject({
+        unitType: '55B', planVariant: 'A', facing: 'south-west',
+      });
+    }
+    for (const buildingId of ['107', '108']) {
+      expect(householdSelection(buildingId, 2, 3, maps)).toMatchObject({
+        unitType: '55B', planVariant: 'B', facing: 'south-east',
+      });
+    }
+    for (const [index, planVariant] of ['D', 'A', 'C', 'D'].entries()) {
+      expect(householdSelection('112', 2, index + 1, maps)).toMatchObject({
+        planVariant, facing: 'south-west',
+      });
+    }
   });
 
   it('only bypasses the gate for a known map query', () => {
