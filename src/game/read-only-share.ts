@@ -74,7 +74,7 @@ function sanitizeFurniture(prop: ApartmentInteriorProp): BundangReadOnlyShareFur
   return {
     assetId,
     positionMeters: [Math.round(position[0] * 100) / 100, Math.round(position[1] * 100) / 100],
-    yawDeg: ((Math.round(Number(prop.yawDeg) || 0) % 360) + 360) % 360,
+    yawDeg: ((Math.round(finite(prop.yawDeg) ? prop.yawDeg : 0) % 360) + 360) % 360,
     mirrored: prop.mirrored === true,
     ...(typeof prop.materialVariantId === 'string' && prop.materialVariantId
       ? { materialVariantId: prop.materialVariantId }
@@ -87,22 +87,22 @@ export function createBundangReadOnlyShare(input: {
   mapId: string;
   unitType: string;
   planVariant: ApartmentPlanVariant;
-  livingFacing: ApartmentLivingFacing;
   selectedOptionIds: Iterable<string>;
   furniture: ApartmentInteriorProp[];
 }): BundangReadOnlyShareV1 {
+  if (input.furniture.length > BUNDANG_SHARE_MAX_FURNITURE) throw new BundangShareError('too-large');
   return {
     schemaVersion: 1,
     sharedByNickname: normalizeSharedNickname(input.sharedByNickname),
     mapId: input.mapId,
     unitType: input.unitType,
     planVariant: input.planVariant,
-    livingFacing: input.livingFacing,
+    livingFacing: planVariantDefinition(input.unitType, input.planVariant).livingFacing,
     selectedOptionIds: [...new Set(input.selectedOptionIds)].map(String),
     furniture: input.furniture.flatMap((prop) => {
       const value = sanitizeFurniture(prop);
       return value ? [value] : [];
-    }).slice(0, BUNDANG_SHARE_MAX_FURNITURE),
+    }),
   };
 }
 
@@ -123,10 +123,12 @@ export function decodeBundangReadOnlyShare(token: string): unknown {
   const envelope = base64UrlDecode(token);
   if (envelope.byteLength <= 4) throw new BundangShareError('invalid-token');
   const declaredSize = new DataView(envelope.buffer, envelope.byteOffset, 4).getUint32(0, true);
+  if (declaredSize === 0) throw new BundangShareError('invalid-token');
   if (declaredSize > BUNDANG_SHARE_MAX_JSON_BYTES) throw new BundangShareError('too-large');
   let json: Uint8Array;
-  try { json = unzlibSync(envelope.subarray(4)); } catch (error) {
-    if (error instanceof BundangShareError) throw error;
+  // A false size header must not allow unbounded decompression. One extra byte
+  // distinguishes an exact result from fflate truncating an oversized result.
+  try { json = unzlibSync(envelope.subarray(4), { out: new Uint8Array(declaredSize + 1) }); } catch {
     throw new BundangShareError('invalid-token');
   }
   if (json.byteLength !== declaredSize || json.byteLength > BUNDANG_SHARE_MAX_JSON_BYTES) throw new BundangShareError('invalid-token');
@@ -135,14 +137,17 @@ export function decodeBundangReadOnlyShare(token: string): unknown {
 
 export function shareTokenFromHash(hash: string): string | null {
   const source = hash.startsWith('#') ? hash.slice(1) : hash;
-  return source.startsWith(BUNDANG_SHARE_PREFIX) ? source.slice(BUNDANG_SHARE_PREFIX.length) : null;
+  if (!source.startsWith('share=')) return null;
+  if (!source.startsWith(BUNDANG_SHARE_PREFIX) || source.length === BUNDANG_SHARE_PREFIX.length) {
+    throw new BundangShareError('invalid-token');
+  }
+  return source.slice(BUNDANG_SHARE_PREFIX.length);
 }
 
-export function validateBundangReadOnlyShare(
+export function validateBundangReadOnlyShareMetadata(
   value: unknown,
   catalog: ShowcaseCatalog,
-  interiorAssets: InteriorAssetEntry[],
-): BundangReadOnlyShareV1 {
+): Omit<BundangReadOnlyShareV1, 'furniture'> {
   const row = record(value);
   if (!row || row.schemaVersion !== 1) throw new BundangShareError('invalid-state');
   // Initial v1 links did not include an author. Keep those links readable.
@@ -163,6 +168,16 @@ export function validateBundangReadOnlyShare(
   if (canonical.join('\u0000') !== [...new Set(selected)].join('\u0000')) throw new BundangShareError('invalid-state');
 
   if (!Array.isArray(row.furniture) || row.furniture.length > BUNDANG_SHARE_MAX_FURNITURE) throw new BundangShareError('invalid-state');
+  return { schemaVersion: 1, sharedByNickname, mapId, unitType, planVariant, livingFacing, selectedOptionIds: canonical };
+}
+
+export function validateBundangReadOnlyShare(
+  value: unknown,
+  catalog: ShowcaseCatalog,
+  interiorAssets: InteriorAssetEntry[],
+): BundangReadOnlyShareV1 {
+  const metadata = validateBundangReadOnlyShareMetadata(value, catalog);
+  const row = value as { furniture: unknown[] };
   const assets = new Map(interiorAssets.map((asset) => [asset.assetId, asset]));
   const furniture = row.furniture.map((value): BundangReadOnlyShareFurnitureV1 => {
     const item = record(value);
@@ -187,7 +202,7 @@ export function validateBundangReadOnlyShare(
       ...(typeof material === 'string' ? { materialVariantId: material } : {}),
     };
   });
-  return { schemaVersion: 1, sharedByNickname, mapId, unitType, planVariant, livingFacing, selectedOptionIds: canonical, furniture };
+  return { ...metadata, furniture };
 }
 
 export function sharedFurnitureProps(value: BundangReadOnlyShareV1, assets: InteriorAssetEntry[]): ApartmentInteriorProp[] {

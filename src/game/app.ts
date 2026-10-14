@@ -1,4 +1,4 @@
-import { escapeHtml, formatBytes, resolveProjectUrl, resolveReferencedUrl } from './base';
+import { escapeHtml, resolveProjectUrl, resolveReferencedUrl } from './base';
 import { loadCatalog, mapFromQuery } from './catalog';
 import { hasValidMapQuery } from './household-catalog';
 import { waitForHouseholdSelection } from './household-selector';
@@ -31,13 +31,13 @@ import { COOKTOP_OPTION_IDS } from './bundang-option-layout';
 import { snapFurnitureToNearestWall } from './interior-wall-snap';
 import { stageOptionChipActionFromPath } from './stage-option-chip-action';
 import {
-  BundangShareError,
   bundangReadOnlyShareUrl,
   createBundangReadOnlyShare,
   decodeBundangReadOnlyShare,
   shareTokenFromHash,
   sharedFurnitureProps,
   validateBundangReadOnlyShare,
+  validateBundangReadOnlyShareMetadata,
   type BundangReadOnlyShareV1,
 } from './read-only-share';
 import {
@@ -99,11 +99,9 @@ import type {
   ActorState,
   BOptionEntry,
   CharacterKey,
-  Direction,
   ShowcaseCatalog,
   StaticCharacterEntry,
   StaticMapEntry,
-  StaticSkillEntry,
   ApartmentInteriorProp,
   WorldData,
   WorldObject,
@@ -257,7 +255,6 @@ export class ShowcaseApp {
   private furnitureWallSnapEnabled = false;
   private interiorDragPointer = -1;
   private interiorDragMoved = false;
-  private interiorRelocationArmed = false;
   private interiorGhostProp: ApartmentInteriorProp | null = null;
   private interiorGhostMode: 'add' | 'move' | null = null;
   private interiorGhostValidation: InteriorPlacementValidation | null = null;
@@ -306,7 +303,30 @@ export class ShowcaseApp {
   async start(): Promise<void> {
     const { catalog, fallback } = await loadCatalog();
     this.catalog = catalog;
-    this.shareToken = shareTokenFromHash(window.location.hash) || '';
+    try {
+      this.shareToken = shareTokenFromHash(window.location.hash) || '';
+      if (this.shareToken) {
+        const decoded = decodeBundangReadOnlyShare(this.shareToken);
+        validateBundangReadOnlyShareMetadata(decoded, catalog);
+        // Only the small furniture catalog is needed here, not maps or 3D assets.
+        // Reject invalid shares before asking the visitor to authenticate.
+        await this.loadInteriorAssets();
+        this.sharedState = validateBundangReadOnlyShare(decoded, catalog, this.interiorAssets);
+        const url = new URL(window.location.href);
+        url.search = '';
+        url.searchParams.set('map', this.sharedState.mapId);
+        url.searchParams.set('variant', this.sharedState.planVariant);
+        history.replaceState(null, '', url);
+      }
+    } catch (error) {
+      console.warn('[bunfirvil] invalid read-only share', error);
+      this.mount.innerHTML = `<main class="fatal-shell">
+        <h1>공유 링크를 열 수 없습니다</h1>
+        <p>링크가 손상되었거나 현재 카탈로그와 맞지 않습니다. 공유한 사람에게 새 링크를 요청해 주세요.</p>
+        <a href="${resolveProjectUrl('')}">놀이터로 돌아가기</a>
+      </main>`;
+      return;
+    }
     this.readOnlyShare = Boolean(this.shareToken);
     this.paletteAppliedOnly = this.readOnlyShare;
     const hasRequestedMap = hasValidMapQuery(catalog.maps, window.location.search);
@@ -326,13 +346,12 @@ export class ShowcaseApp {
           timeoutMs: 8_000,
         };
       }
-      const requestedMap = mapFromQuery(catalog, window.location.search);
       const verification = await waitForHouseholdSelection(
         this.mount,
         catalog,
         fallback,
         verificationConfig,
-        this.readOnlyShare ? { unitType: requestedMap.unitType } : null,
+        this.readOnlyShare,
       );
       const selection = verification.selection;
       this.authenticatedNickname = verification.nickname;
@@ -380,25 +399,8 @@ export class ShowcaseApp {
       console.warn('[bunfirvil] WebGL unavailable; Canvas2D renderer stays active.', error);
       this.threeRenderer = null;
     }
-    await this.loadInteriorAssets();
-    if (this.shareToken) {
-      try {
-        const shared = validateBundangReadOnlyShare(
-          decodeBundangReadOnlyShare(this.shareToken),
-          this.catalog,
-          this.interiorAssets,
-        );
-        if (shared.mapId !== this.currentMap.id || shared.planVariant !== this.planVariant) throw new BundangShareError('invalid-state');
-        this.sharedState = shared;
-        this.authenticatedNickname = this.authenticatedNickname || shared.sharedByNickname;
-      } catch (error) {
-        console.warn('[bunfirvil] invalid read-only share', error);
-        const loader = this.get<HTMLElement>('#stage-loader');
-        loader.innerHTML = '<b>공유 링크를 열 수 없습니다</b><small>링크가 손상되었거나 현재 카탈로그와 맞지 않습니다. 공유한 사람에게 새 링크를 요청해 주세요.</small>';
-        loader.classList.add('is-share-error');
-        return;
-      }
-    }
+    if (!this.readOnlyShare) await this.loadInteriorAssets();
+    this.renderFurniturePalette();
     this.createActors();
     this.bindEvents();
     this.renderHotbar();
@@ -464,11 +466,9 @@ export class ShowcaseApp {
         && asset.category !== 'notice'
         && asset.mountingKind !== 'room-finish'
         && !optionManagedKitchenAssets.has(asset.assetId));
-      this.renderFurniturePalette();
     } catch (error) {
       console.warn('[bunfirvil] furniture palette unavailable.', error);
       this.interiorAssets = [];
-      this.renderFurniturePalette();
     }
   }
 
@@ -1067,7 +1067,6 @@ export class ShowcaseApp {
         this.selectedLocalPropId = '';
         this.selectedScenePropSnapshot = null;
         this.furnitureContextMenuOpen = false;
-        this.interiorRelocationArmed = false;
         this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
         this.threeRenderer?.setEditorSelection('');
         this.renderFurniturePalette();
@@ -1851,7 +1850,6 @@ export class ShowcaseApp {
       this.cancelInteriorGhost('', false);
       this.pendingInteriorAssetId = '';
       this.interiorDragPointer = -1;
-      this.interiorRelocationArmed = false;
       this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
     }
     this.paintPaletteViewToggle();
@@ -1935,7 +1933,6 @@ export class ShowcaseApp {
         this.selectedLocalPropId = '';
         this.selectedScenePropSnapshot = null;
         this.threeRenderer?.setEditorSelection('');
-        this.interiorRelocationArmed = false;
         this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
         const point = this.lastInteriorPointerPoint || this.defaultInteriorGhostPoint();
         this.beginInteriorGhost('add', createLocalProp(asset, point[0], point[1]));
@@ -1949,7 +1946,6 @@ export class ShowcaseApp {
         this.pendingInteriorAssetId = '';
         this.selectedLocalPropId = propId;
         this.selectedScenePropSnapshot = { ...this.localInteriorProps.find((prop) => String(prop.id) === propId)! };
-        this.interiorRelocationArmed = false;
         this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
         this.threeRenderer?.setEditorSelection(propId);
         this.renderFurniturePalette();
@@ -1995,7 +1991,6 @@ export class ShowcaseApp {
     if (this.readOnlyShare) return;
     this.interiorGhostMode = mode;
     this.interiorGhostProp = { ...prop, positionMeters: [...(prop.positionMeters || this.defaultInteriorGhostPoint())] };
-    this.interiorRelocationArmed = mode === 'move';
     this.furnitureContextMenuOpen = false;
     const stage = this.get<HTMLElement>('#game-stage');
     stage.classList.toggle('is-relocating-furniture', mode === 'move');
@@ -2070,7 +2065,6 @@ export class ShowcaseApp {
     this.interiorGhostMode = null;
     this.interiorGhostValidation = null;
     this.pendingInteriorAssetId = '';
-    this.interiorRelocationArmed = false;
     const stage = this.mount.querySelector<HTMLElement>('#game-stage');
     if (stage) {
       stage.classList.remove('has-interior-ghost', 'is-furniture-ghost-valid', 'is-furniture-ghost-invalid', 'is-relocating-furniture');
@@ -2136,7 +2130,6 @@ export class ShowcaseApp {
     this.selectedScenePropSnapshot = { ...prop, positionMeters: [...(prop.positionMeters || [])] };
     this.pendingInteriorAssetId = '';
     this.furnitureContextMenuOpen = openMenu;
-    this.interiorRelocationArmed = false;
     this.get<HTMLElement>('#game-stage').classList.remove('is-relocating-furniture');
     this.threeRenderer?.setEditorSelection(this.selectedLocalPropId);
     const optionId = optionSourceIdForProp(prop, this.selectedOptionIds);
@@ -2920,7 +2913,6 @@ export class ShowcaseApp {
   }
 
   private triggerEffect(skillId: string, actor: ActorState, teleportDestination: { x: number; y: number } | null = null): void {
-    const layer = this.get<HTMLElement>('#effect-layer');
     const from = this.renderer.project(actor.displayX, actor.displayY);
     const other = this.actors.get(actor.key === '100' ? '200' : '100');
     const to = teleportDestination
@@ -3271,32 +3263,6 @@ export class ShowcaseApp {
     }
   }
 
-  private async removeSelectedOptionWithConfirmation(options: BOptionEntry[], optionId: string): Promise<void> {
-    if (this.readOnlyShare) return;
-    if (this.optionChangePending) return;
-    const intent = optionSelectionIntent(options, this.selectedOptionIds, optionId);
-    if (!intent.option || intent.kind !== 'deselect') return;
-    this.optionChangePending = true;
-    try {
-      const dependentLabels = intent.dependentsToRemove
-        .map((id) => options.find((option) => option.id === id)?.label || id)
-        .join(', ');
-      const message = dependentLabels
-        ? `${intent.option.label} 선택을 취소하면 ${dependentLabels}도 함께 해제됩니다. 취소하시겠습니까?`
-        : `${intent.option.label} 선택을 취소하시겠습니까?`;
-      const accepted = await this.confirmOptionChange({
-        title: '옵션 선택 취소',
-        message,
-        confirmLabel: '선택 취소',
-      });
-      if (!accepted) return;
-      this.selectedOptionIds = intent.nextSelection;
-      this.commitSelectedOptions();
-    } finally {
-      this.optionChangePending = false;
-    }
-  }
-
   private async clearAllSelectedOptionsWithConfirmation(): Promise<void> {
     if (this.readOnlyShare) return;
     if (this.optionChangePending || this.selectedOptionIds.length === 0) return;
@@ -3575,7 +3541,6 @@ export class ShowcaseApp {
         mapId: this.currentMap.id,
         unitType: this.currentMap.unitType,
         planVariant: this.planVariant,
-        livingFacing: planVariantDefinition(this.currentMap.unitType, this.planVariant).livingFacing,
         selectedOptionIds: this.selectedOptionIds,
         furniture: this.localInteriorProps.filter(isUserPlacedFurnitureProp),
       });
@@ -3588,9 +3553,12 @@ export class ShowcaseApp {
         field.style.position = 'fixed';
         field.style.opacity = '0';
         document.body.append(field);
-        field.select();
-        if (!document.execCommand('copy')) throw new Error('copy failed');
-        field.remove();
+        try {
+          field.select();
+          if (!document.execCommand('copy')) throw new Error('copy failed');
+        } finally {
+          field.remove();
+        }
       }
       this.toast(`${sharedByNickname}님의 읽기 전용 공유 링크를 복사했습니다.`, 'success');
     } catch (error) {

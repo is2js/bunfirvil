@@ -112,4 +112,38 @@ describe('household Google Sheet verification', () => {
     const fetchMock = async () => new Response(JSON.stringify({ schemaVersion: 1, ok: true, verified: true, operator: false, status: 'requested' }));
     await expect(verifyHousehold(config, { buildingId: '105', unitType: '55A', nickname: '이웃' }, fetchMock)).rejects.toMatchObject({ code: 'invalid-response' });
   });
+
+  it('cancels obsolete authentication without reporting a service timeout', async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn((_input: URL | RequestInfo, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+    }));
+    const pending = verifyHousehold(config, { buildingId: '105', unitType: '55A', nickname: '이웃' }, fetchMock, controller.signal);
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ code: 'cancelled' });
+    await expect(verifyShareViewer(config, { buildingId: '105', nickname: '이웃' }, fetchMock, controller.signal))
+      .rejects.toMatchObject({ code: 'cancelled' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps actual request timeouts separate from user cancellation', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = (_input: URL | RequestInfo, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+      });
+      const pending = verifyHousehold(config, { buildingId: '105', unitType: '55A', nickname: '이웃' }, fetchMock);
+      const assertion = expect(pending).rejects.toMatchObject({ code: 'timeout' });
+      await vi.advanceTimersByTimeAsync(config.timeoutMs);
+      await assertion;
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('does not promote an unknown authentication scope to playground access', () => {
+    const storage = new MemoryStorage();
+    writeHouseholdVerificationSession('verified', '이웃', storage);
+    const session = JSON.parse(storage.getItem(HOUSEHOLD_VERIFICATION_SESSION_KEY)!);
+    storage.setItem(HOUSEHOLD_VERIFICATION_SESSION_KEY, JSON.stringify({ ...session, scope: 'invalid' }));
+    expect(readHouseholdVerificationSession(storage)).toBeNull();
+  });
 });

@@ -421,8 +421,6 @@ input:focus-visible {
 .share-readonly-banner b { color: #efd38e; letter-spacing: .04em; }
 .palette-readonly-note { padding: 8px 10px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid rgba(225, 185, 99, .16); color: #829793; background: rgba(225, 185, 99, .04); font-size: 9px; }
 .palette-readonly-note b { color: #e3c77d; }
-.stage-loader.is-share-error { color: #e8d7aa; }
-.stage-loader.is-share-error small { max-width: 340px; color: #aebdb9; text-align: center; line-height: 1.6; }
 
 .icon-button {
   width: 33px;

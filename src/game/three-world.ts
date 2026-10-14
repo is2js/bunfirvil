@@ -14,7 +14,6 @@ import { castsExteriorStructureShadow } from './structure-shadow';
 import {
   bundangEditorSelectionPropIds,
   bundangEffectiveKitchenFixtures,
-  bundangHidesInteriorDoorLeaves,
   bundangPreciseEditorPickOnly,
   isBundangManagedKitchenApplianceProp,
   KITCHEN_COOKTOP_MOUNT_HEIGHT_METERS,

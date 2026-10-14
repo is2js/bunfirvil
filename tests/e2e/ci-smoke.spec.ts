@@ -192,7 +192,15 @@ test('smokes household selection, deployed maps, read-only sharing, living-room 
   expect(sharedUrl).toMatch(/\?map=bundang-first-village-59a-prototype&variant=B#share=v1\./);
   expect(sharedUrl).not.toMatch(/actor=|nickname|household|operator/);
   await page.evaluate(() => sessionStorage.removeItem('bunfirvil:household-verification:v1'));
-  await page.goto(sharedUrl);
+  // Invalid shares must fail before authentication or loading a game scene.
+  await page.goto('./#share=v1.');
+  await expect(page.getByRole('heading', { name: '공유 링크를 열 수 없습니다' })).toBeVisible();
+  await expect(page.locator('#household-nickname')).toHaveCount(0);
+  await expect(page.locator('#game-stage')).toHaveCount(0);
+  expect(await page.evaluate(() => sessionStorage.getItem('bunfirvil:household-verification:v1'))).toBeNull();
+  const fragmentOnlyUrl = new URL(sharedUrl);
+  fragmentOnlyUrl.search = '';
+  await page.goto(fragmentOnlyUrl.toString());
   await expect(page.getByRole('heading', { name: '분당퍼스트빌리지 동 선택' })).toBeVisible();
   await expect(page.locator('#household-step-unit')).toHaveCount(0);
   await page.locator('[data-choose-building="105"]').click();

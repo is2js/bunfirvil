@@ -48,7 +48,7 @@ export interface HouseholdVerificationSessionV1 {
   nickname?: string;
 }
 
-export type HouseholdVerificationErrorCode = 'not-configured' | 'timeout' | 'network' | 'invalid-response' | 'backend-update-required' | 'request_capacity' | 'rate_limited';
+export type HouseholdVerificationErrorCode = 'not-configured' | 'cancelled' | 'timeout' | 'network' | 'invalid-response' | 'backend-update-required' | 'request_capacity' | 'rate_limited';
 
 export class HouseholdVerificationError extends Error {
   constructor(readonly code: HouseholdVerificationErrorCode) {
@@ -113,8 +113,10 @@ async function sendHouseholdVerification(
   action: HouseholdVerificationAction,
   input: Omit<HouseholdVerificationRequestV1, 'schemaVersion' | 'action'>,
   fetchImpl: typeof fetch,
+  signal?: AbortSignal,
 ): Promise<HouseholdVerificationResponseV1> {
   if (!householdVerificationConfigured(config)) throw new HouseholdVerificationError('not-configured');
+  if (signal?.aborted) throw new HouseholdVerificationError('cancelled');
   const request: HouseholdVerificationRequestV1 = {
     schemaVersion: 1,
     action,
@@ -124,6 +126,8 @@ async function sendHouseholdVerification(
     ...(input.operatorCode ? { operatorCode: input.operatorCode.trim() } : {}),
   };
   const controller = new AbortController();
+  const cancel = (): void => controller.abort();
+  signal?.addEventListener('abort', cancel, { once: true });
   const timer = setTimeout(() => controller.abort(), config.timeoutMs);
   let response: Response;
   let payload: unknown;
@@ -140,10 +144,14 @@ async function sendHouseholdVerification(
       throw new HouseholdVerificationError('invalid-response');
     }
   } catch (error) {
+    if (signal?.aborted) throw new HouseholdVerificationError('cancelled');
     if (error instanceof HouseholdVerificationError) throw error;
     if (controller.signal.aborted || error instanceof DOMException && error.name === 'AbortError') throw new HouseholdVerificationError('timeout');
     throw new HouseholdVerificationError('network');
-  } finally { clearTimeout(timer); }
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', cancel);
+  }
   const row = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload as Record<string, unknown> : null;
   if (row?.ok === false && (row.code === 'request_capacity' || row.code === 'rate_limited')) throw new HouseholdVerificationError(row.code);
   const validStatus = row && ['not_found', 'requested', 'verified', 'operator', 'rejected'].includes(String(row.status));
@@ -170,24 +178,27 @@ export function verifyHousehold(
   config: HouseholdVerificationConfigV1,
   input: Omit<HouseholdVerificationRequestV1, 'schemaVersion' | 'action'>,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<HouseholdVerificationResponseV1> {
-  return sendHouseholdVerification(config, 'verifyHousehold', input, fetchImpl);
+  return sendHouseholdVerification(config, 'verifyHousehold', input, fetchImpl, signal);
 }
 
 export function requestHouseholdVerification(
   config: HouseholdVerificationConfigV1,
   input: Omit<HouseholdVerificationRequestV1, 'schemaVersion' | 'action'>,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<HouseholdVerificationResponseV1> {
-  return sendHouseholdVerification(config, 'requestHouseholdVerification', input, fetchImpl);
+  return sendHouseholdVerification(config, 'requestHouseholdVerification', input, fetchImpl, signal);
 }
 
 export function verifyShareViewer(
   config: HouseholdVerificationConfigV1,
   input: Omit<HouseholdVerificationRequestV1, 'schemaVersion' | 'action' | 'unitType'>,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<HouseholdVerificationResponseV1> {
-  return sendHouseholdVerification(config, 'verifyShareViewer', { ...input, unitType: '' }, fetchImpl);
+  return sendHouseholdVerification(config, 'verifyShareViewer', { ...input, unitType: '' }, fetchImpl, signal);
 }
 
 export function readHouseholdVerificationSession(storage: SessionStoragePort | null = browserSessionStorage()): HouseholdVerificationSessionV1 | null {
@@ -196,7 +207,8 @@ export function readHouseholdVerificationSession(storage: SessionStoragePort | n
     const parsed = JSON.parse(storage.getItem(HOUSEHOLD_VERIFICATION_SESSION_KEY) || 'null') as Partial<HouseholdVerificationSessionV1> | null;
     if (!parsed || parsed.schemaVersion !== 1 || parsed.provider !== HOUSEHOLD_VERIFICATION_PROVIDER
       || typeof parsed.verifiedAt !== 'number' || !Number.isFinite(parsed.verifiedAt) || parsed.verifiedAt <= 0
-      || (parsed.role !== 'verified' && parsed.role !== 'operator')) return null;
+      || (parsed.role !== 'verified' && parsed.role !== 'operator')
+      || (parsed.scope !== undefined && parsed.scope !== 'share' && parsed.scope !== 'playground')) return null;
     // Old nickname-only operator sessions must authenticate again.
     if (parsed.role === 'operator' && parsed.authRevision !== 2) {
       storage.removeItem(HOUSEHOLD_VERIFICATION_SESSION_KEY);

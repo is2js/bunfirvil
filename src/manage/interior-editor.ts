@@ -87,8 +87,6 @@ export class InteriorEditor {
   private props: ApartmentInteriorProp[] = [];
   private selectedPropId = '';
   private renderer: ThreeWorldRenderer | null = null;
-  private mode: EditorMode = 'split';
-  private frame = 0;
   private dragPointer = -1;
   private dragCanvas: HTMLCanvasElement | null = null;
   private catalogUrl = '';
@@ -132,7 +130,7 @@ export class InteriorEditor {
       this.status.textContent = `WebGL 프리뷰를 열 수 없어 평면도 편집만 사용합니다. ${error instanceof Error ? error.message : ''}`;
     }
     await this.selectMap(this.catalog.maps[0]?.id || '');
-    this.frame = requestAnimationFrame(this.renderFrame);
+    requestAnimationFrame(this.renderFrame);
   }
 
   refreshSelectedOptions(mapId: string): void {
@@ -263,7 +261,6 @@ export class InteriorEditor {
   }
 
   private setMode(mode: EditorMode): void {
-    this.mode = mode;
     this.section.dataset.mode = mode;
     document.querySelectorAll<HTMLElement>('[data-editor-mode]').forEach((button) => button.classList.toggle('is-active', button.dataset.editorMode === mode));
     this.drawPlan();
@@ -689,6 +686,6 @@ export class InteriorEditor {
 
   private readonly renderFrame = (): void => {
     this.renderer?.render();
-    this.frame = requestAnimationFrame(this.renderFrame);
+    requestAnimationFrame(this.renderFrame);
   };
 }

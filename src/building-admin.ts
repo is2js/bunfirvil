@@ -1,7 +1,7 @@
 import { apartmentUnitWorldPoint, type NumericPoint } from './game/apartment-transform';
 import { applyPlanVariant, availablePlanVariants, transformPlanPoint, type ApartmentPlanVariant } from './game/plan-variants';
 import type { ThreeWorldRenderer } from './game/three-world';
-import type { StaticMapEntry, WorldData, WorldObject } from './game/types';
+import type { StaticMapEntry, WorldObject } from './game/types';
 import { loadWorld } from './game/world';
 import { loadCatalog } from './manage/catalog';
 import { loadReview } from './manage/review-store';
@@ -61,12 +61,10 @@ function defaultReview(mapId: string, variant: ApartmentPlanVariant): BuildingRe
 
 class BuildingAdmin {
   private catalog!: ShowcaseCatalogV1;
-  private world: WorldData | null = null;
   private apartment: WorldObject | null = null;
   private items: StructureItem[] = [];
   private selectedKey = 'floor:0';
   private renderer: ThreeWorldRenderer | null = null;
-  private frame = 0;
   private loadToken = 0;
   private view = { minX: 0, minY: 0, maxX: 1, maxY: 1, scale: 1, offsetX: 0, offsetY: 0 };
 
@@ -93,7 +91,7 @@ class BuildingAdmin {
       this.status.textContent = `WebGL을 열 수 없어 평면도 검수만 제공합니다. ${error instanceof Error ? error.message : ''}`;
     }
     await this.selectMap(this.catalog.maps[0]?.id || '');
-    this.frame = requestAnimationFrame(this.renderFrame);
+    requestAnimationFrame(this.renderFrame);
   }
 
   private bind(): void {
@@ -122,7 +120,6 @@ class BuildingAdmin {
     if (token !== this.loadToken) return;
     const variant = this.variantSelect.value as ApartmentPlanVariant;
     const plan = applyPlanVariant(world, variant);
-    this.world = world;
     this.apartment = world.objects.find((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry) || null;
     this.items = this.collectItems();
     this.mapSelect.value = map.id;
@@ -261,7 +258,7 @@ class BuildingAdmin {
   }
 
   private readonly renderFrame = (time: number): void => {
-    this.renderer?.render(time); this.frame = requestAnimationFrame(this.renderFrame);
+    this.renderer?.render(time); requestAnimationFrame(this.renderFrame);
   };
 
   private restoreReview(): void {

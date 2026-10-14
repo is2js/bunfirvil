@@ -117,10 +117,6 @@ export interface HouseholdSelectionResultV1 {
   nickname: string;
 }
 
-export interface HouseholdShareAuthenticationV1 {
-  unitType: string;
-}
-
 export function householdShellHeader(exportId: string, fallback = false, overview = false): string {
   const operator = householdVerificationIsOperator();
   const householdHref = overview ? resolveProjectUrl('') : resolveProjectUrl('households/');
@@ -160,7 +156,7 @@ export function waitForHouseholdSelection(
   catalog: ShowcaseCatalog,
   fallback: boolean,
   verificationConfig: HouseholdVerificationConfigV1,
-  shareAuthentication: HouseholdShareAuthenticationV1 | null = null,
+  shareAuthentication = false,
 ): Promise<HouseholdSelectionResultV1> {
   return new Promise((resolve) => {
     let selected: HouseholdSelectionV1 | null = null;
@@ -254,6 +250,13 @@ export function waitForHouseholdSelection(
     let nicknameVerified = false;
     let verifiedRole: HouseholdVerificationRole | null = null;
     let verificationAttempt = 0;
+    let verificationController: AbortController | null = null;
+
+    const invalidateVerification = (): void => {
+      verificationAttempt += 1;
+      verificationController?.abort();
+      verificationController = null;
+    };
 
     const paintBuildingChoice = (): void => {
       picker.querySelectorAll<HTMLButtonElement>('[data-choose-building]').forEach((button) => {
@@ -303,7 +306,7 @@ export function waitForHouseholdSelection(
     };
 
     const resetNicknameVerification = (clearNickname: boolean): void => {
-      verificationAttempt += 1;
+      invalidateVerification();
       nicknameVerified = false;
       verifiedRole = null;
       operatorInput.value = '';
@@ -317,7 +320,7 @@ export function waitForHouseholdSelection(
       requestVerification.textContent = '해당 닉네임으로 등록 요청';
       nicknameInput.disabled = false;
       verifyNickname.disabled = nickname.trim().length === 0 || !householdVerificationConfigured(verificationConfig);
-      requestVerification.disabled = verifyNickname.disabled;
+      requestVerification.disabled = shareAuthentication || verifyNickname.disabled;
       verifyNickname.removeAttribute('aria-busy');
       requestVerification.removeAttribute('aria-busy');
       dock.classList.remove('is-authenticated');
@@ -473,18 +476,8 @@ export function waitForHouseholdSelection(
     });
 
     nicknameInput.addEventListener('input', () => {
-      operatorGroup.hidden = true;
-      operatorInput.value = '';
-      verificationAttempt += 1;
       nickname = nicknameInput.value;
-      nicknameVerified = false;
-      verifiedRole = null;
-      verifyNickname.textContent = '인증 확인';
-      requestVerification.textContent = '해당 닉네임으로 등록 요청';
-      verifyNickname.disabled = nickname.trim().length === 0 || !householdVerificationConfigured(verificationConfig);
-      requestVerification.disabled = verifyNickname.disabled;
-      verifyNickname.removeAttribute('aria-busy');
-      requestVerification.removeAttribute('aria-busy');
+      resetNicknameVerification(false);
       nicknameStatus.textContent = householdVerificationConfigured(verificationConfig)
         ? (nickname.trim() ? '인증 확인이 필요합니다.' : '')
         : '인증 서비스 연결 주소가 아직 설정되지 않았습니다.';
@@ -492,12 +485,14 @@ export function waitForHouseholdSelection(
     });
 
     const authenticate = async (register: boolean): Promise<void> => {
-      if (register && shareAuthentication) return;
+      if (verificationController || nicknameVerified || register && shareAuthentication) return;
       const candidate = nickname.trim();
       const buildingId = selected?.buildingId || chosenBuildingId || '';
       const unitType = selected?.unitType || '';
       if (!candidate || !buildingId || (!shareAuthentication && !unitType) || !householdVerificationConfigured(verificationConfig)) return;
       const attempt = ++verificationAttempt;
+      const controller = new AbortController();
+      verificationController = controller;
       verifyNickname.disabled = true;
       requestVerification.disabled = true;
       operatorInput.disabled = true;
@@ -507,8 +502,9 @@ export function waitForHouseholdSelection(
       try {
         const input = { buildingId, unitType, nickname: candidate, operatorCode: operatorInput.value };
         const response = shareAuthentication
-          ? await verifyShareViewer(verificationConfig, input)
-          : register ? await requestHouseholdVerification(verificationConfig, input) : await verifyHousehold(verificationConfig, input);
+          ? await verifyShareViewer(verificationConfig, input, undefined, controller.signal)
+          : register ? await requestHouseholdVerification(verificationConfig, input, undefined, controller.signal)
+            : await verifyHousehold(verificationConfig, input, undefined, controller.signal);
         if (attempt !== verificationAttempt || nickname.trim() !== candidate) return;
         nicknameVerified = response.verified;
         verifiedRole = response.operator ? 'operator' : response.verified ? 'verified' : null;
@@ -539,11 +535,12 @@ export function waitForHouseholdSelection(
           : code === 'request_capacity' ? '현재 등록 요청 접수량이 많습니다. 운영자에게 문의해 주세요.'
           : '인증 서비스를 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.';
       } finally {
+        if (verificationController === controller) verificationController = null;
         if (attempt === verificationAttempt) {
           button.removeAttribute('aria-busy');
           operatorInput.disabled = nicknameVerified;
           verifyNickname.disabled = nicknameVerified;
-          requestVerification.disabled = nicknameVerified || Boolean(shareAuthentication);
+          requestVerification.disabled = nicknameVerified || shareAuthentication;
           updateSelectionSummary();
           if (!operatorGroup.hidden && !nicknameVerified) operatorInput.focus();
         }
@@ -552,7 +549,7 @@ export function waitForHouseholdSelection(
     verifyNickname.addEventListener('click', () => { void authenticate(false); });
     requestVerification.addEventListener('click', () => { void authenticate(true); });
     operatorInput.addEventListener('input', () => {
-      verificationAttempt += 1;
+      invalidateVerification();
       verifyNickname.disabled = false;
     });
     for (const input of [nicknameInput, operatorInput]) {
@@ -592,6 +589,6 @@ export function waitForHouseholdSelection(
 
     const initialBuilding = new URLSearchParams(window.location.hash.slice(1)).get('building');
     if (initialBuilding) showBuilding(initialBuilding, false);
-    else if (shareAuthentication) showBuildingPicker();
+    else showBuildingPicker();
   });
 }
