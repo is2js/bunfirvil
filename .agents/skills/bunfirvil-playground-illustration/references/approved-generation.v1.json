@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "approvedAt": "2026-10-15",
+  "generationMode": "built-in image_gen",
+  "useCase": "stylized-concept",
+  "origin": "Bunfirvil docs/assets/og-playground-v3.json",
+  "references": [
+    {
+      "path": "assets/og.png",
+      "role": "style and brand composition"
+    },
+    {
+      "path": "assets/og-playground-v2.jpg",
+      "role": "apartment and character subject reference"
+    }
+  ],
+  "approvedOutput": "assets/og-playground-v3.jpg",
+  "width": 1200,
+  "height": 630,
+  "preparationScript": "scripts/prepare-link-preview.ps1",
+  "reproducibility": "Prompt and visual-style reproduction, not a seed-based or byte-identical guarantee.",
+  "prompt": "Use case: stylized-concept.\nAsset type: polished illustrated Open Graph / social link preview for a Korean apartment virtual playground, wide landscape 1200:630 aspect ratio (approximately 1.905:1).\n\nInput images: Image 1 (og.png) is STYLE AND BRAND COMPOSITION REFERENCE ONLY: its cinematic near-black navy backdrop, mint/teal glow, restrained gold frame and premium illustrated isometric miniature-world presentation. Image 2 (og-playground-v2.jpg) is SUBJECT REFERENCE ONLY: the actual apartment interior arrangement, cutaway walls, pale wood floors, large balcony glazing, kitchen counter and small mint-clothed game character. Do NOT reproduce a screenshot, browser, actual HUD or price panel.\n\nPrimary request: Generate a completely new, beautifully crafted illustration that evokes the actual apartment playground in the graphic style of Image 1. A premium illustrated cover, not a screenshot and not a photographic house interior. The apartment should be the unmistakable hero.\n\nComposition: approximately left 40% for clean, large Korean brand typography; right 60% for an elevated isometric apartment cutaway floating above a very subtle teal architectural grid. Show an inviting central living space, connected kitchen with pale-gold countertop, a few bedrooms and bathroom areas, glass balcony rail/windows and precise cutaway partitions, derived from the actual screenshot but artistically composed rather than a technical floor plan. A few home furnishings may establish the living room and bedroom functions. Two small cute adult chibi RPG avatars, one short-haired and one longer-haired, in mint/teal and white clothing, near the living room, with subtle rim light. Their scale must remain small compared to the apartment. Give the rooms warm ivory/wood surfaces and soft amber interior light so the home reads clearly against the dark background. Teal ambient highlights and delicate gold accents connect it to the existing cover. Fine material detail, coherent miniature architecture, crisp forms, soft cinematic shadows. Make the apartment much more prominent than peripheral decorative elements.\n\nText, exact Korean copy ONLY:\nsmall top line: \"e편한세상\"\nlarge main title: \"분당퍼스트빌리지\"\nmint-colored subtitle: \"돌아온범생의 놀이터\"\nRender these three lines accurately, with generous spacing, high contrast and an elegant bold Korean sans-serif. Title area must remain comfortably within the canvas, with safe margins for social cropping. Do not include any other lettering. Do not use the old English \"BUNFIRVIL\" or \"RPG RENDERING LAB\" text. A thin restrained gold decorative rule can separate title and subtitle, similar to Image 1.\n\nAvoid: literal UI screenshots, buttons, keycaps, minimap HUD, option-price amounts, financial or stock charts, medical dashboards, terrain tile trays, weapons, combat, monsters, unrelated buildings, excessive holographic windows, clutter, watermark, official brand logos, extra slogans. No actual private household information or nicknames. Keep a sophisticated dark-mint-and-gold visual identity, but the apartment is bright enough to recognize at thumbnail size. Fully opaque background. Output a single finished wide illustration."
+}

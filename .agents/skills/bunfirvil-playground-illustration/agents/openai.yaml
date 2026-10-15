@@ -1,0 +1,4 @@
+interface:
+  display_name: "분퍼빌 놀이터 일러스트"
+  short_description: "승인된 다크 민트·골드 아파트 표지와 링크 이미지를 재생성"
+  default_prompt: "$bunfirvil-playground-illustration 승인된 분위기를 유지한 분당퍼스트빌리지 놀이터 링크 표지를 새로 만들어줘."
