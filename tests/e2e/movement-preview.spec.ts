@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { resolve } from 'node:path';
 
-test('diagonal release keeps the completed facing and can capture the public playground preview', async ({ page, context }) => {
+test('diagonal release keeps the completed facing and can capture a playground reference image', async ({ page, context }) => {
   test.setTimeout(120_000);
   await context.addInitScript(() => {
     sessionStorage.setItem('bunfirvil:household-verification:v1', JSON.stringify({
@@ -45,7 +45,7 @@ test('diagonal release keeps the completed facing and can capture the public pla
   }
   if (process.env.CAPTURE_PLAYGROUND_PREVIEW === '1') {
     await page.getByRole('button', { name: '캐릭터 위치 초기화' }).click();
-    // Capture the actual scene at a standard link-preview size; only the frame size changes.
+    // Capture a reference for the illustrated cover, not its final public OG image.
     await page.addStyleTag({ content: '.showcase-layout { grid-template-columns:1200px 348px!important; max-width:none!important; } #game-stage { width:1200px!important; height:630px!important; min-height:630px!important; }' });
     await expect(stage).toHaveCSS('width', '1200px');
     await expect(stage).toHaveCSS('height', '630px');
