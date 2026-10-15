@@ -153,6 +153,9 @@ describe('game-local state helpers', () => {
     } as unknown as WorldData;
     expect(canTraverse(cornerWorld, 0, 0, 1, 1)).toBe(false);
     expect(canTraverse({ ...cornerWorld, blocked: new Set() }, 0, 0, 1, 1)).toBe(true);
+    // A minimap/procedural fallback has no precise geometry to replace the mask.
+    const fallbackWorld = { ...cornerWorld, entry: { id: 'bundang-first-village-55a-prototype' } } as WorldData;
+    expect(canTraverse(fallbackWorld, 0, 0, 1, 1)).toBe(false);
   });
 
   it.each(['A', 'B'] as const)('keeps the 55B %s bathroom-2 and bedroom-2 openings passable without removing their walls', (variant) => {

@@ -811,7 +811,9 @@ export function canTraverse(world: WorldData | null, fromX: number, fromY: numbe
   if (!world) return false;
   const from = { x: fromX, y: fromY };
   const to = { x: toX, y: toY };
-  const usesPreciseGeometry = Boolean(world.entry?.id?.startsWith('bundang-first-village-'));
+  const usesPreciseGeometry = Boolean(world.entry?.id?.startsWith('bundang-first-village-')
+    && world.objects.some((object) => object.type === 'enterable-apartment-unit-v1'
+      && (object.geometry?.floorPolygon?.length || 0) >= 3));
   if (!isWalkable(world, toX, toY)) return false;
   const deltaX = Math.round(toX - fromX);
   const deltaY = Math.round(toY - fromY);
