@@ -771,7 +771,7 @@ function movementPointBlocked(object: WorldObject, point: CollisionPoint, minusA
 
 /** Release only a known apartment mask cell whose precise physical footprint is clear. */
 function hasBundangRasterClearance(world: WorldData, point: CollisionPoint): boolean {
-  if (!world.entry.id.startsWith('bundang-first-village-')) return false;
+  if (!world.entry?.id?.startsWith('bundang-first-village-')) return false;
   return world.objects.some((object) => {
     if (object.type !== 'enterable-apartment-unit-v1'
       || !object.blockedCells?.some((cell) => cell.x === point.x && cell.y === point.y)) return false;
@@ -811,7 +811,7 @@ export function canTraverse(world: WorldData | null, fromX: number, fromY: numbe
   if (!world) return false;
   const from = { x: fromX, y: fromY };
   const to = { x: toX, y: toY };
-  const usesPreciseGeometry = world.entry.id.startsWith('bundang-first-village-');
+  const usesPreciseGeometry = Boolean(world.entry?.id?.startsWith('bundang-first-village-'));
   if (!isWalkable(world, toX, toY)) return false;
   const deltaX = Math.round(toX - fromX);
   const deltaY = Math.round(toY - fromY);
