@@ -23,6 +23,7 @@ function cellKey(x: number, y: number): string {
 }
 
 const optionCollisionBaselines = new WeakMap<WorldData, Set<string>>();
+const minusOptionCollisionWorlds = new WeakSet<WorldData>();
 
 function finitePoint(value: unknown): [number, number] | null {
   if (!Array.isArray(value) || value.length < 2) return null;
@@ -116,7 +117,10 @@ export function synchronizeBundangMinusOptionWorldCollision(
   }
   world.blocked.clear();
   baseline.forEach((key) => world.blocked.add(key));
-  if (![...selectedOptionIds].some(isBundangMinusOption)) return;
+  const minusActive = [...selectedOptionIds].some(isBundangMinusOption);
+  if (minusActive) minusOptionCollisionWorlds.add(world);
+  else minusOptionCollisionWorlds.delete(world);
+  if (!minusActive) return;
 
   for (const apartment of world.objects.filter((object) => object.type === 'enterable-apartment-unit-v1' && object.geometry)) {
     const geometry = apartment.geometry;
@@ -615,7 +619,8 @@ export function isWalkable(world: WorldData | null, x: number, y: number): boole
   });
   return (
     (insideWorld || insideApartmentPlan) &&
-    !world.blocked.has(cellKey(roundedX, roundedY))
+    (!world.blocked.has(cellKey(roundedX, roundedY))
+      || hasBundangRasterClearance(world, { x: roundedX, y: roundedY }))
   );
 }
 
@@ -628,12 +633,14 @@ export interface BundangTraversalOpeningV1 {
   schemaVersion: 1;
   openingTypes: readonly string[];
   clearanceCells: number;
+  jambToleranceCells: number;
 }
 
 export const BUNDANG_TRAVERSAL_OPENINGS: BundangTraversalOpeningV1 = {
   schemaVersion: 1,
   openingTypes: ['interior-door', 'entry-door', 'passage'],
   clearanceCells: 0.52,
+  jambToleranceCells: 0.3,
 };
 
 function finite(value: unknown, fallback = 0): number {
@@ -646,23 +653,24 @@ function worldCollisionPoint(object: WorldObject, value: unknown): CollisionPoin
   return apartmentUnitWorldPoint(object, [finite(value[0]), finite(value[1])]);
 }
 
-function movementIntersectsWall(
+function movementWallIntersection(
   from: CollisionPoint,
   to: CollisionPoint,
   wallStart: CollisionPoint,
   wallEnd: CollisionPoint,
-): boolean {
+): CollisionPoint | null {
   const moveX = to.x - from.x;
   const moveY = to.y - from.y;
   const wallX = wallEnd.x - wallStart.x;
   const wallY = wallEnd.y - wallStart.y;
   const denominator = moveX * wallY - moveY * wallX;
-  if (Math.abs(denominator) < 1e-7) return false;
+  if (Math.abs(denominator) < 1e-7) return null;
   const offsetX = wallStart.x - from.x;
   const offsetY = wallStart.y - from.y;
   const moveRatio = (offsetX * wallY - offsetY * wallX) / denominator;
   const wallRatio = (offsetX * moveY - offsetY * moveX) / denominator;
-  return moveRatio > 0.02 && moveRatio < 0.98 && wallRatio >= -0.01 && wallRatio <= 1.01;
+  return moveRatio > 0.02 && moveRatio < 0.98 && wallRatio >= -0.01 && wallRatio <= 1.01
+    ? { x: from.x + moveX * moveRatio, y: from.y + moveY * moveRatio } : null;
 }
 
 function collisionDistance(point: CollisionPoint, start: CollisionPoint, end: CollisionPoint): number {
@@ -686,7 +694,7 @@ function movementTouchesTraversalOpening(
   to: CollisionPoint,
 ): boolean {
   return traversalOpenings(object).some(({ start, end }) =>
-    movementIntersectsWall(from, to, start, end)
+    movementWallIntersection(from, to, start, end)
       || collisionDistance(from, start, end) <= BUNDANG_TRAVERSAL_OPENINGS.clearanceCells
       || collisionDistance(to, start, end) <= BUNDANG_TRAVERSAL_OPENINGS.clearanceCells,
   );
@@ -698,15 +706,79 @@ export function pointTouchesBundangTraversalOpening(objects: WorldObject[], poin
   ));
 }
 
-function wallBordersTraversalOpening(
+function wallAllowsTraversalPoint(
   object: WorldObject,
+  point: CollisionPoint,
   wallStart: CollisionPoint,
   wallEnd: CollisionPoint,
 ): boolean {
+  const dx = wallEnd.x - wallStart.x;
+  const dy = wallEnd.y - wallStart.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 1e-7) return false;
+  const lineDistance = (candidate: CollisionPoint): number => Math.abs(
+    (candidate.x - wallStart.x) * dy - (candidate.y - wallStart.y) * dx,
+  ) / length;
   return traversalOpenings(object).some(({ start, end }) =>
-    collisionDistance(start, wallStart, wallEnd) <= 0.08
-      || collisionDistance(end, wallStart, wallEnd) <= 0.08,
+    lineDistance(start) <= 0.08 && lineDistance(end) <= 0.08
+      && collisionDistance(point, start, end) <= BUNDANG_TRAVERSAL_OPENINGS.jambToleranceCells,
   );
+}
+
+function pointInsidePolygon(point: [number, number], polygon: [number, number][]): boolean {
+  let inside = false;
+  let previous = polygon[polygon.length - 1];
+  if (!previous) return false;
+  for (const current of polygon) {
+    if ((current[1] > point[1]) !== (previous[1] > point[1])
+      && point[0] < (previous[0] - current[0]) * (point[1] - current[1]) / (previous[1] - current[1]) + current[0]) inside = !inside;
+    previous = current;
+  }
+  return inside;
+}
+
+function solidContainsPoint(row: Record<string, unknown>, point: [number, number], padding: number): boolean {
+  const polygon = Array.isArray(row.footprintPolygonMeters)
+    ? row.footprintPolygonMeters.flatMap((value) => { const p = finitePoint(value); return p ? [p] : []; }) : [];
+  if (polygon.length >= 3) {
+    return pointInsidePolygon(point, polygon) || polygon.some((start, index) =>
+      pointToSegmentDistance(point, start, polygon[(index + 1) % polygon.length]) <= padding);
+  }
+  const bounds = rowBounds(row);
+  return Boolean(bounds && insideExpandedBounds(point, bounds, padding));
+}
+
+function movementPointBlocked(object: WorldObject, point: CollisionPoint, minusActive: boolean): boolean {
+  const local = apartmentWorldPointToLocalMeters(object, point);
+  const geometry = object.geometry;
+  // Sprite feet are a small point footprint, not a half-cell-wide physical body.
+  const skinMeters = 0.04;
+  for (const value of geometry?.wallSegments || []) {
+    const wall = value as Record<string, unknown>;
+    if (finite(wall.baseMeters) > 0.35) continue;
+    const start = worldCollisionPoint(object, wall.a);
+    const end = worldCollisionPoint(object, wall.b);
+    const cellSize = Math.max(0.01, finite(geometry?.cellSizeMeters, 0.5));
+    if (start && end && collisionDistance(point, start, end) <= (Math.max(0.04, finite(wall.thicknessMeters, 0.12)) / 2 + skinMeters) / cellSize
+      && !wallAllowsTraversalPoint(object, point, start, end)) return true;
+  }
+  if ((geometry?.solidBlocks || []).some((value) => solidContainsPoint(value as Record<string, unknown>, local, skinMeters))) return true;
+  if (minusActive) return false;
+  if ((geometry?.kitchenFixtures || []).some((value) => solidContainsPoint(value as Record<string, unknown>, local, skinMeters))) return true;
+  return (geometry?.interiorProps || []).some((prop) => prop.installationRole === 'bathroom-base-fixture'
+    && prop.collisionMode !== 'visual-only' && pointInsidePropFootprint(local, prop as Record<string, unknown>, skinMeters));
+}
+
+/** Release only a known apartment mask cell whose precise physical footprint is clear. */
+function hasBundangRasterClearance(world: WorldData, point: CollisionPoint): boolean {
+  if (!world.entry.id.startsWith('bundang-first-village-')) return false;
+  return world.objects.some((object) => {
+    if (object.type !== 'enterable-apartment-unit-v1'
+      || !object.blockedCells?.some((cell) => cell.x === point.x && cell.y === point.y)) return false;
+    const local = apartmentWorldPointToLocalMeters(object, point);
+    const polygon = (object.geometry?.floorPolygon || []).flatMap((value) => { const p = finitePoint(value); return p ? [p] : []; });
+    return pointInsidePolygon(local, polygon) && !movementPointBlocked(object, point, minusOptionCollisionWorlds.has(world));
+  });
 }
 
 export function crossesApartmentWall(
@@ -725,9 +797,9 @@ export function crossesApartmentWall(
       if (finite(segment.baseMeters) > 0.35) continue;
       const wallStart = worldCollisionPoint(object, segment.a);
       const wallEnd = worldCollisionPoint(object, segment.b);
-      if (wallStart && wallEnd && movementIntersectsWall(from, to, wallStart, wallEnd)) {
-        if (wallBordersTraversalOpening(object, wallStart, wallEnd)
-          && movementTouchesTraversalOpening(object, from, to)) continue;
+      const intersection = wallStart && wallEnd ? movementWallIntersection(from, to, wallStart, wallEnd) : null;
+      if (wallStart && wallEnd && intersection) {
+        if (wallAllowsTraversalPoint(object, intersection, wallStart, wallEnd)) continue;
         return true;
       }
     }
@@ -739,14 +811,21 @@ export function canTraverse(world: WorldData | null, fromX: number, fromY: numbe
   if (!world) return false;
   const from = { x: fromX, y: fromY };
   const to = { x: toX, y: toY };
-  const usesTraversalOpening = world.objects.some((object) => movementTouchesTraversalOpening(object, from, to));
-  if (!isWalkable(world, toX, toY) && !pointTouchesBundangTraversalOpening(world.objects, to)) return false;
+  const usesPreciseGeometry = world.entry.id.startsWith('bundang-first-village-');
+  if (!isWalkable(world, toX, toY)) return false;
   const deltaX = Math.round(toX - fromX);
   const deltaY = Math.round(toY - fromY);
   if (Math.abs(deltaX) === 1 && Math.abs(deltaY) === 1) {
     // 화면상 동서남북도 world grid에서는 대각선이므로 벽 모서리 사이를 비집고 지나가지 못하게 한다.
-    if (!usesTraversalOpening
+    if (!usesPreciseGeometry && !world.objects.some((object) => movementTouchesTraversalOpening(object, from, to))
       && (!isWalkable(world, fromX + deltaX, fromY) || !isWalkable(world, fromX, fromY + deltaY))) return false;
+  }
+  if (usesPreciseGeometry) {
+    for (const ratio of [0.25, 0.5, 0.75]) {
+      const point = { x: fromX + (toX - fromX) * ratio, y: fromY + (toY - fromY) * ratio };
+      if (world.objects.some((object) => object.type === 'enterable-apartment-unit-v1'
+        && movementPointBlocked(object, point, minusOptionCollisionWorlds.has(world)))) return false;
+    }
   }
   return !crossesApartmentWall(world.objects, fromX, fromY, toX, toY);
 }

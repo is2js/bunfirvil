@@ -100,4 +100,57 @@ describe('Bundang runtime traversal openings', () => {
       midpoint.x - dy / length, midpoint.y + dx / length,
       midpoint.x + dy / length, midpoint.y - dx / length)).toBe(true);
   });
+
+  function narrowDoorWorld(): WorldData {
+    const world = loadWorld('55B');
+    const cells = Array.from({ length: 11 }, (_, index) => ({ x: 14, y: 10 + index }));
+    world.blocked = new Set(cells.map((cell) => `${cell.x},${cell.y}`));
+    world.objects = [{
+      id: 'narrow-door-test', type: 'enterable-apartment-unit-v1', originCell: { x: 10, y: 10 },
+      blockedCells: cells,
+      geometry: {
+        cellSizeMeters: .5, floorPolygon: [[0, 0], [5, 0], [5, 5], [0, 5]],
+        wallSegments: [
+          { a: [2.1, 0], b: [2.1, 2], thicknessMeters: .12 },
+          { a: [2.1, 3], b: [2.1, 5], thicknessMeters: .12 },
+        ],
+        openings: [{ id: 'door', type: 'interior-door', a: [2.1, 2], b: [2.1, 3] }],
+        solidBlocks: [], kitchenFixtures: [], interiorProps: [],
+      },
+    }];
+    return world;
+  }
+
+  it('allows three door lanes and oblique approaches without changing the wall or raster data', () => {
+    const world = narrowDoorWorld();
+    const originalGeometry = JSON.stringify(world.objects);
+    const originalBlocked = [...world.blocked];
+    for (const y of [14, 15, 16]) {
+      expect(canTraverse(world, 13, y, 14, y)).toBe(true);
+      expect(canTraverse(world, 14, y, 15, y)).toBe(true);
+      expect(canTraverse(world, 15, y, 14, y)).toBe(true);
+    }
+    expect(canTraverse(world, 13, 13, 14, 14)).toBe(true);
+    expect(canTraverse(world, 15, 17, 14, 16)).toBe(true);
+    expect(canTraverse(world, 13, 13, 15, 13)).toBe(false);
+    expect(canTraverse(world, 13, 17, 15, 17)).toBe(false);
+    expect(JSON.stringify(world.objects)).toBe(originalGeometry);
+    expect([...world.blocked]).toEqual(originalBlocked);
+  });
+
+  it('uses the actual service-wall polygon and preserves fixtures and unrelated blockers', () => {
+    const world = narrowDoorWorld();
+    const apartment = world.objects[0];
+    apartment.geometry!.wallSegments = [];
+    apartment.geometry!.solidBlocks = [{
+      boundsMeters: [1, 1, 3, 3],
+      footprintPolygonMeters: [[1, 1], [3, 1], [3, 1.5], [1.5, 1.5], [1.5, 3], [1, 3]],
+    }];
+    apartment.geometry!.kitchenFixtures = [{ boundsMeters: [1.8, 3.8, 2.2, 4.2] }];
+    expect(isWalkable(world, 14, 14)).toBe(true); // Empty inner corner, not the entire L-wall bounding box.
+    expect(isWalkable(world, 14, 12)).toBe(false);
+    expect(isWalkable(world, 14, 18)).toBe(false);
+    world.blocked.add('17,17'); // Not owned by the apartment's collision raster.
+    expect(isWalkable(world, 17, 17)).toBe(false);
+  });
 });

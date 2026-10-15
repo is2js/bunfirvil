@@ -18,7 +18,7 @@ import {
 } from './sale-calculator-context';
 import { cameraZoomPercent, RPG_CAMERA_BASE_ZOOM } from './camera';
 import { ManifestEffectPlayer } from './effect-player';
-import { interpolateCellTravel, screenDirection, screenVectorToWorldDelta } from './grid';
+import { interpolateCellTravel, MovementInputIntent, screenDirection, screenVectorToWorldDelta } from './grid';
 import { FrameMetrics } from './metrics';
 import { FloorPlanMinimap } from './floorplan-minimap';
 import { highlightedMessageParts } from './highlighted-message';
@@ -229,6 +229,7 @@ export class ShowcaseApp {
   private readonly actors = new Map<CharacterKey, ActorState>();
   private readonly actorViews = new Map<CharacterKey, ActorView>();
   private readonly pressedKeys = new Set<string>();
+  private readonly movementInputIntent = new MovementInputIntent();
   private touchMovement = { x: 0, y: 0 };
   private touchPad?: TouchMovementPad;
   private mobileLayout = false;
@@ -3395,9 +3396,15 @@ export class ShowcaseApp {
     if (this.paletteTab === 'furniture') return;
     const actor = this.actors.get(this.activeActor);
     if (!actor || !this.world) return;
-    const horizontal = this.touchMovement.x || (Number(this.pressedKeys.has('d') || this.pressedKeys.has('arrowright')) - Number(this.pressedKeys.has('a') || this.pressedKeys.has('arrowleft')));
-    const vertical = this.touchMovement.y || (Number(this.pressedKeys.has('s') || this.pressedKeys.has('arrowdown')) - Number(this.pressedKeys.has('w') || this.pressedKeys.has('arrowup')));
+    const intent = this.movementInputIntent.resolve(
+      this.touchMovement.x || (Number(this.pressedKeys.has('d') || this.pressedKeys.has('arrowright')) - Number(this.pressedKeys.has('a') || this.pressedKeys.has('arrowleft'))),
+      this.touchMovement.y || (Number(this.pressedKeys.has('s') || this.pressedKeys.has('arrowdown')) - Number(this.pressedKeys.has('w') || this.pressedKeys.has('arrowup'))),
+      time,
+    );
+    const horizontal = intent.x;
+    const vertical = intent.y;
     if (horizontal === 0 && vertical === 0) {
+      actor.queuedDirection = null;
       if (!actor.travel) {
         actor.moving = false;
         if (actor.motion === 'walk') {
@@ -3463,12 +3470,8 @@ export class ShowcaseApp {
     actor.displayY = actor.travel.toY;
     actor.travel = null;
     actor.moving = false;
-    if (actor.queuedDirection && actor.queuedDirection !== actor.direction) {
-      actor.direction = actor.queuedDirection;
-      actor.turnReadyAt = time + TURN_ONLY_HOLD_TO_MOVE_MS;
-      actor.motion = 'idle';
-      actor.motionStartedAt = time;
-    }
+    // A queued key may already have been released. Only current, settled input
+    // may turn the actor on the next frame; idle keeps the completed travel row.
     actor.queuedDirection = null;
   }
 
