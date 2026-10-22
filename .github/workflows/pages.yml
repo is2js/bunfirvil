@@ -16,7 +16,9 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Keep Playwright apt dependencies on a stable supported distribution.
+    # The ubuntu-latest 26.04 image hit a Microsoft apt-repository 403.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
@@ -46,7 +48,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - name: Deploy to GitHub Pages

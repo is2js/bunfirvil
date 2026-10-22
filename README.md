@@ -136,3 +136,5 @@ GitHub Pages에 포함된 파일은 누구나 내려받을 수 있습니다. `op
 ## 배포
 
 `main`에 push하면 GitHub Actions가 단위 테스트, 정적 빌드, 누출 검사와 Chromium 스모크를 한 번 수행한 뒤 Pages artifact를 배포합니다. 빌드 기준 경로는 `/bunfirvil/`이며 모든 자산 URL은 그 하위경로를 기준으로 계산됩니다.
+
+Pages 검증·배포 runner는 Playwright 시스템 의존성 설치를 위해 `ubuntu-24.04`로 고정합니다. `ubuntu-latest`의 26.04 전환 중 패키지 저장소 403이 발생한 이력이 있으며, 브라우저 검사를 건너뛰는 대신 검증된 배포 환경을 유지합니다.
