@@ -81,6 +81,28 @@ input:focus-visible{outline:2px solid var(--mint-bright);outline-offset:3px}
 .calculator-side .disclosure-body dd{overflow-wrap:anywhere}
 .quote-layout>*,.calculator-side,.calculator-hero>*{min-width:0}
 .schedule-scroll{width:100%;max-width:100%}
+.schedule-table .financing-cell{min-width:186px;white-space:normal}
+.contract-due{display:grid;gap:5px;color:#91a99d;font-size:9px;font-weight:400}
+.contract-due>b{color:#d9e9df;font-size:11px}
+.financing-lines{margin-top:10px;padding-top:8px;display:grid;gap:7px;border-top:1px solid var(--line)}
+.financing-line,.financing-cash{display:flex;justify-content:space-between;align-items:baseline;gap:9px;font-size:9px;white-space:nowrap}
+.financing-line{color:#9fb9aa;font-weight:400}
+.financing-line b{color:#ccdbd0;font-size:10px}
+.financing-line[data-flow="loan-draw"] b,.financing-line[data-flow="mortgage"] b{color:#8fd7bf}
+.financing-line[data-flow="deferred-interest"] b{color:#e4c282}
+.financing-cash{margin-top:3px;color:#c8ddcf;font-weight:750}
+.financing-cash b{color:var(--mint-bright);font-size:12px}
+.separate-contract-date{display:block;margin-top:6px;color:#afaa91;font-size:9px;line-height:1.6;white-space:nowrap}
+.financing-note{margin:13px 0;color:#9bb3a4;font-size:11px;line-height:1.75}
+.financing-note b{color:#c9dfcf}
+.settlement-choice-row.is-inactive{position:relative;cursor:pointer;transition:background .15s;border-radius:6px}
+.settlement-choice-row.is-inactive:hover,.settlement-choice-row.is-inactive:focus-within{background:rgba(137,242,220,.09)}
+.settlement-choice-row.is-inactive:focus-within{outline:2px solid var(--mint-bright);outline-offset:3px}
+.settlement-choice-row button{display:flex;align-items:center;flex-wrap:wrap;gap:5px 10px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.settlement-choice-row button::after{position:absolute;inset:0;content:""}
+.settlement-choice-row button small{color:#a6d2ba;font-size:10px;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.settlement-choice-row.is-inactive:hover dt,.settlement-choice-row.is-inactive:hover dd{color:#f1fff8}
+#calculator-tax-details,#calculator-cost-details{scroll-margin-top:20px}
 .settlement-stage{margin-top:16px;padding:17px;border:1px solid var(--line);border-radius:10px;background:rgba(3,13,17,.23)}
 .settlement-stage h4{display:flex;align-items:center;gap:8px;margin:0 0 14px;color:#d4e9e0;font-size:14px;line-height:1.5}
 .settlement-stage h4 i{width:25px;height:25px;display:grid;place-items:center;flex-shrink:0;border:1px solid rgba(225,185,99,.3);border-radius:7px;color:#e5c884;font-size:10px;font-style:normal}
@@ -134,6 +156,9 @@ input:focus-visible{outline:2px solid var(--mint-bright);outline-offset:3px}
 .deadline-note b{color:#c7dcd2}
 @media(max-width:600px){.funding-metrics{grid-template-columns:1fr}.funding-metrics>div{display:flex;align-items:center;justify-content:space-between;gap:12px}.funding-metrics b{margin:0}.settlement-table .settlement-total{flex-wrap:wrap}.move-in-block .subhead{align-items:flex-start;flex-wrap:wrap;gap:8px}.calculator-side .disclosure-body dl{font-size:11px}}
 @media print{
+  .contract-due,.contract-due>b,.financing-line,.financing-line b,.financing-cash,.financing-cash b,.financing-note,.financing-note b,.separate-contract-date{color:#254534!important}
+  .financing-lines{border-color:#bdd0c3}.schedule-table .financing-cell{min-width:0}
+  .settlement-choice-row button small{display:none}.settlement-choice-row button{color:#344c43!important}.settlement-choice-row button::after{display:none}
   .interim-rate-control,.mortgage-enable,.balance-ltv-control{display:none!important}
   .settlement-stage,.mortgage-overview{border-color:#bccfc4;background:#fff!important;break-inside:avoid}.settlement-stage h4,.settlement-stage h4 i,.stage-note,.mortgage-overview p,.mortgage-overview p b{color:#304e3c!important}
   .settlement-subtotal{border-color:#bbd0c1!important;background:#f8fcf9!important}.settlement-subtotal dt,.settlement-subtotal dd,.mortgage-keyfigures b{color:#234f39!important}

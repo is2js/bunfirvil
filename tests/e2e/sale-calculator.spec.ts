@@ -46,6 +46,7 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await page.goto('calculator/');
 
   await expect(page.getByRole('heading', { name: '내 자금 계획' })).toBeVisible();
+  await expect(page.locator('a[href*="joy-papa.github.io"]')).toHaveCount(0);
   await expect(page.locator('#calculator-context-header')).toContainText('55A · 5층 이상');
   await expect(page.locator('.context-highlight')).toContainText('55A · 5층 이상 · 본청약 기준');
   await expect(page.getByLabel('본청약(신규신청자)')).toBeChecked();
@@ -67,7 +68,13 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(countdown('별도 안내')).toHaveText('일정 미정');
   await expect(countdown('입주 시')).toHaveText('예정월 D-833');
   await expect(page.locator('#calculator-deadline-today')).toContainText('2026.10.22');
-  await expect(page.locator('.deadline-note')).toContainText('발코니·추가선택품목의 계약 일정은 별도 안내');
+  await expect(page.locator('.deadline-note')).toContainText('계약일은 별도 안내');
+  const mainFirstInterim = page.locator('[data-finance-due="2027-04-12"]');
+  await expect(mainFirstInterim.locator('[data-flow="loan-draw"]')).toContainText('63,651,000원');
+  await expect(mainFirstInterim.locator('[data-flow="deferred-interest"]')).toHaveCount(0);
+  await expect(page.locator('[data-finance-due="2028-02-14"] [data-flow="cash-due"] b')).toHaveText('0원');
+  await expect(page.locator('[data-finance-due="입주 시"] [data-flow="interim-repayment"]')).toContainText('127,302,000원');
+  await expect(page.locator('[data-finance-due="입주 시"] [data-flow="deferred-interest"]')).toContainText('7,073,109원');
   // Seoul midnight changes date labels only; open sections and quote state survive.
   await page.clock.fastForward(1_100);
   await expect(countdown('계약 시')).toHaveText('시작 D-12');
@@ -85,10 +92,20 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('.schedule-table tbody')).not.toContainText('중도금 2차');
   await expect(page.locator('[data-payment-due="2027-04-12"]')).toHaveCount(0);
   await expect(countdown('2028-02-14')).toHaveText('D-479');
+  await expect(page.locator('[data-finance-due="2028-02-14"] [data-flow="loan-draw"]')).toContainText('127,302,000원');
+  await expect(page.locator('[data-finance-due="입주 시"] [data-flow="deferred-interest"]')).toContainText('4,924,669원');
 
   const taxDetails = page.locator('#calculator-tax-details');
-  await taxDetails.locator('summary').click();
-  await page.getByLabel('취득세 추정 활성화').check();
+  await page.locator('#calculator-settlement-rate-input').fill('4.2');
+  const taxShortcut = page.locator('[data-enable-estimate="tax"]');
+  await expect(taxShortcut).toHaveCSS('cursor', 'pointer');
+  await taxShortcut.hover();
+  await taxShortcut.click();
+  await expect(page.getByLabel('취득세 추정 활성화')).toBeChecked();
+  await expect(page.locator('#calculator-settlement-rate-input')).toHaveValue('4.2');
+  await expect(page.getByLabel('사전청약 당첨자')).toBeChecked();
+  await page.locator('#calculator-settlement-rate-input').fill('4.0');
+  await page.locator('#calculator-settlement-rate-input').press('Enter');
   await expect(page.locator('#calculator-tax-details')).toHaveAttribute('open', '');
   await expect(page.locator('#calculator-option-details')).toHaveAttribute('open', '');
   await taxDetails.locator('.relief-options label').filter({ hasText: '생애최초' }).click();
@@ -153,13 +170,22 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
 
   const unchangedContract = await page.locator('.hero-total strong').textContent();
   const costs = page.locator('#calculator-cost-details');
-  await costs.locator('summary').click();
-  await page.getByLabel('미납 부대비용 반영', { exact: true }).check();
+  await page.locator('#calculator-settlement-rate-input').fill('4.6');
+  await page.locator('[data-enable-estimate="costs"]').click();
+  await expect(page.getByLabel('미납 부대비용 반영', { exact: true })).toBeChecked();
+  await expect(page.locator('#calculator-settlement-rate-input')).toHaveValue('4.6');
+  await expect(page.locator('#calculator-children')).toHaveValue('2');
+  await expect(page.locator('#calculator-settlement-period')).toHaveValue('9');
+  await page.locator('#calculator-settlement-rate-input').fill('4.4');
+  await page.locator('#calculator-settlement-rate-input').press('Enter');
   await page.locator('#calculator-cost-management').fill('1000000');
   await page.locator('#calculator-cost-management').press('Tab');
   await expect(page.locator('#calculator-extra-cost-total')).toHaveText('1,000,000원');
   await expect(page.locator('.hero-total strong')).toHaveText(unchangedContract!);
   await expect(costs).toHaveAttribute('open', '');
+  await page.getByLabel('미납 부대비용 반영', { exact: true }).uncheck();
+  await page.locator('[data-enable-estimate="costs"]').click();
+  await expect(page.locator('#calculator-cost-management')).toHaveValue('1000000');
   await page.locator('#calculator-cost-management').fill('');
   await page.locator('#calculator-cost-management').press('Tab');
   await expect(page.locator('#calculator-extra-cost-total')).toHaveText('0원');
@@ -248,3 +274,26 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('.contract-breakdown .discount')).toContainText('마이너스 감액');
   await expect(page.locator('.contract-breakdown .discount')).toContainText('−29,260,000원');
 });
+
+const priceCases = [
+  { name: '별도 옵션 포함', ids: ['system-ac-2-general', 'wide-plank-floor-finish'], total: '647,068,000원', mainDeposit: '64,706,800원', preDeposit: '32,353,400원', mainBalance: '452,405,600원', preBalance: '485,301,000원', separate: true },
+  { name: '별도 기타 옵션 없음', ids: ['system-ac-2-general'], total: '645,248,000원', mainDeposit: '64,524,800원', preDeposit: '32,262,400원', mainBalance: '451,313,600원', preBalance: '483,936,000원', separate: false },
+  { name: '마이너스 옵션', ids: ['bundang-minus-option-package'], total: '612,388,000원', mainDeposit: '61,238,800원', preDeposit: '30,619,400원', mainBalance: '428,671,600원', preBalance: '459,291,000원', separate: false },
+];
+
+for (const scenario of priceCases) for (const plan of ['main-subscription', 'pre-subscription'] as const) {
+  test(`납부 사례: ${scenario.name} · ${plan}`, async ({ page }) => {
+    await seedCalculatorSession(page, { schemaVersion: 1, unitType: '55A', priceFloorBand: '5+', applicantRoute: plan, optionIds: scenario.ids, returnUrl: RETURN_URL });
+    await page.goto('calculator/');
+    await expect(page.locator('.hero-total strong')).toHaveText(scenario.total);
+    const main = plan === 'main-subscription';
+    await expect(page.locator('[data-finance-due="계약 시"] .contract-due b')).toHaveText(main ? scenario.mainDeposit : scenario.preDeposit);
+    await expect(page.locator('[data-finance-due="입주 시"] .contract-due b')).toHaveText(main ? scenario.mainBalance : scenario.preBalance);
+    await expect(page.locator('[data-finance-due="별도 안내"]')).toHaveCount(scenario.separate ? 1 : 0);
+    await expect(page.locator('[data-finance-due="2027-04-12"]')).toHaveCount(main ? 1 : 0);
+    await expect(page.locator('[data-finance-due="2028-02-14"] [data-flow="deferred-interest"]')).toHaveCount(0);
+    await expect(page.locator('[data-finance-due="입주 시"] [data-flow="deferred-interest"]')).toHaveCount(1);
+    await expect(page.locator('[data-flow="interim-repayment"]')).toHaveCount(1);
+    await expect(page.locator('a[href*="joy-papa.github.io"]')).toHaveCount(0);
+  });
+}
