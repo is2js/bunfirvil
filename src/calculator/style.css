@@ -81,6 +81,42 @@ input:focus-visible{outline:2px solid var(--mint-bright);outline-offset:3px}
 .calculator-side .disclosure-body dd{overflow-wrap:anywhere}
 .quote-layout>*,.calculator-side,.calculator-hero>*{min-width:0}
 .schedule-scroll{width:100%;max-width:100%}
+.settlement-stage{margin-top:16px;padding:17px;border:1px solid var(--line);border-radius:10px;background:rgba(3,13,17,.23)}
+.settlement-stage h4{display:flex;align-items:center;gap:8px;margin:0 0 14px;color:#d4e9e0;font-size:14px;line-height:1.5}
+.settlement-stage h4 i{width:25px;height:25px;display:grid;place-items:center;flex-shrink:0;border:1px solid rgba(225,185,99,.3);border-radius:7px;color:#e5c884;font-size:10px;font-style:normal}
+.settlement-stage .stage-note,.mortgage-overview>p{margin:12px 0 0;color:#a1b7ac;font-size:11px;line-height:1.75}
+.settlement-subtotal{margin-top:7px;padding:12px 10px!important;border:1px solid rgba(92,211,189,.22)!important;border-radius:7px;background:rgba(92,211,189,.05)}
+.settlement-subtotal dt{color:#d0e4d9;font-weight:750}
+.settlement-subtotal dd{color:var(--mint-bright);font-size:18px}
+.settlement-table .repayment-subtotal{border-color:rgba(225,185,99,.3)!important;background:rgba(225,185,99,.07)}
+.repayment-subtotal dd{color:#f0d18b}
+.non-balance-stage{background:rgba(225,185,99,.025)}
+.settlement-total dt small{display:block;margin-top:7px;color:#a4b7a7;font-size:10px;font-weight:400}
+.interim-rate-control{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:13px 0;padding:13px;border:1px solid rgba(92,211,189,.22);border-radius:9px;background:linear-gradient(110deg,rgba(92,211,189,.07),rgba(225,185,99,.03))}
+.interim-rate-control>label{display:grid;gap:5px;color:#c0d7cc;font-size:12px;font-weight:750}
+.interim-rate-control small{color:#849f91;font-size:10px;font-weight:400}
+.interim-rate-input{display:flex;align-items:center;gap:8px;max-width:100%}
+.interim-rate-input>span{display:flex;align-items:center;gap:4px;padding:5px 10px;border:1px solid rgba(225,185,99,.34);border-radius:7px;background:#07161a}
+.interim-rate-input input{width:54px;min-width:0;padding:2px 0;border:0;background:transparent;color:#f2dca6;text-align:center;font-size:20px;font-weight:800;appearance:textfield;-moz-appearance:textfield}
+.interim-rate-input input::-webkit-inner-spin-button,.interim-rate-input input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.interim-rate-input b{color:#c4ba97;font-size:12px}
+.interim-rate-input button{width:34px;height:36px;padding:0;border:1px solid rgba(151,193,187,.25);border-radius:7px;background:#10242a;color:#ddf4e8;font-size:19px;cursor:pointer}
+.interim-rate-input button:hover{border-color:var(--mint);background:#19362f}
+.interim-rate-input button:disabled,.interim-rate-input input:disabled{opacity:.45;cursor:not-allowed}
+.mortgage-enable{flex-wrap:wrap;cursor:pointer;font-size:13px}
+.mortgage-enable>b{margin-left:auto;color:var(--gold);font-size:12px}
+.mortgage-overview{margin:14px 0;padding:14px;border:1px solid rgba(225,185,99,.22);border-radius:8px;background:rgba(225,185,99,.035)}
+.mortgage-required{display:inline-block;color:#e8ca89;font-size:11px;font-weight:750;line-height:1.6}
+.mortgage-overview p b{color:#d6e6d9}
+.balance-ltv-control{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;color:#c0d2c6;font-size:12px}
+.balance-ltv-control select{min-width:96px;min-height:38px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#091a1d;color:#d8f0df;cursor:pointer}
+.mortgage-keyfigures{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:13px}
+.mortgage-keyfigures>div{min-width:0;padding:10px;border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,.12)}
+.mortgage-keyfigures span{display:block;color:#8fa79a;font-size:10px;line-height:1.5}
+.mortgage-keyfigures b{display:block;margin-top:7px;color:#e1d6ad;font-size:14px;overflow-wrap:anywhere}
+.mortgage-reference{display:flex;flex-wrap:wrap;gap:7px 13px}
+.mortgage-reference a,.deadline-note a{color:var(--mint-bright);text-underline-offset:3px}
+@media(max-width:600px){.settlement-stage{padding:13px}.settlement-subtotal{flex-wrap:wrap}.mortgage-keyfigures{grid-template-columns:1fr}.mortgage-keyfigures>div{display:flex;justify-content:space-between;align-items:center;gap:8px}.mortgage-keyfigures b{margin:0;white-space:nowrap}.interim-rate-input button{width:40px;height:40px}}
 .deadline-summary{margin:14px 0;display:flex;align-items:center;flex-wrap:wrap;gap:10px 18px;padding:15px 16px;border:1px solid rgba(92,211,189,.26);border-radius:9px;background:linear-gradient(110deg,rgba(92,211,189,.09),rgba(225,185,99,.04))}
 .deadline-summary>div{flex:1;min-width:150px;display:grid;gap:5px}
 .deadline-summary span{color:#9bb5ac;font-size:11px}
@@ -98,6 +134,10 @@ input:focus-visible{outline:2px solid var(--mint-bright);outline-offset:3px}
 .deadline-note b{color:#c7dcd2}
 @media(max-width:600px){.funding-metrics{grid-template-columns:1fr}.funding-metrics>div{display:flex;align-items:center;justify-content:space-between;gap:12px}.funding-metrics b{margin:0}.settlement-table .settlement-total{flex-wrap:wrap}.move-in-block .subhead{align-items:flex-start;flex-wrap:wrap;gap:8px}.calculator-side .disclosure-body dl{font-size:11px}}
 @media print{
+  .interim-rate-control,.mortgage-enable,.balance-ltv-control{display:none!important}
+  .settlement-stage,.mortgage-overview{border-color:#bccfc4;background:#fff!important;break-inside:avoid}.settlement-stage h4,.settlement-stage h4 i,.stage-note,.mortgage-overview p,.mortgage-overview p b{color:#304e3c!important}
+  .settlement-subtotal{border-color:#bbd0c1!important;background:#f8fcf9!important}.settlement-subtotal dt,.settlement-subtotal dd,.mortgage-keyfigures b{color:#234f39!important}
+  .mortgage-keyfigures>div{border-color:#bccfc4;background:#fff!important}.mortgage-required,.mortgage-keyfigures span,.mortgage-reference a,.deadline-note a{color:#47613e!important}
   .deadline-summary{border-color:#adc9bd;background:#f5fbf8!important;break-inside:avoid}.deadline-summary strong,.deadline-summary span,.deadline-summary small,#calculator-deadline-today{color:#294e3d!important}
   .deadline-next,.schedule-countdown b{color:#17644a!important;border-color:#b7d2c6;background:#f5fbf8!important}.schedule-countdown small,.deadline-note,.deadline-note b{color:#3b5648!important}
   .move-in-block{border-color:#b9c9c3}.move-in-block>p,.payment-explainer p,.payment-explainer li,.settlement-table dt{color:#344c43!important}

@@ -15,6 +15,11 @@ export interface BundangPaymentCountdownV1 {
 
 const DAY_MS = 86_400_000;
 const SEOUL_OFFSET_MS = 9 * 60 * 60 * 1_000;
+export const BUNDANG_PAYMENT_SCHEDULE_SOURCE = {
+  revision: '2026-07-02',
+  url: 'https://www.elife.co.kr/jsp/front/po/210114/static/pdf/210114_notice_260702.pdf',
+  contractPages: [1, 3, 25],
+} as const;
 
 /** A Seoul calendar day, independent of the visitor's device time zone. */
 export function seoulDateKey(now: Date = new Date()): string {
@@ -33,7 +38,7 @@ function calendarDay(date: string | undefined): number | null {
 export function paymentDeadlineForDue(due: string): BundangPaymentDeadlineV1 {
   if (due === '계약 시') return {
     id: 'contract', label: '계약금', precision: 'range',
-    startDate: '2026-11-07', endDate: '2026-11-13', dateLabel: '2026.11.07~11.13',
+    startDate: '2026-11-04', endDate: '2026-11-13', dateLabel: '2026.11.04~11.13',
   };
   if (due === '2027-04-12') return {
     id: 'interim-1', label: '중도금 1차', precision: 'date',

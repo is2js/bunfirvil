@@ -38,17 +38,46 @@ describe('Bundang move-in settlement', () => {
       expect(result.totalOwnCashWon + result.mortgageAppliedWon).toBe(result.totalAcquisitionBudgetWon);
       expect(result.mortgageAppliedWon).toBe(400_000_000);
       expect(result.mortgageExcessWon).toBe(0);
+      expect(result.housingBalanceWon + result.optionBalanceWon).toBe(result.balancePaymentsWon);
+      expect(result.preMortgageRepaymentWon).toBe(result.interimLoanRepaymentWon + result.deferredInterestWon);
+      expect(result.nonBalanceCostsWon).toBe(result.preMortgageRepaymentWon + 8_000_000);
+      expect(result.balanceCashAfterMortgageWon).toBe(result.balancePaymentsWon - result.mortgageAppliedWon);
+      expect(result.requiredCashAtMoveInWon).toBe(result.nonBalanceCostsWon + result.balanceCashAfterMortgageWon);
     }
   });
 
-  it('caps mortgage application at uses, discloses excess, and never creates negative required cash', () => {
+  it.each(['main-subscription', 'pre-subscription'] as const)('caps the mortgage at housing/balcony balances without funding interim debt, options or costs under %s', (plan) => {
+    const quote = contract(plan);
+    const result = calculateBundangMoveInSettlement({
+      paymentSchedules: quote.paymentSchedules, interimFunding: 'loan', mortgagePrincipalWon: 900_000_000,
+      interimInterestWon: 5_000_000, acquisitionTaxWon: 7_000_000,
+      additionalCosts: [{ id: 'moving', amountWon: 1_000_000 }],
+    });
+    expect(result.housingBalanceWon).toBe(quote.paymentSchedules
+      .filter((schedule) => schedule.target === 'supply' || schedule.target === 'balcony')
+      .flatMap((schedule) => schedule.installments)
+      .filter((installment) => installment.id === 'balance')
+      .reduce((sum, installment) => sum + installment.amountWon, 0));
+    expect(result.mortgageAppliedWon).toBe(result.housingBalanceWon);
+    expect(result.mortgageExcessWon).toBe(900_000_000 - result.housingBalanceWon);
+    expect(result.preMortgageRepaymentWon).toBe(quote.adjustedSupplyPriceWon * 0.2 + 5_000_000);
+    expect(result.balanceCashAfterMortgageWon).toBe(result.optionBalanceWon);
+    expect(result.requiredCashAtMoveInWon).toBe(result.preMortgageRepaymentWon + 8_000_000 + result.optionBalanceWon);
+    expect(result.totalOwnCashWon + result.mortgageAppliedWon).toBe(result.totalAcquisitionBudgetWon);
+  });
+
+  it('still requires the option balance and ancillary costs when cash-paid interims leave excess mortgage capacity', () => {
     const quote = contract();
     const result = calculateBundangMoveInSettlement({
       paymentSchedules: quote.paymentSchedules, interimFunding: 'cash', mortgagePrincipalWon: 900_000_000,
+      interimInterestWon: 5_000_000, acquisitionTaxWon: 7_000_000,
+      additionalCosts: [{ id: 'moving', amountWon: 1_000_000 }],
     });
-    expect(result.mortgageAppliedWon).toBe(result.balancePaymentsWon);
-    expect(result.mortgageExcessWon).toBe(900_000_000 - result.balancePaymentsWon);
-    expect(result.requiredCashAtMoveInWon).toBe(0);
+    expect(result.preMortgageRepaymentWon).toBe(0);
+    expect(result.nonBalanceCostsWon).toBe(8_000_000);
+    expect(result.balanceCashAfterMortgageWon).toBe(3_252_000);
+    expect(result.requiredCashAtMoveInWon).toBe(11_252_000);
+    expect(result.mortgageAppliedWon).toBe(result.housingBalanceWon);
     expect(result.totalOwnCashWon + result.mortgageAppliedWon).toBe(result.totalAcquisitionBudgetWon);
   });
 
@@ -60,6 +89,10 @@ describe('Bundang move-in settlement', () => {
     expect(result.totalAcquisitionBudgetWon).toBe(quote.contractTotalWon);
     expect(result.totalOwnCashWon).toBe(quote.contractTotalWon);
     expect(result.deferredInterestWon).toBe(0);
+    expect(result.optionBalanceWon).toBe(0);
+    expect(result.balancePaymentsWon).toBe(result.housingBalanceWon);
+    expect(result.preMortgageRepaymentWon).toBe(result.interimLoanRepaymentWon);
+    expect(result.nonBalanceCostsWon).toBe(result.interimLoanRepaymentWon);
   });
 
   it('keeps additional move-in costs separate from contract and option totals without mutating the schedule', () => {
@@ -82,7 +115,12 @@ describe('Bundang move-in settlement', () => {
       paymentSchedules: [], interimFunding: 'loan', interimInterestWon: 1.4,
       acquisitionTaxWon: 2.6, additionalCosts: [{ id: 'other', amountWon: 3.5 }], mortgagePrincipalWon: 0.5,
     });
-    expect(result).toMatchObject({ deferredInterestWon: 1, acquisitionTaxWon: 3, additionalCostsWon: 4, mortgageAppliedWon: 1, requiredCashAtMoveInWon: 7 });
+    expect(result).toMatchObject({
+      deferredInterestWon: 1, acquisitionTaxWon: 3, additionalCostsWon: 4,
+      preMortgageRepaymentWon: 1, nonBalanceCostsWon: 8, housingBalanceWon: 0, optionBalanceWon: 0,
+      mortgageAppliedWon: 0, mortgageExcessWon: 1, balanceCashAfterMortgageWon: 0,
+      requiredCashAtMoveInWon: 8,
+    });
     expect(Object.values(result).every(Number.isInteger)).toBe(true);
   });
 

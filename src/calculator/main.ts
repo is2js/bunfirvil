@@ -5,7 +5,7 @@ import { BUNDANG_MINUS_OPTION_ID } from '../game/minus-option';
 import { BUNDANG_INTERIM_LOAN_ASSUMED_MOVE_IN_DATE, calculateBundangInterimLoanInterest, calculateBundangSaleFinance, type BundangInterimLoanInterestQuoteV1, type BundangMortgageChildCount, type BundangPaymentPlanKind, type BundangSaleFloorBand, type BundangSaleUnitType } from '../game/bundang-sale-finance';
 import { calculateBundangMoveInSettlement } from '../game/bundang-move-in-finance';
 import { calculateBundangMortgageSettlement } from '../game/bundang-mortgage-settlement';
-import { countdownForDeadline, paymentDeadlineForDue, seoulDateKey } from '../game/bundang-payment-timeline';
+import { BUNDANG_PAYMENT_SCHEDULE_SOURCE, countdownForDeadline, paymentDeadlineForDue, seoulDateKey } from '../game/bundang-payment-timeline';
 import { clearSaleCalculatorContext, readSaleCalculatorLaunchContext, type SaleCalculatorContextV1 } from '../game/sale-calculator-context';
 import { resolveSaleCalculatorOptionLines, type SaleCalculatorOptionLineV1 } from '../game/sale-calculator-options';
 
@@ -71,7 +71,6 @@ class CalculatorApp {
   private plan: BundangPaymentPlanKind;
   private taxEnabled = false;
   private taxReliefMode: TaxReliefMode = 'none';
-  private interimLoanEnabled = false;
   private interimRatePercent = 4;
   private mortgageEnabled = false;
   private ltv: 30 | 40 | 50 | 60 | 70 = 70;
@@ -132,7 +131,7 @@ class CalculatorApp {
     });
     const moveIn = calculateBundangMoveInSettlement({
       paymentSchedules: result.paymentSchedules, interimFunding: this.interimFunding,
-      interimInterestWon: this.interimFunding === 'loan' && this.interimLoanEnabled ? interimLoan.totalInterestWon : 0,
+      interimInterestWon: this.interimFunding === 'loan' ? interimLoan.totalInterestWon : 0,
       mortgagePrincipalWon: result.mortgage?.principalWon ?? 0,
       acquisitionTaxWon: this.taxEnabled ? result.acquisitionTax.totalTaxWon : 0,
       additionalCosts: this.costsEnabled ? COST_ITEMS.map(([id]) => ({ id, amountWon: this.costs[id] })) : [],
@@ -198,7 +197,7 @@ class CalculatorApp {
   private scheduleTable(rows: ScheduleRow[]): string {
     if (!rows.length) return '<div class="empty-state">납부 일정 데이터를 불러오지 못했습니다.</div>';
     const cell = (value: number) => value ? money(value) : '—';
-    return `<div class="schedule-scroll"><table class="schedule-table"><thead><tr><th>회차</th><th>납부일 · D-day</th><th>주택</th><th>발코니</th><th>시스템<br>에어컨</th><th>기타 옵션</th><th>회차 합계</th></tr></thead><tbody>${rows.map((row) => { const total = row.supply + row.balcony + row.systemAc + row.other; const phase = row.label === '계약금' ? 'contract' : row.label === '잔금' ? 'balance' : 'interim'; return `<tr data-phase="${phase}"><th><strong>${escape(row.label)}</strong></th><td class="schedule-date"><span>${escape(row.due)}</span><span class="schedule-countdown" data-payment-due="${escape(row.dueKey)}"></span></td><td>${cell(row.supply)}</td><td>${cell(row.balcony)}</td><td>${cell(row.systemAc)}</td><td>${cell(row.other)}</td><td class="total">${money(total)}</td></tr>`; }).join('')}</tbody></table></div><p class="deadline-note">계약 기간은 <b>주택 계약 기준</b>입니다. 발코니·추가선택품목의 계약 일정은 별도 안내를 확인하세요. 입주는 <b>2029년 2월 예정</b>이며 확정일이 아닙니다. 경과 표시는 납부 완료를 뜻하지 않습니다.</p>`;
+    return `<div class="schedule-scroll"><table class="schedule-table"><thead><tr><th>회차</th><th>납부일 · D-day</th><th>주택</th><th>발코니</th><th>시스템<br>에어컨</th><th>기타 옵션</th><th>회차 합계</th></tr></thead><tbody>${rows.map((row) => { const total = row.supply + row.balcony + row.systemAc + row.other; const phase = row.label === '계약금' ? 'contract' : row.label === '잔금' ? 'balance' : 'interim'; return `<tr data-phase="${phase}"><th><strong>${escape(row.label)}</strong></th><td class="schedule-date"><span>${escape(row.due)}</span><span class="schedule-countdown" data-payment-due="${escape(row.dueKey)}"></span></td><td>${cell(row.supply)}</td><td>${cell(row.balcony)}</td><td>${cell(row.systemAc)}</td><td>${cell(row.other)}</td><td class="total">${money(total)}</td></tr>`; }).join('')}</tbody></table></div><p class="deadline-note">계약 기간은 <a href="${BUNDANG_PAYMENT_SCHEDULE_SOURCE.url}" target="_blank" rel="noreferrer">2026.07.02 정정공고</a>의 <b>주택 계약 기준</b>입니다(11월 4~13일, 10~16시, 주말 포함). 발코니·추가선택품목의 계약 일정은 별도 안내를 확인하세요. 입주는 <b>2029년 2월 예정</b>이며 확정일이 아닙니다. 경과 표시는 납부 완료를 뜻하지 않습니다.</p>`;
   }
 
   private refreshCountdowns(): void {
@@ -265,8 +264,13 @@ class CalculatorApp {
     const balconyInterim = interimRows.reduce((total, row) => total + row.balcony, 0);
     const systemAcInterim = interimRows.reduce((total, row) => total + row.systemAc, 0);
     const otherInterim = interimRows.reduce((total, row) => total + row.other, 0);
-    const result = this.interimFunding === 'loan' && this.interimLoanEnabled ? `<dl><dt>은행 집단대출 원금</dt><dd>${money(details.totalPrincipalWon)}</dd><dt class="calculation-total-label">입주 시 납부 예상 이자</dt><dd class="calculation-total">${money(details.totalInterestWon)}</dd><dt>발코니 중도금 · 자납</dt><dd>${money(balconyInterim)}</dd><dt>시스템에어컨 중도금 · 자납</dt><dd>${money(systemAcInterim)}</dd><dt>기타 옵션 중도금 · 자납</dt><dd>${money(otherInterim)}</dd><dt>계산상 입주 기준일</dt><dd>${details.assumedMoveInDate}</dd></dl><ul class="tranche-list">${details.tranches.map((tranche, index) => `<li><span>${this.plan === 'main-subscription' ? `${index + 1}차 · ` : ''}${tranche.executionDate}<small>${tranche.days}일 후불</small></span><b>${money(tranche.principalWon)}<small>이자 ${money(tranche.interestWon)}</small></b></li>`).join('')}</ul>` : '<p class="muted-copy">활성화하면 주택 공급대금 중도금 20%에 대한 이자후불 예상액을 계산합니다.</p>';
-    return `<details id="calculator-interim-loan-details" class="calculator-card disclosure" ${this.interimLoanEnabled ? 'open' : ''}><summary>중도금 대출 이자 추정 <span>펼치기</span></summary><div class="disclosure-body"><div class="loan-scope"><span><small>집단대출 추정 대상</small><b>주택 공급대금 중도금 20%</b></span><span><small>별도 현금납부 예상</small><b>${money(selfFunded)}</b></span></div><label class="enable-row"><input id="calculator-interim-loan-enabled" type="checkbox" ${this.interimLoanEnabled ? 'checked' : ''}> 이자후불제 추정 활성화</label><label class="date-field">입주 정산 기준일 · 계획값<input id="calculator-move-in-date" type="date" min="2028-02-15" max="2099-12-31" value="${this.assumedMoveInDate}"></label><div class="rate-stepper" aria-label="예상 연 금리"><span>예상 연 금리</span><div><button id="calculator-interim-rate-down" type="button" ${this.interimLoanEnabled ? '' : 'disabled'} aria-label="금리 0.5%포인트 낮추기">−</button><strong>${this.interimRatePercent.toFixed(1)}%</strong><button id="calculator-interim-rate-up" type="button" ${this.interimLoanEnabled ? '' : 'disabled'} aria-label="금리 0.5%포인트 높이기">＋</button></div></div>${result}<p class="legal-copy">공고문은 중도금 융자알선을 <b>전체 공급대금의 20% 범위</b>로 명시합니다. 발코니·시스템에어컨·기타 옵션에는 계약상 중도금 회차가 있지만 별도 계약·계좌이며, 은행 집단대출 포함 근거가 없어 자납으로 분리했습니다. 단지 금융기관·금리는 미정이며 4.0%는 현재 금리를 뜻하지 않는 계획값입니다. 기준일 기본값은 2029-02-01이며 입주지정기간 최초일·은행 실제 실행일이 확정되면 다시 확인하세요. 실제 이자는 윤년·실행일·일수 산정에 따라 달라질 수 있습니다. 자납을 선택하면 원금 상환과 후불이자는 입주 정산에서 제외됩니다.</p></div></details>`;
+    const result = this.interimFunding === 'loan' ? `<dl><dt>은행 집단대출 원금</dt><dd>${money(details.totalPrincipalWon)}</dd><dt class="calculation-total-label">입주 시 납부 예상 이자</dt><dd class="calculation-total">${money(details.totalInterestWon)}</dd><dt>발코니 중도금 · 자납</dt><dd>${money(balconyInterim)}</dd><dt>시스템에어컨 중도금 · 자납</dt><dd>${money(systemAcInterim)}</dd><dt>기타 옵션 중도금 · 자납</dt><dd>${money(otherInterim)}</dd><dt>계산상 입주 기준일</dt><dd>${details.assumedMoveInDate}</dd></dl><ul class="tranche-list">${details.tranches.map((tranche, index) => `<li><span>${this.plan === 'main-subscription' ? `${index + 1}차 · ` : ''}${tranche.executionDate}<small>${tranche.days}일 후불</small></span><b>${money(tranche.principalWon)}<small>예상 이자 ${money(tranche.interestWon)}</small></b></li>`).join('')}</ul>` : '<p class="muted-copy">전액 자납 가정에서는 중도금 대출 원금과 후불이자를 입주 정산에 넣지 않습니다.</p>';
+    return `<details id="calculator-interim-loan-details" class="calculator-card disclosure"><summary>중도금 대출 이자 추정 <span>펼치기</span></summary><div class="disclosure-body"><div class="loan-scope"><span><small>집단대출 추정 대상</small><b>주택 공급대금 중도금 20%</b></span><span><small>별도 현금납부 예상</small><b>${money(selfFunded)}</b></span></div><label class="enable-row"><input id="calculator-interim-loan-enabled" type="checkbox" ${this.interimFunding === 'loan' ? 'checked' : ''}> 집단대출 가정 · 후불이자 반영</label><label class="date-field">입주 정산 기준일 · 계획값<input id="calculator-move-in-date" type="date" min="2028-02-15" max="2099-12-31" value="${this.assumedMoveInDate}"></label>${this.interimRateControl('calculator-interim-rate')}${result}<p class="legal-copy">공고문은 중도금 융자알선을 <b>전체 공급대금의 20% 범위</b>로 명시합니다. 발코니·시스템에어컨·기타 옵션에는 계약상 중도금 회차가 있지만 별도 계약·계좌이며, 은행 집단대출 포함 근거가 없어 자납으로 분리했습니다. 단지 금융기관·금리는 미정이며 4.0%는 현재 금리를 뜻하지 않는 계획값입니다. 기준일 기본값은 2029-02-01이며 입주지정기간 최초일·은행 실제 실행일이 확정되면 다시 확인하세요. <b>실행 예정분을 포함한 전체 예상 후불이자</b>로 현재 발생한 이자가 아닙니다. 실제 이자는 윤년·실행일·일수 산정에 따라 달라질 수 있습니다. 자납을 선택하면 원금 상환과 후불이자는 입주 정산에서 제외됩니다.</p></div></details>`;
+  }
+
+  private interimRateControl(prefix: string): string {
+    const disabled = this.interimFunding === 'loan' ? '' : 'disabled';
+    return `<div class="interim-rate-control"><label for="${prefix}-input">중도금 예상 연 금리<small>0.1%p 단위 · 계획값</small></label><div class="interim-rate-input"><button id="${prefix}-down" data-interim-rate-action="down" type="button" ${disabled} aria-label="금리 0.1%포인트 낮추기">−</button><span><input id="${prefix}-input" data-interim-rate-input type="number" inputmode="decimal" min="0" max="15" step="0.1" value="${this.interimRatePercent.toFixed(1)}" ${disabled} aria-label="중도금 예상 연 금리"><b aria-hidden="true">%</b></span><button id="${prefix}-up" data-interim-rate-action="up" type="button" ${disabled} aria-label="금리 0.1%포인트 높이기">＋</button></div></div>`;
   }
 
   private mortgageDetails(quote: Quote): string {
@@ -286,24 +290,45 @@ class CalculatorApp {
 
   private moveInMarkup(quote: Quote): string {
     const value = quote.moveIn;
-    const missing = [this.interimFunding === 'loan' && !this.interimLoanEnabled ? '후불이자' : '', !this.taxEnabled ? '취득 관련 세금' : '', !this.costsEnabled ? '입주 부대비용' : ''].filter(Boolean);
+    const missing = [!this.taxEnabled ? '취득 관련 세금' : '', !this.costsEnabled ? '입주 부대비용' : ''].filter(Boolean);
     return `<section id="calculator-move-in-settlement" class="move-in-block" aria-labelledby="move-in-heading">
       <div class="subhead"><h3 id="move-in-heading">입주 시 자금 정산</h3><span class="assumption-chip">현재 선택한 가정 기준</span></div>
-      <p>계약 총액과 입주 때 준비할 현금은 다릅니다. 중도금 대출은 입주 시 정리할 채무이며, 잔금 모기지에서 한 번만 차감합니다.</p>
+      <p>계약 총액과 입주 때 준비할 현금은 다릅니다. <b>중도금 대출은 본인자금으로 먼저 정리</b>하고 전용 모기지는 주택·발코니 잔금에만 반영합니다.</p>
       <fieldset class="funding-switch"><legend>주택 중도금 20% 납부 방식</legend><label><input id="calculator-funding-loan" name="interim-funding" value="loan" type="radio" ${this.interimFunding === 'loan' ? 'checked' : ''}> 집단대출 가정</label><label><input id="calculator-funding-cash" name="interim-funding" value="cash" type="radio" ${this.interimFunding === 'cash' ? 'checked' : ''}> 전액 자납 가정</label></fieldset>
-      <dl class="settlement-table"><div><dt>잔금 · 주택·발코니·옵션</dt><dd>${money(value.balancePaymentsWon)}</dd></div>
-        <div><dt>＋ 중도금 대출 원금 상환</dt><dd id="calculator-interim-repayment">${money(value.interimLoanRepaymentWon)}</dd></div>
-        <div><dt>＋ 후불이자 ${this.interimFunding === 'loan' && this.interimLoanEnabled ? '' : '· 미반영'}</dt><dd>${money(value.deferredInterestWon)}</dd></div>
+      <section class="settlement-stage" aria-labelledby="interim-repayment-heading"><h4 id="interim-repayment-heading"><i aria-hidden="true">01</i> 우선 확보할 중도금 상환자금</h4>
+        ${this.interimFunding === 'loan' ? this.interimRateControl('calculator-settlement-rate') : '<p class="muted-copy">전액 자납 가정 · 입주 때 상환할 중도금 대출과 후불이자는 없습니다.</p>'}
+        <dl class="settlement-table"><div><dt>중도금 대출 원금 상환</dt><dd id="calculator-interim-repayment">${money(value.interimLoanRepaymentWon)}</dd></div>
+        <div><dt>＋ 예상 후불이자 ${this.interimFunding === 'loan' ? '· 자동 반영' : '· 자납 제외'}</dt><dd id="calculator-deferred-interest">${money(value.deferredInterestWon)}</dd></div>
+        <div class="settlement-subtotal repayment-subtotal"><dt>모기지 실행 전 중도금 정리금</dt><dd id="calculator-pre-mortgage-cash">${money(value.preMortgageRepaymentWon)}</dd></div></dl>
+        <p class="stage-note">${this.interimFunding === 'loan' ? `미상환 집단대출을 가정하며, 실행 예정 중도금도 연 ${this.interimRatePercent.toFixed(1)}% · ${this.assumedMoveInDate}까지의 전체 예상 이자에 포함합니다. 현재 발생 이자나 은행 청구액이 아닙니다.` : '이미 납부한 금액은 입주 전 계약금·자납 중도금에 포함됩니다.'} 공고문상 중도금은 본인자금 상환 대상입니다. 상환과 모기지 실행의 실제 날짜·순서는 취급은행에 확인하세요.</p>
+      </section>
+      <section class="settlement-stage non-balance-stage" aria-labelledby="non-balance-heading"><h4 id="non-balance-heading">잔금 제외 별도 준비자금</h4>
+        <dl class="settlement-table"><div><dt>위 중도금 정리금 포함</dt><dd>${money(value.preMortgageRepaymentWon)}</dd></div>
         <div><dt>＋ 선택한 취득 관련 세금</dt><dd>${this.taxEnabled ? money(value.acquisitionTaxWon) : '미반영'}</dd></div>
         <div><dt>＋ 미납 입주 부대비용</dt><dd>${this.costsEnabled ? money(value.additionalCostsWon) : '미반영'}</dd></div>
-        <div><dt>− 잔금 모기지 충당</dt><dd>${this.mortgageEnabled ? money(value.mortgageAppliedWon) : '미적용'}</dd></div>
-        <div class="settlement-total"><dt>입주 시 필요 현금</dt><dd id="calculator-required-cash">${money(value.requiredCashAtMoveInWon)}</dd></div></dl>
+        <div class="settlement-subtotal"><dt>잔금 제외 준비금 · 중도금 포함</dt><dd id="calculator-non-balance-cash">${money(value.nonBalanceCostsWon)}</dd></div></dl><p class="stage-note">위 01 금액을 포함한 소계이므로 두 번 더하지 않습니다. 세금·부대비용의 실제 납부일은 각각 다르며 모두 모기지 전에 납부한다는 뜻은 아닙니다.</p>
+      </section>
+      <section class="settlement-stage balance-stage" aria-labelledby="balance-funding-heading"><h4 id="balance-funding-heading"><i aria-hidden="true">02</i> 잔금과 전용 모기지</h4>
+        <label class="enable-row mortgage-enable"><input id="calculator-balance-mortgage-enabled" type="checkbox" ${this.mortgageEnabled ? 'checked' : ''}> 전용 모기지 적용 <b>연 1.3% 고정</b></label>
+        ${this.mortgageOverviewMarkup(quote)}
+        <dl class="settlement-table"><div><dt>주택·발코니 잔금</dt><dd>${money(value.housingBalanceWon)}</dd></div><div><dt>＋ 시스템에어컨·기타 옵션 잔금 · 자납</dt><dd>${money(value.optionBalanceWon)}</dd></div><div><dt>− 주택·발코니 잔금에 모기지 충당</dt><dd id="calculator-mortgage-applied">${this.mortgageEnabled ? money(value.mortgageAppliedWon) : '미적용'}</dd></div>
+        <div class="settlement-subtotal"><dt>잔금 추가 자납액</dt><dd id="calculator-balance-cash">${money(value.balanceCashAfterMortgageWon)}</dd></div></dl>
+      </section>
+      <dl class="settlement-table"><div class="settlement-total"><dt>입주 시 필요 현금<small>잔금 제외 준비금 + 잔금 추가 자납액</small></dt><dd id="calculator-required-cash">${money(value.requiredCashAtMoveInWon)}</dd></div></dl>
       ${missing.length ? `<p class="scenario-warning" role="note">${missing.join('·')} 미반영: 위 금액은 실제 입주 비용 전부를 확정한 값이 아닙니다. 우측 항목을 펼쳐 반영하세요.</p>` : ''}
       ${this.costsEnabled && COST_ITEMS.every(([id]) => this.costs[id] === 0) ? '<p class="scenario-warning">부대비용 예상액이 아직 0원입니다. 무료로 확정된 것이 아니므로 실제 견적을 확인하세요.</p>' : ''}
       ${value.mortgageExcessWon ? `<p class="scenario-warning">계산상 모기지 초과액 ${money(value.mortgageExcessWon)}은 현금 수령·추가대출로 간주하지 않습니다.</p>` : ''}
       <div class="funding-metrics"><div><span>입주 전 계약금·자납 중도금</span><b id="calculator-upfront-cash">${money(value.selfFundedBeforeMoveInWon)}</b></div><div><span>계약·선택한 비용 포함 예산</span><b>${money(value.totalAcquisitionBudgetWon)}</b></div><div><span>계약부터 입주까지 자기자금</span><b>${money(value.totalOwnCashWon)}</b></div></div>
       <p class="legal-copy">기타 옵션 중도금은 별도 안내일에 입주 전 자납하는 것으로 분리했습니다. 이미 납부한 부대비용과 모기지 만기까지의 이자·향후 세금은 이 입주 예산에 넣지 않습니다. 이 시뮬레이션 입력은 저장하거나 전송하지 않습니다.</p>
     </section>`;
+  }
+
+  private mortgageOverviewMarkup(quote: Quote): string {
+    const mortgage = quote.mortgage;
+    return `<div id="calculator-balance-mortgage-info" class="mortgage-overview"><span class="mortgage-required">공고상 의무가입 대상 · 주택가격의 30% 이상</span>
+      <p>얼마나 빌릴 수 있나요? <b>(감액 후 공급가 + 발코니 확장비) × LTV</b>와 <b>4억원</b> 중 작은 금액입니다. 유상옵션·세금은 기준액에 포함하지 않습니다.</p>
+      ${mortgage ? `<label class="balance-ltv-control" for="calculator-balance-ltv">담보인정비율(LTV)<select id="calculator-balance-ltv">${[30,40,50,60,70].map(value => `<option value="${value}" ${value === this.ltv ? 'selected' : ''}>${value}%</option>`).join('')}</select></label><div class="mortgage-keyfigures"><div><span>선택 LTV 기준 대출 예상액</span><b id="calculator-balance-mortgage-principal">${money(mortgage.principal)}</b></div><div><span>1년 거치 · 월 이자</span><b>${money(mortgage.graceInterest)}</b></div><div><span>이후 ${this.term - 1}년 · 월 원리금</span><b>${money(mortgage.repayment)}</b></div></div>` : '<p class="stage-note">미적용은 자금 비교용입니다. 의무가입이 면제되는 뜻이 아니며 실제 승인 금액은 은행 심사로 결정됩니다.</p>'}
+      <p class="stage-note">공고상 잔금 납부 2~3개월 전 신청 → 은행 심사·중도금 상환 → 모기지 실행·납부 확인 → 입주. ${mortgage ? '대출기간·자녀 수와 수익공유 시나리오는 우측 모기지 항목에서 조정합니다.' : '대출을 적용해 한도와 월 상환액을 확인하세요.'} 이 단지의 연 1.3% 예외를 사용하며 실제 실행 조건은 기금·취급은행 확인이 필요합니다.</p><p class="mortgage-reference"><a href="https://joy-papa.github.io/ipju-e-bundang/#money/dsr" target="_blank" rel="noreferrer">참고 · 얼마나 빌릴 수 있나 ↗</a><a href="${MORTGAGE_SOURCE}" target="_blank" rel="noreferrer">KB 공식 상품 기준 ↗</a></p></div>`;
   }
 
   private paymentGuideMarkup(): string {
@@ -359,11 +384,25 @@ class CalculatorApp {
       if (input.value && (!input.reportValidity() || !Number.isFinite(input.valueAsNumber))) { input.value = String(this.salePriceWon ?? ''); return; }
       this.salePriceWon = input.value ? input.valueAsNumber : null; this.render();
     });
-    this.mount.querySelector<HTMLInputElement>('#calculator-interim-loan-enabled')?.addEventListener('change', (event) => { this.interimLoanEnabled = (event.target as HTMLInputElement).checked; if (this.interimLoanEnabled) this.interimFunding = 'loan'; this.render(); });
-    this.mount.querySelector('#calculator-interim-rate-down')?.addEventListener('click', () => { this.interimRatePercent = Math.max(0.5, this.interimRatePercent - 0.5); this.render(); });
-    this.mount.querySelector('#calculator-interim-rate-up')?.addEventListener('click', () => { this.interimRatePercent = Math.min(15, this.interimRatePercent + 0.5); this.render(); });
-    this.mount.querySelector<HTMLInputElement>('#calculator-mortgage-enabled')?.addEventListener('change', (event) => { this.mortgageEnabled = (event.target as HTMLInputElement).checked; this.render(); });
-    this.mount.querySelector<HTMLSelectElement>('#calculator-ltv')?.addEventListener('change', (event) => { this.ltv = Number((event.target as HTMLSelectElement).value) as 30 | 40 | 50 | 60 | 70; this.render(); });
+    this.mount.querySelector<HTMLInputElement>('#calculator-interim-loan-enabled')?.addEventListener('change', event => { this.interimFunding = (event.target as HTMLInputElement).checked ? 'loan' : 'cash'; this.render(); });
+    this.mount.querySelectorAll<HTMLButtonElement>('[data-interim-rate-action]').forEach(button => button.addEventListener('click', () => {
+      const delta = button.dataset.interimRateAction === 'up' ? 1 : -1;
+      this.interimRatePercent = Math.max(0, Math.min(150, Math.round(this.interimRatePercent * 10) + delta)) / 10;
+      this.render();
+    }));
+    this.mount.querySelectorAll<HTMLInputElement>('[data-interim-rate-input]').forEach(input => {
+      const commit = () => {
+        if (!input.value || !input.reportValidity() || !Number.isFinite(input.valueAsNumber)) {
+          input.value = this.interimRatePercent.toFixed(1); return;
+        }
+        this.interimRatePercent = Math.round(input.valueAsNumber * 10) / 10;
+        this.render();
+      };
+      input.addEventListener('change', commit);
+      input.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); commit(); } });
+    });
+    this.mount.querySelectorAll<HTMLInputElement>('#calculator-mortgage-enabled, #calculator-balance-mortgage-enabled').forEach(input => input.addEventListener('change', () => { this.mortgageEnabled = input.checked; this.render(); }));
+    this.mount.querySelectorAll<HTMLSelectElement>('#calculator-ltv, #calculator-balance-ltv').forEach(select => select.addEventListener('change', () => { this.ltv = Number(select.value) as 30 | 40 | 50 | 60 | 70; this.render(); }));
     this.mount.querySelector<HTMLSelectElement>('#calculator-term')?.addEventListener('change', (event) => { this.term = Number((event.target as HTMLSelectElement).value) as 20 | 30; this.holdingYears = Math.min(this.holdingYears, this.term); this.render(); });
     this.mount.querySelector<HTMLSelectElement>('#calculator-children')?.addEventListener('change', (event) => { this.childCount = Number((event.target as HTMLSelectElement).value) as BundangMortgageChildCount; this.render(); });
     this.mount.querySelector<HTMLSelectElement>('#calculator-settlement-period')?.addEventListener('change', (event) => { this.holdingYears = Number((event.target as HTMLSelectElement).value); this.render(); });
@@ -374,7 +413,7 @@ class CalculatorApp {
     if (this.restorePrintState) return;
     const ids = ['calculator-option-details', 'calculator-payment-guide'];
     if (this.taxEnabled) ids.push('calculator-tax-details');
-    if (this.interimFunding === 'loan' && this.interimLoanEnabled) ids.push('calculator-interim-loan-details');
+    if (this.interimFunding === 'loan') ids.push('calculator-interim-loan-details');
     if (this.mortgageEnabled) ids.push('calculator-mortgage-details');
     if (this.costsEnabled) ids.push('calculator-cost-details');
     if (this.mortgageEnabled && this.salePriceWon !== null) ids.push('calculator-resale-details');

@@ -59,9 +59,9 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('.schedule-table thead')).toContainText('시스템에어컨');
   await expect(page.locator('.schedule-table thead')).toContainText('기타 옵션');
   await expect(page.locator('.schedule-table thead')).toContainText('납부일');
-  await expect(page.locator('.schedule-table tr[data-phase="contract"] .schedule-date')).toContainText('2026.11.07~11.13');
+  await expect(page.locator('.schedule-table tr[data-phase="contract"] .schedule-date')).toContainText('2026.11.04~11.13');
   const countdown = (due: string) => page.locator(`[data-payment-due="${due}"] b`);
-  await expect(countdown('계약 시')).toHaveText('시작 D-16');
+  await expect(countdown('계약 시')).toHaveText('시작 D-13');
   await expect(countdown('2027-04-12')).toHaveText('D-172');
   await expect(countdown('2028-02-14')).toHaveText('D-480');
   await expect(countdown('별도 안내')).toHaveText('일정 미정');
@@ -70,7 +70,7 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('.deadline-note')).toContainText('발코니·추가선택품목의 계약 일정은 별도 안내');
   // Seoul midnight changes date labels only; open sections and quote state survive.
   await page.clock.fastForward(1_100);
-  await expect(countdown('계약 시')).toHaveText('시작 D-15');
+  await expect(countdown('계약 시')).toHaveText('시작 D-12');
   await expect(countdown('2027-04-12')).toHaveText('D-171');
   await expect(page.locator('#calculator-deadline-today')).toContainText('2026.10.23');
   await expect(page.locator('#calculator-option-details')).toHaveAttribute('open', '');
@@ -96,13 +96,34 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('#calculator-tax-details')).toContainText('지방교육세');
   await expect(page.locator('#calculator-tax-details .calculation-total')).toContainText('원');
   const interimDetails = page.locator('#calculator-interim-loan-details');
+  // A selected group-loan scenario includes projected interest without another activation step.
+  await expect(page.locator('#calculator-deferred-interest')).not.toHaveText('0원');
+  const initialInterest = await page.locator('#calculator-deferred-interest').textContent();
+  await page.locator('#calculator-settlement-rate-up').click();
+  await expect(page.locator('#calculator-settlement-rate-input')).toHaveValue('4.1');
+  await expect(page.locator('#calculator-deferred-interest')).not.toHaveText(initialInterest!);
+  await page.locator('#calculator-settlement-rate-input').fill('4.3');
+  await page.locator('#calculator-settlement-rate-input').press('Enter');
+  await expect(page.locator('#calculator-interim-rate-input')).toHaveValue('4.3');
   await interimDetails.locator('summary').click();
-  await page.getByLabel('이자후불제 추정 활성화').check();
+  await expect(page.getByLabel('집단대출 가정 · 후불이자 반영', { exact: true })).toBeChecked();
   await expect(interimDetails).toContainText('4.0%');
   await expect(interimDetails).toContainText('주택 공급대금 중도금 20%');
   await expect(interimDetails).toContainText('기타 옵션 중도금 · 자납');
-  await page.getByRole('button', { name: '금리 0.5%포인트 높이기' }).click();
-  await expect(interimDetails).toContainText('4.5%');
+  await page.locator('#calculator-interim-rate-up').click();
+  await expect(page.locator('#calculator-interim-rate-input')).toHaveValue('4.4');
+  await expect(page.locator('#calculator-settlement-rate-input')).toHaveValue('4.4');
+
+  const preMortgageCash = await page.locator('#calculator-pre-mortgage-cash').textContent();
+  await page.locator('#calculator-balance-mortgage-enabled').check();
+  await expect(page.locator('#calculator-mortgage-enabled')).toBeChecked();
+  await expect(page.locator('#calculator-balance-mortgage-principal')).toHaveText('400,000,000원');
+  await expect(page.locator('#calculator-pre-mortgage-cash')).toHaveText(preMortgageCash!);
+  await expect(page.locator('#calculator-balance-mortgage-info')).toContainText('의무가입 대상');
+  await page.locator('#calculator-balance-ltv').selectOption('30');
+  await expect(page.locator('#calculator-ltv')).toHaveValue('30');
+  await expect(page.locator('#calculator-balance-mortgage-principal')).toHaveText('192,494,400원');
+  await page.locator('#calculator-balance-ltv').selectOption('70');
   await expect(interimDetails).toHaveAttribute('open', '');
   await expect(interimDetails.locator('.calculation-total')).toContainText('원');
   const mortgageDetails = page.locator('#calculator-mortgage-details');
@@ -122,8 +143,12 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('#calculator-interim-repayment')).toHaveText('127,302,000원');
   await page.getByLabel('전액 자납 가정', { exact: true }).check();
   await expect(page.locator('#calculator-interim-repayment')).toHaveText('0원');
+  await expect(page.locator('#calculator-deferred-interest')).toHaveText('0원');
+  await expect(page.locator('#calculator-pre-mortgage-cash')).toHaveText('0원');
   await page.getByLabel('집단대출 가정', { exact: true }).check();
   await expect(page.locator('#calculator-interim-repayment')).toHaveText('127,302,000원');
+  await expect(page.locator('#calculator-deferred-interest')).not.toHaveText('0원');
+  expect(await page.locator('#calculator-non-balance-cash').evaluate(node => Boolean(node.compareDocumentPosition(document.querySelector('#calculator-required-cash')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
   await expect(page.locator('#calculator-option-details')).toHaveAttribute('open', '');
 
   const unchangedContract = await page.locator('.hero-total strong').textContent();
@@ -184,6 +209,8 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('#calculator-deadline-today')).toBeVisible();
   await expect(page.locator('#calculator-deadline-today')).toContainText('2026.10.23');
   await expect(countdown('2028-02-14')).toBeVisible();
+  await expect(page.locator('#calculator-non-balance-cash')).toBeVisible();
+  await expect(page.locator('#calculator-pre-mortgage-cash')).toBeVisible();
   await page.emulateMedia({ media: 'screen' });
   await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
   await expect(taxDetails).not.toHaveAttribute('open', '');

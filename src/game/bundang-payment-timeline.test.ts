@@ -6,7 +6,7 @@ const atSeoulNoon = (date: string) => new Date(`${date}T12:00:00+09:00`);
 
 describe('Bundang payment timeline', () => {
   it('preserves official contract range, both interim dates, planned month and unspecified option installment', () => {
-    expect(paymentDeadlineForDue('계약 시')).toMatchObject({ precision: 'range', startDate: '2026-11-07', endDate: '2026-11-13' });
+    expect(paymentDeadlineForDue('계약 시')).toMatchObject({ precision: 'range', startDate: '2026-11-04', endDate: '2026-11-13' });
     expect(paymentDeadlineForDue('2027-04-12')).toMatchObject({ precision: 'date', startDate: '2027-04-12' });
     expect(paymentDeadlineForDue('2028-02-14')).toMatchObject({ precision: 'date', startDate: '2028-02-14' });
     expect(paymentDeadlineForDue('입주 시')).toMatchObject({ precision: 'month', startDate: '2029-02-01', endDate: '2029-02-28' });
@@ -59,8 +59,9 @@ describe('Bundang payment timeline', () => {
   });
 
   it.each([
-    ['2026-10-22', '시작 D-16', 'upcoming'],
-    ['2026-11-06', '시작 D-1', 'upcoming'],
+    ['2026-10-22', '시작 D-13', 'upcoming'],
+    ['2026-11-03', '시작 D-1', 'upcoming'],
+    ['2026-11-04', '종료 D-9', 'active'],
     ['2026-11-07', '종료 D-6', 'active'],
     ['2026-11-12', '종료 D-1', 'active'],
     ['2026-11-13', '오늘 종료 · D-day', 'today'],
@@ -108,6 +109,6 @@ describe('Bundang payment timeline', () => {
     expect(JSON.stringify(deadline)).toBe(before);
     expect(now.getTime()).toBe(timeBefore);
     deadline.startDate = '2030-01-01';
-    expect(paymentDeadlineForDue('계약 시').startDate).toBe('2026-11-07');
+    expect(paymentDeadlineForDue('계약 시').startDate).toBe('2026-11-04');
   });
 });
