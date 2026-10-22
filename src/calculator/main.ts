@@ -5,10 +5,11 @@ import { BUNDANG_MINUS_OPTION_ID } from '../game/minus-option';
 import { BUNDANG_INTERIM_LOAN_ASSUMED_MOVE_IN_DATE, calculateBundangInterimLoanInterest, calculateBundangSaleFinance, type BundangInterimLoanInterestQuoteV1, type BundangMortgageChildCount, type BundangPaymentPlanKind, type BundangSaleFloorBand, type BundangSaleUnitType } from '../game/bundang-sale-finance';
 import { calculateBundangMoveInSettlement } from '../game/bundang-move-in-finance';
 import { calculateBundangMortgageSettlement } from '../game/bundang-mortgage-settlement';
+import { countdownForDeadline, paymentDeadlineForDue, seoulDateKey } from '../game/bundang-payment-timeline';
 import { clearSaleCalculatorContext, readSaleCalculatorLaunchContext, type SaleCalculatorContextV1 } from '../game/sale-calculator-context';
 import { resolveSaleCalculatorOptionLines, type SaleCalculatorOptionLineV1 } from '../game/sale-calculator-options';
 
-type ScheduleRow = { label: string; due: string; supply: number; balcony: number; systemAc: number; other: number };
+type ScheduleRow = { label: string; due: string; dueKey: string; supply: number; balcony: number; systemAc: number; other: number };
 type TaxReliefMode = 'none' | 'first-home' | 'birth-care';
 type Quote = {
   baseSupply: number; adjustedSupply: number; baseBalcony: number; selectedOptions: number;
@@ -46,7 +47,7 @@ function mergeSchedules(schedules: ReturnType<typeof calculateBundangSaleFinance
     // actual installment. Do not render a misleading zero-value payment row.
     if (item.id === 'fund' && item.amountWon === 0) continue;
     const key = item.due;
-    const row = merged.get(key) ?? { label: item.label, due: item.due, supply: 0, balcony: 0, systemAc: 0, other: 0 };
+    const row = merged.get(key) ?? { label: item.label, due: item.due, dueKey: key, supply: 0, balcony: 0, systemAc: 0, other: 0 };
     if (schedule.target === 'supply') row.supply += item.amountWon;
     else if (schedule.target === 'balcony') row.balcony += item.amountWon;
     else if (schedule.target === 'option-ii') row.systemAc += item.amountWon;
@@ -58,14 +59,9 @@ function mergeSchedules(schedules: ReturnType<typeof calculateBundangSaleFinance
     '계약 시': '계약금', '2027-04-12': '중도금 1차', '별도 안내': '기타 옵션 중도금',
     '2028-02-14': plan === 'pre-subscription' ? '중도금' : '중도금 2차', '입주 시': '잔금',
   }[due] ?? '납부 일정');
-  const displayDue = (due: string) => ({
-    '계약 시': '2026.11.07~11.13',
-    '별도 안내': '계약 후 별도 안내',
-    '입주 시': '입주지정기간 · 2029.02 예정',
-  }[due] ?? due);
   return [...merged.values()]
     .sort((left, right) => (dueOrder.get(left.due) ?? 99) - (dueOrder.get(right.due) ?? 99))
-    .map((row) => ({ ...row, label: labelForDue(row.due), due: displayDue(row.due) }));
+    .map((row) => ({ ...row, label: labelForDue(row.due), due: paymentDeadlineForDue(row.due).dateLabel }));
 }
 
 class CalculatorApp {
@@ -88,11 +84,16 @@ class CalculatorApp {
   private costs: Record<CostId, number> = { stamp: 0, bond: 0, registration: 0, guarantee: 0, management: 0, moving: 0 };
   private salePriceWon: number | null = null;
   private restorePrintState: (() => void) | null = null;
+  private scheduleRows: ScheduleRow[] = [];
+  private countdownTimer: number | undefined;
 
   constructor(private readonly mount: HTMLElement) {
     this.plan = this.context?.applicantRoute ?? 'main-subscription';
     window.addEventListener('beforeprint', () => this.preparePrint());
     window.addEventListener('afterprint', () => { this.restorePrintState?.(); this.restorePrintState = null; });
+    document.addEventListener('visibilitychange', this.scheduleCountdownRefresh);
+    window.addEventListener('pageshow', this.scheduleCountdownRefresh);
+    window.addEventListener('pagehide', () => window.clearTimeout(this.countdownTimer));
   }
   private get ready(): boolean { return Boolean(this.context && this.verification); }
   private get unitType(): BundangSaleUnitType { return this.context!.unitType as BundangSaleUnitType; }
@@ -114,6 +115,7 @@ class CalculatorApp {
       return;
     }
     this.render();
+    this.scheduleCountdownRefresh();
   }
 
   private calculate(): Quote {
@@ -172,6 +174,7 @@ class CalculatorApp {
     const active = this.mount.contains(document.activeElement) ? document.activeElement as HTMLElement : null;
     const focusId = active?.id;
     const quote = this.calculate();
+    this.scheduleRows = quote.schedule;
     const planName = this.plan === 'main-subscription' ? '본청약 기준' : '사전청약 당첨자 기준';
     this.mount.innerHTML = `<div class="calculator-shell">
       <a class="skip-link" href="#calculator-main">계산기 본문으로 건너뛰기</a>
@@ -184,6 +187,7 @@ class CalculatorApp {
     for (const node of this.mount.querySelectorAll<HTMLDetailsElement>('details[id]')) {
       if (disclosureState.has(node.id)) node.open = disclosureState.get(node.id)!;
     }
+    this.refreshCountdowns();
     this.bind();
     if (focusId) {
       const restored = this.mount.querySelector<HTMLElement>(`#${CSS.escape(focusId)}`);
@@ -194,8 +198,48 @@ class CalculatorApp {
   private scheduleTable(rows: ScheduleRow[]): string {
     if (!rows.length) return '<div class="empty-state">납부 일정 데이터를 불러오지 못했습니다.</div>';
     const cell = (value: number) => value ? money(value) : '—';
-    return `<div class="schedule-scroll"><table class="schedule-table"><thead><tr><th>회차</th><th>납부일</th><th>주택</th><th>발코니</th><th>시스템<br>에어컨</th><th>기타 옵션</th><th>회차 합계</th></tr></thead><tbody>${rows.map((row) => { const total = row.supply + row.balcony + row.systemAc + row.other; const phase = row.label === '계약금' ? 'contract' : row.label === '잔금' ? 'balance' : 'interim'; return `<tr data-phase="${phase}"><th><strong>${escape(row.label)}</strong></th><td class="schedule-date">${escape(row.due)}</td><td>${cell(row.supply)}</td><td>${cell(row.balcony)}</td><td>${cell(row.systemAc)}</td><td>${cell(row.other)}</td><td class="total">${money(total)}</td></tr>`; }).join('')}</tbody></table></div>`;
+    return `<div class="schedule-scroll"><table class="schedule-table"><thead><tr><th>회차</th><th>납부일 · D-day</th><th>주택</th><th>발코니</th><th>시스템<br>에어컨</th><th>기타 옵션</th><th>회차 합계</th></tr></thead><tbody>${rows.map((row) => { const total = row.supply + row.balcony + row.systemAc + row.other; const phase = row.label === '계약금' ? 'contract' : row.label === '잔금' ? 'balance' : 'interim'; return `<tr data-phase="${phase}"><th><strong>${escape(row.label)}</strong></th><td class="schedule-date"><span>${escape(row.due)}</span><span class="schedule-countdown" data-payment-due="${escape(row.dueKey)}"></span></td><td>${cell(row.supply)}</td><td>${cell(row.balcony)}</td><td>${cell(row.systemAc)}</td><td>${cell(row.other)}</td><td class="total">${money(total)}</td></tr>`; }).join('')}</tbody></table></div><p class="deadline-note">계약 기간은 <b>주택 계약 기준</b>입니다. 발코니·추가선택품목의 계약 일정은 별도 안내를 확인하세요. 입주는 <b>2029년 2월 예정</b>이며 확정일이 아닙니다. 경과 표시는 납부 완료를 뜻하지 않습니다.</p>`;
   }
+
+  private refreshCountdowns(): void {
+    const block = this.mount.querySelector('#calculator-payments');
+    if (!block) return;
+    const now = new Date();
+    const today = seoulDateKey(now);
+    for (const node of block.querySelectorAll<HTMLElement>('[data-payment-due]')) {
+      const deadline = paymentDeadlineForDue(node.dataset.paymentDue!);
+      const countdown = countdownForDeadline(deadline, now);
+      node.dataset.state = countdown.state;
+      node.innerHTML = `<b>${escape(countdown.text)}</b><small>${escape(countdown.detail)}</small>`;
+    }
+    // Only official dated housing payments qualify as the next confirmed event.
+    // An unknown option date or a planning assumption must never become a deadline.
+    const upcoming = this.scheduleRows.find(row => {
+      const deadline = paymentDeadlineForDue(row.dueKey);
+      return (deadline.precision === 'date' || deadline.precision === 'range')
+        && deadline.endDate !== undefined && deadline.endDate >= today;
+    });
+    let summary = block.querySelector<HTMLElement>('#calculator-deadline-summary');
+    if (!summary) {
+      summary = document.createElement('div');
+      summary.id = 'calculator-deadline-summary';
+      summary.className = 'deadline-summary';
+      block.querySelector('.subhead')?.after(summary);
+    }
+    const next = upcoming ? countdownForDeadline(paymentDeadlineForDue(upcoming.dueKey), now) : null;
+    summary.innerHTML = `<div><span>다가오는 주택 납부 일정</span><strong>${upcoming ? escape(upcoming.label) : '확정된 다음 납부일 없음'}</strong><small>${upcoming ? escape(upcoming.due) : '입주·기타 옵션은 별도 확정 안내를 확인하세요.'}</small></div>${next ? `<b class="deadline-next" data-state="${next.state}">${escape(next.text)}</b>` : ''}<p id="calculator-deadline-today">D-day 기준 <time datetime="${today}">${today.replaceAll('-', '.')}</time> · 한국시간(KST)<small>입주 예정월은 2월 1일 기준 참고값 · 실제 잔금일 미정</small></p>`;
+  }
+
+  private readonly scheduleCountdownRefresh = (): void => {
+    window.clearTimeout(this.countdownTimer);
+    if (document.hidden || !this.scheduleRows.length) return;
+    this.refreshCountdowns();
+    // Refresh at Seoul midnight, regardless of the viewer's browser time zone.
+    // Only date labels are replaced, preserving open folds and in-progress inputs.
+    const dayMs = 86_400_000;
+    const untilMidnight = dayMs - ((Date.now() + 9 * 3_600_000) % dayMs);
+    this.countdownTimer = window.setTimeout(this.scheduleCountdownRefresh, untilMidnight + 50);
+  };
 
   private optionMarkup(quote: Quote): string {
     if (this.minus) return `<section class="option-group option-minus" data-option-tier="discount-metadata-only"><h3>마이너스 옵션</h3><dl><div><dt>공급가 감액</dt><dd>−${money(quote.minusSupply)}</dd></div><div><dt>발코니 감액</dt><dd>−${money(quote.minusBalcony)}</dd></div><div class="subtotal"><dt>총 감액</dt><dd>−${money(quote.minusDiscount)}</dd></div></dl><p>마이너스 옵션은 할인 전용 항목이며 일반 유상옵션은 계약 합계에 넣지 않습니다.</p></section>`;
@@ -326,6 +370,7 @@ class CalculatorApp {
   }
 
   private preparePrint(): void {
+    this.refreshCountdowns();
     if (this.restorePrintState) return;
     const ids = ['calculator-option-details', 'calculator-payment-guide'];
     if (this.taxEnabled) ids.push('calculator-tax-details');

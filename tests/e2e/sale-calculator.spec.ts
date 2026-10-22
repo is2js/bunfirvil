@@ -32,6 +32,8 @@ async function seedCalculatorSession(page: Page, context: CalculatorContext): Pr
 
 test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없이 이어진다', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.clock.install({ time: new Date('2026-10-22T14:59:59Z') });
+  await page.clock.pauseAt(new Date('2026-10-22T14:59:59Z'));
   const context: CalculatorContext = {
     schemaVersion: 1,
     unitType: '55A',
@@ -58,6 +60,21 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('.schedule-table thead')).toContainText('기타 옵션');
   await expect(page.locator('.schedule-table thead')).toContainText('납부일');
   await expect(page.locator('.schedule-table tr[data-phase="contract"] .schedule-date')).toContainText('2026.11.07~11.13');
+  const countdown = (due: string) => page.locator(`[data-payment-due="${due}"] b`);
+  await expect(countdown('계약 시')).toHaveText('시작 D-16');
+  await expect(countdown('2027-04-12')).toHaveText('D-172');
+  await expect(countdown('2028-02-14')).toHaveText('D-480');
+  await expect(countdown('별도 안내')).toHaveText('일정 미정');
+  await expect(countdown('입주 시')).toHaveText('예정월 D-833');
+  await expect(page.locator('#calculator-deadline-today')).toContainText('2026.10.22');
+  await expect(page.locator('.deadline-note')).toContainText('발코니·추가선택품목의 계약 일정은 별도 안내');
+  // Seoul midnight changes date labels only; open sections and quote state survive.
+  await page.clock.fastForward(1_100);
+  await expect(countdown('계약 시')).toHaveText('시작 D-15');
+  await expect(countdown('2027-04-12')).toHaveText('D-171');
+  await expect(page.locator('#calculator-deadline-today')).toContainText('2026.10.23');
+  await expect(page.locator('#calculator-option-details')).toHaveAttribute('open', '');
+  await page.locator('#calculator-payments').screenshot({ path: testInfo.outputPath('payment-countdowns-desktop.png') });
 
   await page.locator('.plan-switch label').filter({ hasText: '사전청약 당첨자' }).click();
   await expect(page.getByLabel('사전청약 당첨자')).toBeChecked();
@@ -66,6 +83,8 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('.schedule-table tbody')).toContainText('31,825,500원');
   await expect(page.locator('.schedule-table tbody')).toContainText('중도금');
   await expect(page.locator('.schedule-table tbody')).not.toContainText('중도금 2차');
+  await expect(page.locator('[data-payment-due="2027-04-12"]')).toHaveCount(0);
+  await expect(countdown('2028-02-14')).toHaveText('D-479');
 
   const taxDetails = page.locator('#calculator-tax-details');
   await taxDetails.locator('summary').click();
@@ -126,6 +145,8 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await page.locator('#calculator-move-in-date').fill('2029-03-01');
   await page.locator('#calculator-move-in-date').press('Tab');
   await expect(interimDetails).toContainText('2029-03-01');
+  await expect(page.locator('tr[data-phase="balance"] .schedule-date')).toContainText('2029.02 예정');
+  await expect(countdown('입주 시')).toHaveText('예정월 D-832');
   await page.locator('#calculator-term').selectOption('20');
   await expect(page.locator('#calculator-settlement-period option[value="24"]')).toHaveCount(0);
   await page.locator('#calculator-settlement-period').selectOption('20');
@@ -141,6 +162,7 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.locator('#calculator-move-in-settlement').screenshot({ path: testInfo.outputPath('move-in-mobile.png') });
+  await page.locator('#calculator-payments').screenshot({ path: testInfo.outputPath('payment-countdowns-mobile.png') });
   await page.setViewportSize({ width: 1440, height: 1000 });
 
   // Direct browser printing must include enabled but manually collapsed evidence.
@@ -159,6 +181,9 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('.source-card')).toBeHidden();
   await expect(page.locator('#calculator-move-in-settlement')).toBeVisible();
   await expect(page.locator('#calculator-cost-details .cost-print-summary')).toContainText('1,000,000원');
+  await expect(page.locator('#calculator-deadline-today')).toBeVisible();
+  await expect(page.locator('#calculator-deadline-today')).toContainText('2026.10.23');
+  await expect(countdown('2028-02-14')).toBeVisible();
   await page.emulateMedia({ media: 'screen' });
   await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
   await expect(taxDetails).not.toHaveAttribute('open', '');

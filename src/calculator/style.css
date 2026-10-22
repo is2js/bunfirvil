@@ -81,8 +81,25 @@ input:focus-visible{outline:2px solid var(--mint-bright);outline-offset:3px}
 .calculator-side .disclosure-body dd{overflow-wrap:anywhere}
 .quote-layout>*,.calculator-side,.calculator-hero>*{min-width:0}
 .schedule-scroll{width:100%;max-width:100%}
+.deadline-summary{margin:14px 0;display:flex;align-items:center;flex-wrap:wrap;gap:10px 18px;padding:15px 16px;border:1px solid rgba(92,211,189,.26);border-radius:9px;background:linear-gradient(110deg,rgba(92,211,189,.09),rgba(225,185,99,.04))}
+.deadline-summary>div{flex:1;min-width:150px;display:grid;gap:5px}
+.deadline-summary span{color:#9bb5ac;font-size:11px}
+.deadline-summary strong{color:#edfaf5;font-size:16px}
+.deadline-summary small{color:#92aaa0;font-size:11px;line-height:1.6}
+.deadline-next{color:var(--mint-bright);font-size:24px;letter-spacing:-.04em;white-space:nowrap}
+#calculator-deadline-today{flex-basis:100%;margin:2px 0 0;padding-top:10px;border-top:1px solid var(--line);color:#a8bfb6;font-size:11px;line-height:1.6}
+#calculator-deadline-today small{display:block;margin-top:3px}
+.schedule-countdown{display:flex;align-items:flex-start;flex-direction:column;gap:5px;margin-top:8px;white-space:normal;max-width:200px}
+.schedule-countdown b{padding:3px 7px;border:1px solid rgba(92,211,189,.23);border-radius:5px;color:var(--mint-bright);background:rgba(92,211,189,.08);font-size:11px;white-space:nowrap}
+.schedule-countdown small{color:#8ea69d;font-size:10px;line-height:1.5;font-weight:400}
+.schedule-countdown[data-state="unknown"] b,.schedule-countdown[data-state="elapsed"] b{border-color:var(--line);color:#a2b7af;background:rgba(151,193,187,.04)}
+.schedule-countdown[data-state="active"] b,.schedule-countdown[data-state="today"] b{border-color:rgba(225,185,99,.4);color:#f2d58e;background:rgba(225,185,99,.12)}
+.deadline-note{margin:11px 0;color:#9db2a8;font-size:11px;line-height:1.7}
+.deadline-note b{color:#c7dcd2}
 @media(max-width:600px){.funding-metrics{grid-template-columns:1fr}.funding-metrics>div{display:flex;align-items:center;justify-content:space-between;gap:12px}.funding-metrics b{margin:0}.settlement-table .settlement-total{flex-wrap:wrap}.move-in-block .subhead{align-items:flex-start;flex-wrap:wrap;gap:8px}.calculator-side .disclosure-body dl{font-size:11px}}
 @media print{
+  .deadline-summary{border-color:#adc9bd;background:#f5fbf8!important;break-inside:avoid}.deadline-summary strong,.deadline-summary span,.deadline-summary small,#calculator-deadline-today{color:#294e3d!important}
+  .deadline-next,.schedule-countdown b{color:#17644a!important;border-color:#b7d2c6;background:#f5fbf8!important}.schedule-countdown small,.deadline-note,.deadline-note b{color:#3b5648!important}
   .move-in-block{border-color:#b9c9c3}.move-in-block>p,.payment-explainer p,.payment-explainer li,.settlement-table dt{color:#344c43!important}
   .funding-switch{border-color:#b9c9c3}.funding-switch legend,.funding-switch label{color:#20372e!important}
   .settlement-table>div{border-color:#d1ded8;break-inside:avoid}.settlement-table dd,.funding-metrics b{color:#132d22!important}
