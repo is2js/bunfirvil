@@ -1,4 +1,4 @@
-name: Validate and deploy GitHub Pages
+name: Preserve legacy assets and redirect GitHub Pages
 
 on:
   push:
@@ -27,18 +27,16 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Run focused unit tests
-        run: npm run test:unit
-      - name: Build project-site bundle
+      - name: Build unchanged legacy app assets
         run: npm run build
-      - name: Verify static output
+      - name: Verify original static output before redirect overlay
         run: npm run verify:dist
-      - name: Install smoke-test browser
-        run: npx playwright install --with-deps chromium
-      - name: Run focused Chromium smoke suite
-        run: npm run test:smoke:ci
-        env:
-          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173/bunfirvil/
+      - name: Check compatibility redirects
+        run: node --test scripts/legacy-pages-redirect.test.mjs
+      - name: Overlay only seven entry HTML redirects
+        run: node scripts/legacy-pages-redirect.mjs
+      - name: Verify retained assets and redirect output
+        run: npm run verify:dist
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

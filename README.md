@@ -1,4 +1,21 @@
-# bunfirvil
+# bunfirvil · 이전 주소 호환
+
+> 개발 정본은 [`is2js/naksaeng`](https://github.com/is2js/naksaeng)으로 이동했습니다. [낙생지구 포털](https://is2js.github.io/naksaeng/)에서 [A1 분당퍼스트빌리지 놀이터](https://is2js.github.io/naksaeng/bunfirvil/)를 이용하세요. 이 저장소는 기존 주소와 이미 열려 있는 탭의 정적 자산을 유지하기 위한 호환 저장소입니다.
+
+## 이전 주소 배포·복구
+
+새 낙생지구 Pages의 정상 배포와 공개 접속을 확인한 뒤에만 이 저장소를 배포합니다. 기존 앱 소스·의존성·생성 snapshot과 Vite base를 변경하지 않고 빌드·정적 검증을 먼저 수행한 뒤 `node scripts/legacy-pages-redirect.mjs`로 루트·관리·가이드·전체 동호·계산기 **진입 HTML 7개만** 교체합니다. 기존 JS·CSS·이미지·JSON·지연 로딩 자산은 삭제하거나 변경하지 않습니다.
+
+리다이렉트는 동일 origin의 `/naksaeng/bunfirvil/`과 대응 하위 페이지로 `location.replace()`하며 기존 query와 공유 fragment를 그대로 전달합니다. 명시적인 `index.html`도 trailing-slash 경로로 정규화합니다. `localStorage`·`sessionStorage`는 읽거나 지우거나 복사하지 않습니다. JavaScript가 꺼져 있으면 새 주소 링크를 제공합니다.
+
+```powershell
+node --test scripts/legacy-pages-redirect.test.mjs
+npm run build
+npm run verify:dist
+node scripts/legacy-pages-redirect.mjs
+```
+
+롤백은 리다이렉트 전환 커밋을 **revert**한 뒤 `main`에 push하여 기존 workflow를 다시 배포합니다. 저장소 삭제·이름 변경·강제 초기화·Git 이력 재작성은 하지 않습니다. 아래 내용은 이전 앱의 보존 문서이며 새 기능 수정과 가이드 편집은 정본 저장소에서 진행합니다.
 
 분당 퍼스트빌리지 검수맵과 PVP RPG 프론트엔드 렌더링 성능을 공개하는 서버리스 데모입니다.
 
