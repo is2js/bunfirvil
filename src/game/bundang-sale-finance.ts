@@ -106,7 +106,7 @@ export interface BundangAcquisitionTaxQuoteV1 {
 }
 
 export interface BundangMortgageInputV1 {
-  /** Loan assessment base; the supply price is normally used, not option totals. */
+  /** Contract supply price plus balcony extension; excludes paid option II/III. */
   loanBaseWon: number;
   termYears: 20 | 30;
   requestedLoanWon?: number;
@@ -181,7 +181,7 @@ export interface BundangFinanceQuoteV1 {
   optionIiSubtotalWon: number;
   optionIiiSubtotalWon: number;
   contractTotalWon: number;
-  /** All `잔금` installments less selected mortgage principal; excludes tax. */
+  /** Legacy balance-only proxy, not an entire move-in budget. Use calculateBundangMoveInSettlement for interim debt, interest, tax and costs. */
   moveInRequiredCashWon?: number;
   paymentSchedules: readonly BundangPaymentScheduleV1[];
   acquisitionTax: BundangAcquisitionTaxQuoteV1;
@@ -398,30 +398,49 @@ export function calculateBundangPaymentSchedule(
 export function calculateBundangInterimLoanInterest(
   input: BundangInterimLoanInterestInputV1,
 ): BundangInterimLoanInterestQuoteV1 {
-  const annualRateBps = Math.max(0, Math.round(input.annualRateBps ?? BUNDANG_INTERIM_LOAN_DEFAULT_RATE_BPS));
+  const principal = input.adjustedSupplyPriceWon;
+  const rate = input.annualRateBps ?? BUNDANG_INTERIM_LOAN_DEFAULT_RATE_BPS;
+  if (!Number.isFinite(principal) || principal < 0 || !Number.isSafeInteger(Math.round(principal))) {
+    throw new Error('중도금 기준 공급가는 0 이상의 유한한 원화 금액이어야 합니다.');
+  }
+  if (!Number.isFinite(rate) || rate < 0 || !Number.isSafeInteger(Math.round(rate))) {
+    throw new Error('중도금 금리는 0 이상의 유한한 값이어야 합니다.');
+  }
+  const annualRateBps = Math.round(rate);
   const assumedMoveInDate = input.assumedMoveInDate ?? BUNDANG_INTERIM_LOAN_ASSUMED_MOVE_IN_DATE;
-  const moveIn = Date.parse(`${assumedMoveInDate}T00:00:00Z`);
-  if (!Number.isFinite(moveIn)) throw new Error('유효한 입주 예정일을 입력하세요.');
+  const strictDate = (value: string): number => {
+    if (!/^\d{4}-\d{2}-\d{2}$/u.test(value)) throw new Error('유효한 날짜를 YYYY-MM-DD 형식으로 입력하세요.');
+    const parsed = Date.parse(`${value}T00:00:00Z`);
+    if (!Number.isFinite(parsed) || new Date(parsed).toISOString().slice(0, 10) !== value) {
+      throw new Error('실제로 존재하는 날짜를 입력하세요.');
+    }
+    return parsed;
+  };
+  const moveIn = strictDate(assumedMoveInDate);
   const schedule = calculateBundangPaymentSchedule(input.adjustedSupplyPriceWon, input.paymentPlanKind, 'supply');
   const tranches = schedule.installments
     .filter((installment) => installment.id.startsWith('interim'))
     .map((installment) => {
-      const execution = Date.parse(`${installment.due}T00:00:00Z`);
-      if (!Number.isFinite(execution) || execution >= moveIn) throw new Error('중도금 실행일은 입주 예정일보다 앞서야 합니다.');
+      const execution = strictDate(installment.due);
+      if (execution >= moveIn) throw new Error('중도금 실행일은 입주 예정일보다 앞서야 합니다.');
       const days = Math.round((moveIn - execution) / 86_400_000);
+      const interestWon = won(installment.amountWon * annualRateBps / 10_000 * days / 365);
+      if (!Number.isSafeInteger(interestWon)) throw new Error('중도금 이자 계산 범위를 초과했습니다.');
       return {
         id: installment.id,
         executionDate: installment.due,
         principalWon: installment.amountWon,
         days,
-        interestWon: won(installment.amountWon * annualRateBps / 10_000 * days / 365),
+        interestWon,
       };
     });
+  const totalInterestWon = tranches.reduce((sum, tranche) => sum + tranche.interestWon, 0);
+  if (!Number.isSafeInteger(totalInterestWon)) throw new Error('중도금 이자 합계 계산 범위를 초과했습니다.');
   return {
     annualRateBps,
     assumedMoveInDate,
     totalPrincipalWon: tranches.reduce((sum, tranche) => sum + tranche.principalWon, 0),
-    totalInterestWon: tranches.reduce((sum, tranche) => sum + tranche.interestWon, 0),
+    totalInterestWon,
     tranches,
   };
 }
@@ -497,6 +516,7 @@ export function calculateBundangMortgage(input: BundangMortgageInputV1): Bundang
   };
 }
 
+/** Legacy balance-only calculation; does not include repayment of interim loans. */
 export function calculateMoveInRequiredCash(
   schedules: readonly BundangPaymentScheduleV1[],
   mortgagePrincipalWon: number,
@@ -538,7 +558,9 @@ export function calculateBundangSaleFinance(input: BundangFinanceInputV1): Bunda
     ...input.acquisitionTax,
   });
   const mortgage = input.mortgage
-    ? calculateBundangMortgage({ ...input.mortgage, loanBaseWon: adjustedSupplyPriceWon })
+    // KB's official loan definition includes balcony extension in the contract
+    // house price, but excludes all other additional-option costs.
+    ? calculateBundangMortgage({ ...input.mortgage, loanBaseWon: adjustedSupplyPriceWon + adjustedBalconyExtensionWon })
     : undefined;
   return {
     household: input.household,

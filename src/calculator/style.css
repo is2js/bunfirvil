@@ -44,3 +44,52 @@
   .calculator-side #calculator-option-details,.calculator-side #calculator-option-details .disclosure-body,.calculator-side #calculator-option-details .option-group,.calculator-side #calculator-option-details .option-list{display:block!important;max-height:none!important;overflow:visible!important}
   .calculator-side #calculator-option-details .option-list li{display:flex!important}
 }
+
+/* The existing contract/payment layout stays intact; move-in estimates are a separate layer. */
+input{font:inherit}
+input:focus-visible{outline:2px solid var(--mint-bright);outline-offset:3px}
+.move-in-block{margin-top:26px;padding-top:24px;border-top:1px solid var(--line)}
+.move-in-block>p,.payment-explainer p,.payment-explainer li{color:#a6bab5;font-size:12px;line-height:1.75}
+.assumption-chip{display:inline-block;padding:3px 7px;border:1px solid rgba(225,185,99,.25);border-radius:5px;color:#e2c88e;background:rgba(225,185,99,.06);font-size:10px;white-space:nowrap}
+.funding-switch{margin:17px 0;padding:12px;border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:14px}
+.funding-switch legend{padding:0 5px;color:#bfd2cb;font-size:12px;font-weight:750}
+.funding-switch label{display:flex;gap:7px;align-items:center;font-size:12px;cursor:pointer}
+.funding-switch input,.enable-row input,.relief-options input{accent-color:var(--gold)}
+.settlement-table{margin:0}
+.settlement-table>div{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:10px 0;border-bottom:1px solid rgba(151,193,187,.08)}
+.settlement-table dt{color:#a5bcb5;font-size:12px;line-height:1.6}
+.settlement-table dd{margin:0;font-size:14px;font-weight:750;text-align:right;white-space:nowrap}
+.settlement-table .settlement-total{margin-top:8px;padding:17px 13px;border:1px solid rgba(225,185,99,.32);border-radius:8px;background:linear-gradient(100deg,rgba(225,185,99,.12),rgba(92,211,189,.06))}
+.settlement-total dt{color:#e5d2a7;font-weight:800}
+.settlement-total dd{color:#f0d18b;font-size:clamp(21px,3vw,28px);letter-spacing:-.035em}
+.scenario-warning{padding:10px 12px;border-left:2px solid var(--gold);background:rgba(225,185,99,.06);color:#d5bf91!important;font-size:11px!important;line-height:1.7}
+.funding-metrics{margin-top:14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.funding-metrics>div{padding:12px;border:1px solid var(--line);border-radius:7px;min-width:0;background:rgba(3,13,17,.28)}
+.funding-metrics span{display:block;color:#8fa8a0;font-size:10px;line-height:1.5}
+.funding-metrics b{display:block;margin-top:8px;color:#dceee7;font-size:13px;overflow-wrap:anywhere}
+.payment-explainer{margin-top:22px;padding:14px;border:1px solid var(--line);border-radius:8px;background:rgba(3,13,17,.2)}
+.payment-explainer summary{color:#b8d7cc;font-size:13px;font-weight:750;cursor:pointer}
+.payment-explainer ol{padding-left:20px}
+.payment-explainer li+li{margin-top:9px}
+.payment-explainer a{color:#84d8bf;text-decoration:underline;text-underline-offset:3px}
+.money-field,.date-field{display:grid;gap:8px;margin:13px 0;color:#b0c4bc;font-size:12px;font-weight:650}
+.money-field input,.date-field input{width:100%;min-width:0;min-height:40px;padding:8px 10px;border:1px solid rgba(151,193,187,.2);border-radius:6px;color:var(--ink);background:#07151a;font-size:14px}
+.money-field small{color:#839e93;font-size:11px;font-weight:400;line-height:1.6}
+.money-field input:disabled{opacity:.5;cursor:not-allowed}
+.cost-print-summary{display:none!important}
+.calculator-side .disclosure-body dl{grid-template-columns:minmax(0,1fr) auto}
+.calculator-side .disclosure-body dd{overflow-wrap:anywhere}
+.quote-layout>*,.calculator-side,.calculator-hero>*{min-width:0}
+.schedule-scroll{width:100%;max-width:100%}
+@media(max-width:600px){.funding-metrics{grid-template-columns:1fr}.funding-metrics>div{display:flex;align-items:center;justify-content:space-between;gap:12px}.funding-metrics b{margin:0}.settlement-table .settlement-total{flex-wrap:wrap}.move-in-block .subhead{align-items:flex-start;flex-wrap:wrap;gap:8px}.calculator-side .disclosure-body dl{font-size:11px}}
+@media print{
+  .move-in-block{border-color:#b9c9c3}.move-in-block>p,.payment-explainer p,.payment-explainer li,.settlement-table dt{color:#344c43!important}
+  .funding-switch{border-color:#b9c9c3}.funding-switch legend,.funding-switch label{color:#20372e!important}
+  .settlement-table>div{border-color:#d1ded8;break-inside:avoid}.settlement-table dd,.funding-metrics b{color:#132d22!important}
+  .settlement-table .settlement-total{border-color:#b69d66;background:#fff9eb!important}.settlement-total dd,.settlement-total dt{color:#78531c!important}
+  .funding-metrics>div,.payment-explainer{border-color:#c0d0c8;background:#fff!important}.funding-metrics span{color:#52675e!important}
+  .assumption-chip,.scenario-warning{border-color:#c2ad76;color:#725321!important;background:#fffaf0!important}
+  .cost-controls,.date-field,#calculator-sale-price{display:none!important}.cost-print-summary{display:grid!important}
+  .calculator-side .disclosure-body>dl{color:#243c31!important}.calculator-side .disclosure-body>dl dd{color:#172e24!important}
+  .payment-explainer{break-inside:avoid}.payment-explainer summary{color:#20372e!important}
+}

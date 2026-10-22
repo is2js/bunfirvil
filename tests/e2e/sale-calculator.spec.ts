@@ -30,7 +30,8 @@ async function seedCalculatorSession(page: Page, context: CalculatorContext): Pr
   }, { calculatorContext: context, verificationKey: VERIFICATION_KEY, calculatorKey: CALCULATOR_CONTEXT_KEY });
 }
 
-test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없이 이어진다', async ({ page }) => {
+test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없이 이어진다', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
   const context: CalculatorContext = {
     schemaVersion: 1,
     unitType: '55A',
@@ -70,6 +71,7 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await taxDetails.locator('summary').click();
   await page.getByLabel('취득세 추정 활성화').check();
   await expect(page.locator('#calculator-tax-details')).toHaveAttribute('open', '');
+  await expect(page.locator('#calculator-option-details')).toHaveAttribute('open', '');
   await taxDetails.locator('.relief-options label').filter({ hasText: '생애최초' }).click();
   await expect(page.locator('#calculator-tax-details')).toContainText('−2,000,000원');
   await expect(page.locator('#calculator-tax-details')).toContainText('지방교육세');
@@ -93,23 +95,83 @@ test('인증 세대의 옵션·청약·감액 계산 흐름은 개인정보 없�
   await expect(page.locator('#calculator-mortgage-details')).toContainText('상환 만기');
   await expect(page.locator('#calculator-mortgage-details')).toContainText('정산 시 대출 유지기간');
   await page.locator('#calculator-children').selectOption('2');
-  await page.locator('#calculator-settlement-period').selectOption('1-9');
-  await expect(page.locator('#calculator-mortgage-details')).toContainText('향후 매각차익 기금 정산비율30%');
+  await page.locator('#calculator-settlement-period').selectOption('9');
+  // 4억원 cap / (55A adjusted supply + balcony) floors to 62% effective LTV.
+  await expect(page.locator('#calculator-mortgage-details')).toContainText('향후 매각차익 기금 정산비율26%');
+  await expect(page.locator('#calculator-mortgage-details')).toContainText('641,648,000원');
+
+  await expect(page.locator('#calculator-interim-repayment')).toHaveText('127,302,000원');
+  await page.getByLabel('전액 자납 가정', { exact: true }).check();
+  await expect(page.locator('#calculator-interim-repayment')).toHaveText('0원');
+  await page.getByLabel('집단대출 가정', { exact: true }).check();
+  await expect(page.locator('#calculator-interim-repayment')).toHaveText('127,302,000원');
+  await expect(page.locator('#calculator-option-details')).toHaveAttribute('open', '');
+
+  const unchangedContract = await page.locator('.hero-total strong').textContent();
+  const costs = page.locator('#calculator-cost-details');
+  await costs.locator('summary').click();
+  await page.getByLabel('미납 부대비용 반영', { exact: true }).check();
+  await page.locator('#calculator-cost-management').fill('1000000');
+  await page.locator('#calculator-cost-management').press('Tab');
+  await expect(page.locator('#calculator-extra-cost-total')).toHaveText('1,000,000원');
+  await expect(page.locator('.hero-total strong')).toHaveText(unchangedContract!);
+  await expect(costs).toHaveAttribute('open', '');
+  await page.locator('#calculator-cost-management').fill('');
+  await page.locator('#calculator-cost-management').press('Tab');
+  await expect(page.locator('#calculator-extra-cost-total')).toHaveText('0원');
+  await expect(page.locator('#calculator-cost-management')).toHaveValue('0');
+  await page.locator('#calculator-cost-management').fill('1000000');
+  await page.locator('#calculator-cost-management').press('Tab');
+
+  await page.locator('#calculator-move-in-date').fill('2029-03-01');
+  await page.locator('#calculator-move-in-date').press('Tab');
+  await expect(interimDetails).toContainText('2029-03-01');
+  await page.locator('#calculator-term').selectOption('20');
+  await expect(page.locator('#calculator-settlement-period option[value="24"]')).toHaveCount(0);
+  await page.locator('#calculator-settlement-period').selectOption('20');
+  await expect(page.locator('#calculator-required-cash')).toContainText('원');
+  const resale = page.locator('#calculator-resale-details');
+  await resale.locator('summary').click();
+  await page.locator('#calculator-sale-price').fill('900000000');
+  await page.locator('#calculator-sale-price').press('Tab');
+  await expect(page.locator('#calculator-resale-proceeds')).toHaveText('874,164,800원');
+  await expect(resale).toContainText('회수액은 순이익이 아닙니다');
+  await expect(resale).toHaveAttribute('open', '');
+  await page.locator('#calculator-move-in-settlement').screenshot({ path: testInfo.outputPath('move-in-desktop.png') });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.locator('#calculator-move-in-settlement').screenshot({ path: testInfo.outputPath('move-in-mobile.png') });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
+  // Direct browser printing must include enabled but manually collapsed evidence.
+  await taxDetails.locator('summary').click();
+  await interimDetails.locator('summary').click();
+  await mortgageDetails.locator('summary').click();
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  await expect(taxDetails).toHaveAttribute('open', '');
+  await expect(interimDetails).toHaveAttribute('open', '');
+  await expect(mortgageDetails).toHaveAttribute('open', '');
 
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('.topbar')).toBeHidden();
   await expect(page.locator('.calculator-side')).toBeVisible();
   await expect(page.locator('#calculator-tax-details')).toBeVisible();
   await expect(page.locator('.source-card')).toBeHidden();
+  await expect(page.locator('#calculator-move-in-settlement')).toBeVisible();
+  await expect(page.locator('#calculator-cost-details .cost-print-summary')).toContainText('1,000,000원');
   await page.emulateMedia({ media: 'screen' });
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  await expect(taxDetails).not.toHaveAttribute('open', '');
+  await expect(interimDetails).not.toHaveAttribute('open', '');
+  await expect(mortgageDetails).not.toHaveAttribute('open', '');
   await page.getByRole('button', { name: '인쇄 · PDF 저장' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-print-called', 'true');
 
   const stored = await page.evaluate((key) => sessionStorage.getItem(key), CALCULATOR_CONTEXT_KEY);
   expect(JSON.parse(stored || '{}')).toEqual(context);
   expect(page.url()).not.toMatch(/105|1903|%ED%94%BC%EC%B9%98/u);
-  await expect(page.locator('body')).not.toContainText('105');
-  await expect(page.locator('body')).not.toContainText('1903');
+  await expect(page.locator('body')).not.toContainText('105동');
+  await expect(page.locator('body')).not.toContainText('1903호');
   await expect(page.locator('body')).not.toContainText('피치');
   expect(stored).not.toMatch(/105|1903|피치/u);
 

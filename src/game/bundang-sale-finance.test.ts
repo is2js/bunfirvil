@@ -82,6 +82,25 @@ describe('Bundang sale finance', () => {
     expect(calculateBundangInterimLoanInterest({ adjustedSupplyPriceWon: 600_000_000, paymentPlanKind: 'main-subscription', annualRateBps: 450 }).totalInterestWon).toBeGreaterThan(main.totalInterestWon);
   });
 
+  it.each(['2029-02-31', '2029-02-29', '2029-13-01', '2029-2-01', '2029-02-01T00:00:00Z', 'not-a-date', '2028-02-14'])('rejects invalid or non-future interim settlement date %s', (assumedMoveInDate) => {
+    expect(() => calculateBundangInterimLoanInterest({ adjustedSupplyPriceWon: 600_000_000, paymentPlanKind: 'pre-subscription', assumedMoveInDate })).toThrow();
+  });
+
+  it('accepts real leap dates, zero rates and integer-won interest totals', () => {
+    const result = calculateBundangInterimLoanInterest({ adjustedSupplyPriceWon: 600_000_000, paymentPlanKind: 'pre-subscription', assumedMoveInDate: '2028-02-29', annualRateBps: 0 });
+    expect(result.tranches[0]?.days).toBe(15);
+    expect(result.totalInterestWon).toBe(0);
+  });
+
+  it.each([NaN, Infinity, -Infinity, -1, Number.MAX_SAFE_INTEGER + 1])('rejects invalid interim loan supply or rate %s', (value) => {
+    expect(() => calculateBundangInterimLoanInterest({ adjustedSupplyPriceWon: value, paymentPlanKind: 'main-subscription' })).toThrow();
+    expect(() => calculateBundangInterimLoanInterest({ adjustedSupplyPriceWon: 600_000_000, paymentPlanKind: 'main-subscription', annualRateBps: value })).toThrow();
+  });
+
+  it('rejects interest arithmetic exceeding safe integer won even when individual inputs are finite', () => {
+    expect(() => calculateBundangInterimLoanInterest({ adjustedSupplyPriceWon: Number.MAX_SAFE_INTEGER, paymentPlanKind: 'main-subscription', annualRateBps: Number.MAX_SAFE_INTEGER })).toThrow();
+  });
+
   it('separates option II and III, and clears both under the minus-option contract', () => {
     const base = calculateBundangSaleFinance({
       household: { unitType: '55A', floor: 2 },
@@ -127,6 +146,19 @@ describe('Bundang sale finance', () => {
     expect(thirty.totalInterestWon).toBeGreaterThan(0);
     const schedules = [calculateBundangPaymentSchedule(600_000_000, 'main-subscription', 'supply')];
     expect(calculateMoveInRequiredCash(schedules, 400_000_000)).toBe(20_000_000);
+  });
+
+  it.each([false, true])('includes adjusted balcony in the mortgage base but excludes option II/III (minus=%s)', (selectMinusOption) => {
+    const result = calculateBundangSaleFinance({
+      household: { unitType: '55A', floorBand: 5 }, paymentPlanKind: 'main-subscription', selectMinusOption,
+      optionLines: [{ id: 'system-ac', label: '시스템에어컨', tier: 'option-ii', priceWon: 3_600_000 }, { id: 'wide-floor', label: '광폭 강마루', tier: 'option-iii', priceWon: 1_820_000 }],
+      mortgage: { termYears: 30, ltvBps: 3_000 },
+    });
+    expect(result.mortgage?.loanBaseWon).toBe(result.adjustedSupplyPriceWon + result.adjustedBalconyExtensionWon);
+    expect(result.mortgage?.principalWon).toBe(Math.round((result.adjustedSupplyPriceWon + result.adjustedBalconyExtensionWon) * 0.3));
+    expect(result.mortgage?.annualRateBps).toBe(130);
+    const noBalcony = calculateBundangSaleFinance({ household: { unitType: '55A', floorBand: 5 }, paymentPlanKind: 'main-subscription', includeBalconyExtension: false, mortgage: { termYears: 30, ltvBps: 3_000 } });
+    expect(noBalcony.mortgage?.loanBaseWon).toBe(noBalcony.adjustedSupplyPriceWon);
   });
 
   it('applies the notice child-count and settlement-period fund share table', () => {
